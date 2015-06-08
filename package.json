@@ -27,6 +27,7 @@
     "eslint": "^0.22.1",
     "expect": "^1.6.0",
     "mocha": "*",
+    "mocha-bamboo-reporter": "^1.1.0",
     "node-libs-browser": "^0.5.2",
     "require-dir": "^0.3.0",
     "sinon": "^1.14.1",
