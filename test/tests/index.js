@@ -108,7 +108,7 @@ describe('In fixtures', () => {
 });
 
 describe('avenger', () => {
-  it('should correctly compute the upset', () => {
+  it('should correctly compute the upset and actualize params', () => {
     const input = new avenger.AvengerInput([
       {
         query: queries.sampleTestsKindQuery
@@ -121,7 +121,9 @@ describe('avenger', () => {
       }
     ]);
     const upset = avenger.upset(input);
-    expect(Object.keys(upset)).toEqual(
+    expect(upset.map((x) => x.name)).toEqual(
         [ 'sampleTestsKindQuery', 'sampleTestsQuery', 'sampleQuery' ]);
+
+    console.log(avenger.actualizeParameters(input));
   });
 });
