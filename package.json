@@ -1,9 +1,11 @@
 {
   "name": "avenger",
   "version": "0.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "mocha --harmony"
+    "test": "mocha",
+    "build": "babel --loose --stage 0 --out-dir lib src",
+    "lint": "eslint src"
   },
   "repository": {
     "type": "git",
@@ -20,10 +22,14 @@
   },
   "devDependencies": {
     "babel": "^5.5.5",
+    "babel-eslint": "^3.1.14",
     "better-assert": "^1.0.2",
+    "eslint": "^0.22.1",
     "expect": "^1.6.0",
     "mocha": "*",
+    "node-libs-browser": "^0.5.2",
     "require-dir": "^0.3.0",
-    "sinon": "^1.14.1"
+    "sinon": "^1.14.1",
+    "webpack": "^1.9.10"
   }
 }
