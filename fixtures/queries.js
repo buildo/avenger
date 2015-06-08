@@ -6,6 +6,7 @@ const assert = require('better-assert');
 const m = require('./models');
 
 const worklistQuery = new Query({
+  name: 'worklistQuery',
   paramsType: t.struct({
     worklistId: t.Str
   }),
@@ -19,6 +20,7 @@ const worklistQuery = new Query({
 assert(Query.is(worklistQuery));
 
 const worklistSamplesQuery = new Query({
+  name: 'worklistSamplesQuery',
   paramsType: t.Nil,
   dependencies: [
     {
@@ -37,6 +39,7 @@ const worklistSamplesQuery = new Query({
 });
 
 const sampleQuery = new Query({
+  name: 'sampleQuery',
   paramsType: t.struct({
     sampleId: t.Str
   }),
@@ -49,6 +52,7 @@ const sampleQuery = new Query({
 });
 
 const sampleTestsQuery = new Query({
+  name: 'sampleTestsQuery',
   paramsType: t.Nil,
   dependencies: [
     {
@@ -67,6 +71,7 @@ const sampleTestsQuery = new Query({
 });
 
 const sampleTestsKindQuery = new Query({
+  name: 'sampleTestsKindQuery',
   paramsType: t.Nil,
   dependencies: [
     {

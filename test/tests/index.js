@@ -7,10 +7,13 @@ import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
 import Query from '../../src/Query';
+import Avenger from '../../src/Avenger';
+import * as avenger from '../../src';
 
 describe('Query', () => {
   it('should have the right structure', () => {
     const q1 = new Query({
+      name: 'q1',
       paramsType: t.struct({
         orderId: t.Num
       }),
@@ -22,6 +25,7 @@ describe('Query', () => {
       })
     });
     const q2 = new Query({
+      name: 'q2',
       paramsType: t.struct({
         id: t.Num
       }),
@@ -100,5 +104,24 @@ describe('In fixtures', () => {
     expect(sampleTestsKindFetchParams).toEqual({
       testKindId: ["asdf", "qwer"]
     });
+  });
+});
+
+describe('avenger', () => {
+  it('should correctly compute the upset', () => {
+    const input = new avenger.AvengerInput([
+      {
+        query: queries.sampleTestsKindQuery
+      },
+      {
+        query: queries.sampleQuery,
+        params: new queries.sampleQuery.paramsType({
+          sampleId: '123'
+        })
+      }
+    ]);
+    const upset = avenger.upset(input);
+    expect(Object.keys(upset)).toEqual(
+        [ 'sampleTestsKindQuery', 'sampleTestsQuery', 'sampleQuery' ]);
   });
 });
