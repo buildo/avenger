@@ -46,9 +46,14 @@ const sampleQuery = new Query({
   fetchResultType: t.struct({
     sample: m.Sample
   }),
-  fetch: (params) => () => ({
-    sample: module.exports.API.fetchSample(params.sampleId)
-  })
+  fetch: (params) => () => {
+    console.log("***** sampleQuery", params);
+    const res = {
+      sample: module.exports.API.fetchSample(params.sampleId)
+    };
+    console.log('res', res);
+    return res;
+  }
 });
 
 const sampleTestsQuery = new Query({
@@ -65,9 +70,12 @@ const sampleTestsQuery = new Query({
   fetchResultType: t.struct({
     tests: t.list(m.Test)
   }),
-  fetch: () => (sq) => ({
-    tests: module.exports.API.fetchTests(sq.sampleId)
-  })
+  fetch: () => (sq) => {
+    console.log('**** sampleTestsQuery', sq);
+    return {
+      tests: module.exports.API.fetchTests(sq.sampleId)
+    };
+  }
 });
 
 const sampleTestsKindQuery = new Query({
@@ -85,9 +93,12 @@ const sampleTestsKindQuery = new Query({
   fetchResultType: t.struct({
     testKinds: m.TestKind
   }),
-  fetch: () => (stq) => ({
-    testKinds: module.exports.API.fetchTestKind(stq.testKindId)
-  })
+  fetch: () => (stq) => {
+    console.log(stq);
+    return {
+      testKinds: module.exports.API.fetchTestKind(stq.testKindId)
+    };
+  }
 })
 
 module.exports = {

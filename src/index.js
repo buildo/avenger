@@ -29,9 +29,10 @@ export function actualizeParameters(avengerInput) {
   assert(AvengerInput.is(avengerInput));
 
   return upset(avengerInput).map((query) => {
-    const params = avengerInput.filter((i) =>
+    const ai = avengerInput.filter((i) =>
       i.query == query
     )[0];
+    const params = (!!ai) ? ai.params : {};
     return {
       name: query.name,
       query: query,
@@ -67,11 +68,14 @@ export function schedule(avengerInput) {
           mang[names[i]] = fetchParams[i];
         }
         console.log('scheduling ' + c.query.name);
-        c.promise = Promise.allValues(gnam).then((fetchResults) =>
-          c.fetcher(Object.keys(fetchResults).map((frk) => {
+        c.promise = Promise.allValues(gnam).then((fetchResults) => {
+          console.log('!!', fetchResults);
+          const ppp = Object.keys(fetchResults).map((frk) =>
             mang[frk](fetchResults[frk])
-          }))[0]
-        );
+          )
+          console.log('FETCHER', ppp);
+          return Promise.allValues(c.fetcher(ppp[0]));
+        });
       }
       return c.promise;
     });
