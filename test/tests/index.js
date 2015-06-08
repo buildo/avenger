@@ -1,12 +1,12 @@
-const t = require('tcomb');
-const expect = require('expect');
-const sinon = require('sinon');
+import t from 'tcomb';
+import expect from 'expect';
+import sinon from 'sinon';
 
 require('../../src/util');
-const queries = require('../../fixtures/queries');
-const m = require('../../fixtures/models');
-const assert = require('better-assert');
-const Query = require('../../src/Query');
+import queries from '../../fixtures/queries';
+import m from '../../fixtures/models';
+import assert from 'better-assert';
+import Query from '../../src/Query';
 
 describe('Query', () => {
   it('should have the right structure', () => {
