@@ -69,10 +69,12 @@ describe('In fixtures', () => {
       name: 'b2'
     })));
     const worklistPromise = queries.worklistQuery.fetch(12)();
-    worklistPromise.worklist.then((w) => {
+    Promise.allValues(worklistPromise).then((w) => {
       expect(w).toEqual({
-        _id: 'a1',
-        name: 'b2'
+        worklist: {
+          _id: 'a1',
+          name: 'b2'
+        }
       });
       done();
     });
