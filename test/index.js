@@ -1,8 +1,11 @@
 'use strict';
 
 const t = require('tcomb');
+const expect = require('expect');
+const sinon = require('sinon');
 
 const queries = require('../fixtures/queries');
+const m = require('../fixtures/models');
 const assert = require('better-assert');
 const Query = require('../src/Query');
 
@@ -44,22 +47,42 @@ describe('Query', () => {
   });
 });
 
-describe('Fixture', () => {
-  it('should be processed correctly', () => {
-    console.log(queries.sampleQuery);
+describe('In fixtures', () => {
+  it('fetch should be correct', (done) => {
+    queries.API = {}
+    queries.API.fetchWorklist = sinon.stub().withArgs(12).returns(Promise.resolve(new m.Worklist({
+      _id: 'a1',
+      name: 'b2'
+    })));
+    const worklistPromise = queries.worklistQuery.fetch(12)();
+    worklistPromise.worklist.then((w) => {
+      expect(w).toEqual({
+        _id: 'a1',
+        name: 'b2'
+      });
+      done();
+    });
+  });
+
+  it('dependencies should be correct', () => {
+    const sampleTestsResult = {
+      tests: [
+        new m.Test({
+          _id: "a1",
+          blocked: false,
+          _testKindId: "asdf"
+        }),
+        new m.Test({
+          _id: "b2",
+          blocked: true,
+          _testKindId: "qwer"
+        })
+      ]
+    }
+    const sampleTestsKindFetchParams =
+      queries.sampleTestsKindQuery.dependencies[0].fetchParams(sampleTestsResult);
+    expect(sampleTestsKindFetchParams).toEqual({
+      testKindId: ["asdf", "qwer"]
+    });
   });
 });
-//const sampleDetailTests = {
-//  dependencies: {
-//    sampleDetail: {
-//      params: ({ tests }) => ({
-//        testId: tests.map(({ _id }) => _id)
-//      }),
-//      multi: 'testId'
-//    }
-//  },
-//
-//  fetch: () => ({ testId }) => ({
-//    testRemarks: API.fetchTestRemark({ testId })
-//  })
-//}

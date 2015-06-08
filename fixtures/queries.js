@@ -5,10 +5,6 @@ const Query = require('../src/Query');
 const assert = require('better-assert');
 const m = require('./models');
 
-const API = {
-  fetchSamples: (worklistId) => null
-};
-
 const worklistQuery = new Query({
   paramsType: t.struct({
     worklistId: t.Str
@@ -17,7 +13,7 @@ const worklistQuery = new Query({
     worklist: m.Worklist
   }),
   fetch: (params) => () => ({
-    worklist: API.fetchWorklist(params.worklistId)
+    worklist: module.exports.API.fetchWorklist(params.worklistId)
   })
 });
 assert(Query.is(worklistQuery));
@@ -36,7 +32,7 @@ const worklistSamplesQuery = new Query({
     samples: t.list(m.Sample)
   }),
   fetch: () => (wlq) => ({
-    samples: API.fetchSamples(wlq.worklistId)
+    samples: module.exports.API.fetchSamples(wlq.worklistId)
   })
 });
 
@@ -48,7 +44,7 @@ const sampleQuery = new Query({
     sample: m.Sample
   }),
   fetch: (params) => () => ({
-    sample: API.fetchSample(params.sampleId)
+    sample: module.exports.API.fetchSample(params.sampleId)
   })
 });
 
@@ -66,7 +62,7 @@ const sampleTestsQuery = new Query({
     tests: t.list(m.Test)
   }),
   fetch: () => (sq) => ({
-    tests: API.fetchTests(sq.sampleId)
+    tests: module.exports.API.fetchTests(sq.sampleId)
   })
 });
 
@@ -85,10 +81,15 @@ const sampleTestsKindQuery = new Query({
     testKinds: m.TestKind
   }),
   fetch: () => (stq) => ({
-    testKinds: API.fetchTestKind(stq.testKindId)
+    testKinds: module.exports.API.fetchTestKind(stq.testKindId)
   })
 })
 
 module.exports = {
-  sampleQuery: sampleQuery
+  API: {},
+  worklistQuery: worklistQuery,
+  worklistSamplesQuery: worklistSamplesQuery,
+  sampleQuery: sampleQuery,
+  sampleTestsQuery: sampleTestsQuery,
+  sampleTestsKindQuery: sampleTestsKindQuery
 };
