@@ -2,6 +2,7 @@ const t = require('tcomb');
 const expect = require('expect');
 const sinon = require('sinon');
 
+require('../../src/util');
 const queries = require('../../fixtures/queries');
 const m = require('../../fixtures/models');
 const assert = require('better-assert');
@@ -42,6 +43,21 @@ describe('Query', () => {
     });
     assert(Query.is(q1));
     assert(Query.is(q2));
+  });
+});
+
+describe('Promise.allValues', () => {
+  it('should do its magic', (done) => {
+    Promise.allValues({
+      asdf: Promise.resolve(12),
+      qwer: Promise.resolve(24)
+    }).then((res) => {
+      expect(res).toEqual({
+        asdf: 12,
+        qwer: 24
+      });
+      done();
+    });
   });
 });
 
