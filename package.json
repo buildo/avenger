@@ -1,0 +1,25 @@
+{
+  "name": "avenger",
+  "version": "0.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --harmony"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buildo/avenger"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/buildo/avenger/issues"
+  },
+  "homepage": "https://github.com/buildo/avenger",
+  "dependencies": {
+    "debug": "*",
+    "tcomb": "*"
+  },
+  "devDependencies": {
+    "better-assert": "^1.0.2",
+    "mocha": "*"
+  }
+}
