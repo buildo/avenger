@@ -16,7 +16,7 @@ export function upset(avengerInput) {
   function _upset(input) {
     input.map((q) => {
       res[q.name] = q;
-      if (!! q.dependencies) {
+      if (q.dependencies) {
         _upset(q.dependencies.map((d) => d.query));
       }
     });
@@ -30,9 +30,9 @@ export function actualizeParameters(avengerInput) {
 
   return upset(avengerInput).map((query) => {
     const ai = avengerInput.filter((i) =>
-      i.query == query
+      i.query === query
     )[0];
-    const params = (!!ai) ? ai.params : {};
+    const params = ai ? ai.params : {};
     return {
       name: query.name,
       query: query,
@@ -49,18 +49,18 @@ export function schedule(avengerInput) {
 
   function _schedule(curr) {
     return curr.map((c) => {
-      if (! c.promise) {
+      if (!c.promise) {
         console.log('considering ' + c.query.name);
         // must be in order
         //console.log(c.query.dependencies.map((q) => q.query.name));
         const dependentPrepareds =
-          ps.filter((p) => c.query.dependencies && (c.query.dependencies.map((q) => q.query.name).indexOf(p.query.name) != -1));
+          ps.filter((p) => c.query.dependencies && (c.query.dependencies.map((q) => q.query.name).indexOf(p.query.name) !== -1));
         console.log(dependentPrepareds);
         _schedule(dependentPrepareds);
         const names = dependentPrepareds.map((p) => p.query.name);
         const promises = dependentPrepareds.map((p) => p.promise);
         const fetchParams = dependentPrepareds.map((p) =>
-            c.query.dependencies.filter((d) => d.query == p.query)[0].fetchParams);
+            c.query.dependencies.filter((d) => d.query === p.query)[0].fetchParams);
         const gnam = {};
         const mang = {};
         for (var i = 0; i < names.length; i++) {
@@ -72,7 +72,7 @@ export function schedule(avengerInput) {
           console.log('!!', fetchResults);
           const ppp = Object.keys(fetchResults).map((frk) =>
             mang[frk](fetchResults[frk])
-          )
+          );
           console.log('FETCHER', ppp);
           return Promise.allValues(c.fetcher(ppp[0]));
         });

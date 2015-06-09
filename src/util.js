@@ -1,5 +1,3 @@
-'use strict';
-
 Promise.allValues = (prs) => {
   const keys = Object.keys(prs);
   const promises = keys.map((k) => prs[k]);
