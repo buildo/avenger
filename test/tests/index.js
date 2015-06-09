@@ -155,7 +155,7 @@ describe('avenger', () => {
     expect(sampleQueryMock.fetch.calledWith({ sampleId: '123' })).toBe(true);
   });
 
-  it('should pass correct data to fetchers', done => {
+  describe('data dependencies', () => {
     const API = {}
     API.fetchSample = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Sample({
       _id: 'a1',
@@ -188,31 +188,65 @@ describe('avenger', () => {
       material: 'plasma'
     })));
 
-    const { sampleTestsKindQuery, sampleQuery } = queries(API);
-    const input = new avenger.AvengerInput([
-      {
-        query: sampleTestsKindQuery
-      },
-      {
-        query: sampleQuery,
-        params: new sampleQuery.paramsType({
-          sampleId: 'a1'
-        })
-      }
-    ]);
+    it('should pass correct data to fetchers', done => {
+      const { sampleTestsKindQuery, sampleQuery } = queries(API);
+      const input = new avenger.AvengerInput([
+        {
+          query: sampleTestsKindQuery
+        },
+        {
+          query: sampleQuery,
+          params: new sampleQuery.paramsType({
+            sampleId: 'a1'
+          })
+        }
+      ]);
 
-    avenger.schedule(input).then(() => {
-      expect(API.fetchSample.calledOnce).toBe(true);
-      expect(API.fetchSample.calledWith('a1')).toBe(true);
+      avenger.schedule(input).then(() => {
+        expect(API.fetchSample.calledOnce).toBe(true);
+        expect(API.fetchSample.calledWith('a1')).toBe(true);
 
-      expect(API.fetchTests.calledOnce).toBe(true);
-      expect(API.fetchTests.calledWith('a1')).toBe(true);
+        expect(API.fetchTests.calledOnce).toBe(true);
+        expect(API.fetchTests.calledWith('a1')).toBe(true);
 
-      expect(API.fetchTestKind.calledTwice).toBe(true);
-      expect(API.fetchTestKind.calledWith('tka')).toBe(true);
-      expect(API.fetchTestKind.calledWith('tkb')).toBe(true);
+        expect(API.fetchTestKind.calledTwice).toBe(true);
+        expect(API.fetchTestKind.calledWith('tka')).toBe(true);
+        expect(API.fetchTestKind.calledWith('tkb')).toBe(true);
 
-      done();
+        done();
+      });
     });
+
+    it('should output the upset data', done => {
+      const { sampleTestsKindQuery, sampleQuery } = queries(API);
+      const input = new avenger.AvengerInput([
+        {
+          query: sampleTestsKindQuery
+        },
+        {
+          query: sampleQuery,
+          params: new sampleQuery.paramsType({
+            sampleId: 'a1'
+          })
+        }
+      ]);
+
+      avenger.schedule(input).then(output => {
+        expect(output.length).toBe(3);
+        expect(output).toContain({
+          sample: { _id: 'a1', valid: false }
+        });
+        expect(output).toContain({
+          tests: [true, true, true]
+        }, (a, b) => assert(a.tests.length === b.tests.length));
+        expect(output).toContain({
+          testKinds: [true, true]
+        }, (a, b) => assert(a.testKinds.length === b.testKinds.length));
+
+        done();
+      });
+    });
+
   });
+
 });
