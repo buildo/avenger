@@ -61,9 +61,7 @@ describe('allValues', () => {
         qwer: 24
       });
       done();
-    }).catch(() => {
-      assert(false);
-    });
+    }).catch(e => { throw e });
   });
 });
 
