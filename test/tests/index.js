@@ -1,6 +1,7 @@
 import t from 'tcomb';
 import expect from 'expect';
 import sinon from 'sinon';
+import { merge } from 'ramda';
 
 require('../../src/util');
 import queries from '../../fixtures/queries';
@@ -107,7 +108,7 @@ describe('In fixtures', () => {
 });
 
 describe('avenger', () => {
-  it('should correctly compute the upset and actualize params', () => {
+  it('should correctly compute the upset', () => {
     const input = new avenger.AvengerInput([
       {
         query: queries.sampleTestsKindQuery
@@ -120,11 +121,34 @@ describe('avenger', () => {
       }
     ]);
     const upset = avenger.upset(input);
-    expect(upset.map((x) => x.name)).toEqual(
+    expect(upset.map(({ name }) => name)).toEqual(
         [ 'sampleTestsKindQuery', 'sampleTestsQuery', 'sampleQuery' ]);
+  });
 
-    // TODO: check actualizeParameters
-    console.log(avenger.actualizeParameters(input));
+  it('should correctly actualize parameters', () => {
+    const testKindsQuery = merge(queries.sampleTestsKindQuery, {
+      fetch: sinon.spy()
+    });
+    const sampleQuery = merge(queries.sampleQuery, {
+      fetch: sinon.spy()
+    });
+
+    const input = new avenger.AvengerInput([
+      {
+        query: testKindsQuery
+      },
+      {
+        query: sampleQuery,
+        params: new queries.sampleQuery.paramsType({
+          sampleId: '123'
+        })
+      }
+    ]);
+    const upset = avenger.actualizeParameters(input);
+
+    expect(testKindsQuery.fetch.calledOnce).toBe(true);
+    expect(sampleQuery.fetch.calledOnce).toBe(true);
+    expect(sampleQuery.fetch.calledWith({ sampleId: '123' })).toBe(true);
   });
 
   it('should schedule fetchers correctly', (done) => {

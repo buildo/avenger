@@ -16,8 +16,8 @@ const worklistQuery = new Query({
   fetchResultType: t.struct({
     worklist: m.Worklist
   }),
-  fetch: (params) => () => ({
-    worklist: module.exports.API.fetchWorklist(params.worklistId)
+  fetch: ({ worklistId }) => () => ({
+    worklist: module.exports.API.fetchWorklist(worklistId)
   })
 });
 assert(Query.is(worklistQuery));
@@ -49,10 +49,10 @@ const sampleQuery = new Query({
   fetchResultType: t.struct({
     sample: m.Sample
   }),
-  fetch: (params) => () => {
-    console.log("***** sampleQuery", params);
+  fetch: ({ sampleId }) => () => {
+    console.log("***** sampleQuery", { sampleId });
     const res = {
-      sample: module.exports.API.fetchSample(params.sampleId)
+      sample: module.exports.API.fetchSample(sampleId)
     };
     console.log('res', res);
     return res;
