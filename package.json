@@ -5,7 +5,7 @@
   "scripts": {
     "test": "mocha",
     "build": "babel --loose --stage 0 --out-dir lib src",
-    "lint": "eslint src"
+    "lint": "eslint src || true"
   },
   "repository": {
     "type": "git",
@@ -18,6 +18,7 @@
   "homepage": "https://github.com/buildo/avenger",
   "dependencies": {
     "debug": "*",
+    "ramda": "^0.14.0",
     "tcomb": "*"
   },
   "devDependencies": {

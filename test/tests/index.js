@@ -101,7 +101,7 @@ describe('In fixtures', () => {
     const sampleTestsKindFetchParams =
       queries.sampleTestsKindQuery.dependencies[0].fetchParams(sampleTestsResult);
     expect(sampleTestsKindFetchParams).toEqual({
-      testKindId: ["asdf", "qwer"]
+      testKindIds: ["asdf", "qwer"]
     });
   });
 });
@@ -135,16 +135,16 @@ describe('avenger', () => {
       {
         query: queries.sampleQuery,
         params: new queries.sampleQuery.paramsType({
-          sampleId: '123'
+          sampleId: 'a1'
         })
       }
     ]);
     queries.API = {}
-    queries.API.fetchSample = sinon.stub().withArgs(123).returns(Promise.resolve(new m.Sample({
+    queries.API.fetchSample = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Sample({
       _id: 'a1',
       valid: false
     })));
-    queries.API.fetchTests = sinon.stub().withArgs(123).returns(Promise.resolve([
+    queries.API.fetchTests = sinon.stub().withArgs('a1').returns(Promise.resolve([
       new m.Test({
         _id: 't1',
         blocked: true,

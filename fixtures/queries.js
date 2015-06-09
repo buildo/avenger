@@ -1,9 +1,12 @@
 'use strict';
 
 const t = require('tcomb');
+require('../src/util');
+
 const Query = require('../src/Query');
 const assert = require('better-assert');
 const m = require('./models');
+import { uniq } from 'ramda';
 
 const worklistQuery = new Query({
   name: 'worklistQuery',
@@ -85,9 +88,8 @@ const sampleTestsKindQuery = new Query({
     {
       query: sampleTestsQuery,
       fetchParams: (stq) => ({
-        testKindId: stq.tests.map((test) => test._testKindId)
-      }),
-      multi: 'testKindId'
+        testKindIds: uniq(stq.tests.map((test) => test._testKindId))
+      })
     }
   ],
   fetchResultType: t.struct({
@@ -96,7 +98,7 @@ const sampleTestsKindQuery = new Query({
   fetch: () => (stq) => {
     console.log(stq);
     return {
-      testKinds: module.exports.API.fetchTestKind(stq.testKindId)
+      testKinds: Promise.all(stq.testKindIds.map((id) => module.exports.API.fetchTestKind(id)))
     };
   }
 })
