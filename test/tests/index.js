@@ -51,7 +51,7 @@ describe('Query', () => {
 });
 
 describe('allValues', () => {
-  it('should do its magic', (done) => {
+  it('should do its magic', done => {
     allValues({
       asdf: Promise.resolve(12),
       qwer: Promise.resolve(24)
@@ -61,6 +61,8 @@ describe('allValues', () => {
         qwer: 24
       });
       done();
+    }).catch(() => {
+      assert(false);
     });
   });
 });

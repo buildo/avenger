@@ -74,7 +74,7 @@ export function schedule(avengerInput) {
             mang[frk](fetchResults[frk])
           );
           console.log('FETCHER', ppp);
-          return Promise.allValues(c.fetcher(ppp[0]));
+          return allValues(c.fetcher(ppp[0]));
         });
       }
       return c.promise;
