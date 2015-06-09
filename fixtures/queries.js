@@ -96,9 +96,9 @@ const sampleTestsKindQuery = new Query({
     testKinds: m.TestKind
   }),
   fetch: () => (stq) => {
-    console.log(stq);
+    console.log('>> stq', stq);
     return {
-      testKinds: Promise.all(stq.testKindIds.map((id) => module.exports.API.fetchTestKind(id)))
+      testKinds: Promise.all(stq.testKindIds.map(id => module.exports.API.fetchTestKind(id)))
     };
   }
 })

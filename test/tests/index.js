@@ -151,7 +151,7 @@ describe('avenger', () => {
     expect(sampleQuery.fetch.calledWith({ sampleId: '123' })).toBe(true);
   });
 
-  it('should schedule fetchers correctly', (done) => {
+  it('should pass correct data to fetchers', done => {
     const input = new avenger.AvengerInput([
       {
         query: queries.sampleTestsKindQuery
@@ -163,6 +163,7 @@ describe('avenger', () => {
         })
       }
     ]);
+
     queries.API = {}
     queries.API.fetchSample = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Sample({
       _id: 'a1',
@@ -194,8 +195,19 @@ describe('avenger', () => {
       _id: 'tkb',
       material: 'plasma'
     })));
-    avenger.schedule(input).then(() =>
-      done()
-    );
+
+    avenger.schedule(input).then(() => {
+      expect(queries.API.fetchSample.calledOnce).toBe(true);
+      expect(queries.API.fetchSample.calledWith('a1')).toBe(true);
+
+      expect(queries.API.fetchTests.calledOnce).toBe(true);
+      expect(queries.API.fetchTests.calledWith('a1')).toBe(true);
+
+      expect(queries.API.fetchTestKind.calledTwice).toBe(true);
+      expect(queries.API.fetchTestKind.calledWith('tka')).toBe(true);
+      expect(queries.API.fetchTestKind.calledWith('tkb')).toBe(true);
+
+      done();
+    });
   });
 });
