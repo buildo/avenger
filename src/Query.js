@@ -9,7 +9,7 @@ const Dependency = t.struct({
 });
 
 const Query = t.struct({
-  name: t.Str,
+  id: t.Str,
   paramsType: Type,
   fetchResultType: Type,
   dependencies: t.maybe(t.list(Dependency)),

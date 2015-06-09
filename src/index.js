@@ -15,7 +15,7 @@ export function upset(avengerInput) {
   const res = {};
   function _upset(input) {
     input.map((q) => {
-      res[q.name] = q;
+      res[q.id] = q;
       if (q.dependencies) {
         _upset(q.dependencies.map((d) => d.query));
       }
@@ -34,7 +34,7 @@ export function actualizeParameters(avengerInput) {
     )[0];
     const params = ai ? ai.params : {};
     return {
-      name: query.name,
+      id: query.id,
       query: query,
       fetcher: query.fetch(params)
     };
@@ -52,20 +52,20 @@ export function schedule(avengerInput) {
       if (!c.promise) {
         console.log('considering ' + c.query.name);
         const dependentPrepareds = (c.query.dependencies || []).map((d) =>
-          ps.filter((p) => p.query.name === d.query.name)[0])
+          ps.filter((p) => p.query.id === d.query.id)[0])
         console.log(dependentPrepareds);
         _schedule(dependentPrepareds);
-        const names = dependentPrepareds.map((p) => p.query.name);
+        const ids = dependentPrepareds.map((p) => p.query.id);
         const promises = dependentPrepareds.map((p) => p.promise);
         const fetchParams = dependentPrepareds.map((p) =>
             c.query.dependencies.filter((d) => d.query === p.query)[0].fetchParams);
         const gnam = {};
         const mang = {};
-        for (var i = 0; i < names.length; i++) {
-          gnam[names[i]] = promises[i];
-          mang[names[i]] = fetchParams[i];
+        for (var i = 0; i < ids.length; i++) {
+          gnam[ids[i]] = promises[i];
+          mang[ids[i]] = fetchParams[i];
         }
-        console.log('scheduling ' + c.query.name);
+        console.log('scheduling ' + c.query.id);
         c.promise = allValues(gnam).then((fetchResults) => {
           console.log('!!', fetchResults);
           const fetcherParams = Object.keys(fetchResults).map((frk) =>
