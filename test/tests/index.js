@@ -3,7 +3,7 @@ import expect from 'expect';
 import sinon from 'sinon';
 import { merge } from 'ramda';
 
-require('../../src/util');
+import { allValues } from '../../src/util';
 import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
@@ -50,9 +50,9 @@ describe('Query', () => {
   });
 });
 
-describe('Promise.allValues', () => {
-  it('should do its magic', (done) => {
-    Promise.allValues({
+describe('allValues', () => {
+  it('should do its magic', done => {
+    allValues({
       asdf: Promise.resolve(12),
       qwer: Promise.resolve(24)
     }).then((res) => {
@@ -61,7 +61,7 @@ describe('Promise.allValues', () => {
         qwer: 24
       });
       done();
-    });
+    }).catch(e => { throw e });
   });
 });
 
@@ -75,7 +75,7 @@ describe('In fixtures', () => {
     const { worklistQuery } = queries(API);
     const worklistPromise = worklistQuery.fetch('a1')();
 
-    Promise.allValues(worklistPromise).then((w) => {
+    allValues(worklistPromise).then((w) => {
       expect(w).toEqual({
         worklist: {
           _id: 'a1',
