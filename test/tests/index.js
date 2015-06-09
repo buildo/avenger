@@ -67,12 +67,14 @@ describe('Promise.allValues', () => {
 
 describe('In fixtures', () => {
   it('fetch should be correct', (done) => {
-    queries.API = {}
-    queries.API.fetchWorklist = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Worklist({
+    const API = {}
+    API.fetchWorklist = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Worklist({
       _id: 'a1',
       name: 'b2'
     })));
-    const worklistPromise = queries.worklistQuery.fetch('a1')();
+    const { worklistQuery } = queries(API);
+    const worklistPromise = worklistQuery.fetch('a1')();
+
     Promise.allValues(worklistPromise).then((w) => {
       expect(w).toEqual({
         worklist: {
@@ -99,8 +101,8 @@ describe('In fixtures', () => {
         })
       ]
     }
-    const sampleTestsKindFetchParams =
-      queries.sampleTestsKindQuery.dependencies[0].fetchParams(sampleTestsResult);
+    const { sampleTestsKindQuery } = queries({});
+    const sampleTestsKindFetchParams = sampleTestsKindQuery.dependencies[0].fetchParams(sampleTestsResult);
     expect(sampleTestsKindFetchParams).toEqual({
       testKindIds: ["asdf", "qwer"]
     });
@@ -109,13 +111,14 @@ describe('In fixtures', () => {
 
 describe('avenger', () => {
   it('should correctly compute the upset', () => {
+    const { sampleQuery, sampleTestsKindQuery } = queries({});
     const input = new avenger.AvengerInput([
       {
-        query: queries.sampleTestsKindQuery
+        query: sampleTestsKindQuery
       },
       {
-        query: queries.sampleQuery,
-        params: new queries.sampleQuery.paramsType({
+        query: sampleQuery,
+        params: new sampleQuery.paramsType({
           sampleId: '123'
         })
       }
@@ -126,50 +129,39 @@ describe('avenger', () => {
   });
 
   it('should correctly actualize parameters', () => {
-    const testKindsQuery = merge(queries.sampleTestsKindQuery, {
+    const { sampleTestsKindQuery, sampleQuery } = queries({});
+    const sampleTestKindsQueryMock = merge(sampleTestsKindQuery, {
       fetch: sinon.spy()
     });
-    const sampleQuery = merge(queries.sampleQuery, {
+    const sampleQueryMock = merge(sampleQuery, {
       fetch: sinon.spy()
     });
 
     const input = new avenger.AvengerInput([
       {
-        query: testKindsQuery
+        query: sampleTestKindsQueryMock
       },
       {
-        query: sampleQuery,
-        params: new queries.sampleQuery.paramsType({
+        query: sampleQueryMock,
+        params: new sampleQueryMock.paramsType({
           sampleId: '123'
         })
       }
     ]);
-    const upset = avenger.actualizeParameters(input);
+    avenger.actualizeParameters(input);
 
-    expect(testKindsQuery.fetch.calledOnce).toBe(true);
-    expect(sampleQuery.fetch.calledOnce).toBe(true);
-    expect(sampleQuery.fetch.calledWith({ sampleId: '123' })).toBe(true);
+    expect(sampleTestKindsQueryMock.fetch.calledOnce).toBe(true);
+    expect(sampleQueryMock.fetch.calledOnce).toBe(true);
+    expect(sampleQueryMock.fetch.calledWith({ sampleId: '123' })).toBe(true);
   });
 
   it('should pass correct data to fetchers', done => {
-    const input = new avenger.AvengerInput([
-      {
-        query: queries.sampleTestsKindQuery
-      },
-      {
-        query: queries.sampleQuery,
-        params: new queries.sampleQuery.paramsType({
-          sampleId: 'a1'
-        })
-      }
-    ]);
-
-    queries.API = {}
-    queries.API.fetchSample = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Sample({
+    const API = {}
+    API.fetchSample = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Sample({
       _id: 'a1',
       valid: false
     })));
-    queries.API.fetchTests = sinon.stub().withArgs('a1').returns(Promise.resolve([
+    API.fetchTests = sinon.stub().withArgs('a1').returns(Promise.resolve([
       new m.Test({
         _id: 't1',
         blocked: true,
@@ -186,26 +178,39 @@ describe('avenger', () => {
         _testKindId: 'tkb'
       })
     ]));
-    queries.API.fetchTestKind = sinon.stub();
-    queries.API.fetchTestKind.withArgs('tka').returns(Promise.resolve(new m.TestKind({
+    API.fetchTestKind = sinon.stub();
+    API.fetchTestKind.withArgs('tka').returns(Promise.resolve(new m.TestKind({
       _id: 'tka',
       material: 'blood'
     })));
-    queries.API.fetchTestKind.withArgs('tkb').returns(Promise.resolve(new m.TestKind({
+    API.fetchTestKind.withArgs('tkb').returns(Promise.resolve(new m.TestKind({
       _id: 'tkb',
       material: 'plasma'
     })));
 
+    const { sampleTestsKindQuery, sampleQuery } = queries(API);
+    const input = new avenger.AvengerInput([
+      {
+        query: sampleTestsKindQuery
+      },
+      {
+        query: sampleQuery,
+        params: new sampleQuery.paramsType({
+          sampleId: 'a1'
+        })
+      }
+    ]);
+
     avenger.schedule(input).then(() => {
-      expect(queries.API.fetchSample.calledOnce).toBe(true);
-      expect(queries.API.fetchSample.calledWith('a1')).toBe(true);
+      expect(API.fetchSample.calledOnce).toBe(true);
+      expect(API.fetchSample.calledWith('a1')).toBe(true);
 
-      expect(queries.API.fetchTests.calledOnce).toBe(true);
-      expect(queries.API.fetchTests.calledWith('a1')).toBe(true);
+      expect(API.fetchTests.calledOnce).toBe(true);
+      expect(API.fetchTests.calledWith('a1')).toBe(true);
 
-      expect(queries.API.fetchTestKind.calledTwice).toBe(true);
-      expect(queries.API.fetchTestKind.calledWith('tka')).toBe(true);
-      expect(queries.API.fetchTestKind.calledWith('tkb')).toBe(true);
+      expect(API.fetchTestKind.calledTwice).toBe(true);
+      expect(API.fetchTestKind.calledWith('tka')).toBe(true);
+      expect(API.fetchTestKind.calledWith('tkb')).toBe(true);
 
       done();
     });
