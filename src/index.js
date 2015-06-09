@@ -1,4 +1,4 @@
-require('./util');
+import { allValues } from './util';
 
 import assert from 'better-assert';
 import t from 'tcomb';
@@ -68,7 +68,7 @@ export function schedule(avengerInput) {
           mang[names[i]] = fetchParams[i];
         }
         console.log('scheduling ' + c.query.name);
-        c.promise = Promise.allValues(gnam).then((fetchResults) => {
+        c.promise = allValues(gnam).then((fetchResults) => {
           console.log('!!', fetchResults);
           const ppp = Object.keys(fetchResults).map((frk) =>
             mang[frk](fetchResults[frk])
