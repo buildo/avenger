@@ -275,7 +275,6 @@ describe('avenger', () => {
         expect(APIABC.fetchC.calledOnce).toBe(true);
         expect(APIABC.fetchC.calledWith(33, 44)).toBe(true);
 
-        console.dir(output);
         expect(output).toContain({
           aa: { _aid: 33 }
         });

@@ -1,8 +1,11 @@
+import debug from 'debug';
 import t from 'tcomb';
 import { allValues } from './util';
 import Query from './Query';
 import AvengerInput from './AvengerInput';
 import { actualizeParameters } from './internals';
+
+const log = debug('Avenger');
 
 export Query from './Query';
 export AvengerInput from './AvengerInput';
@@ -13,15 +16,17 @@ export function schedule(avengerInput) {
   }
 
   const ps = actualizeParameters(avengerInput);
-  console.log(ps);
+  log('actualizedInput: %o', ps);
 
   function _schedule(curr) {
     return curr.map((c) => {
       if (!c.promise) {
-        console.log('considering ' + c.query.name);
+        log(`considering '${c.query.id}'`);
+
         const dependentPrepareds = (c.query.dependencies || []).map((d) =>
           ps.filter((p) => p.query.id === d.query.id)[0])
-        console.log(dependentPrepareds);
+        log(`'${c.query.id}' depends on: [${dependentPrepareds.map(({ query }) => query.id).join(', ')}]`);
+
         _schedule(dependentPrepareds);
         const ids = dependentPrepareds.map((p) => p.query.id);
         const promises = dependentPrepareds.map((p) => p.promise);
@@ -33,13 +38,14 @@ export function schedule(avengerInput) {
           gnam[ids[i]] = promises[i];
           mang[ids[i]] = fetchParams[i];
         }
-        console.log('scheduling ' + c.query.id);
+        log(`scheduling '${c.query.id}'`);
+
         c.promise = allValues(gnam).then((fetchResults) => {
-          console.log('!!', fetchResults);
+          // console.log('!!', fetchResults);
           const fetcherParams = Object.keys(fetchResults).map((frk) =>
             mang[frk](fetchResults[frk])
           );
-          console.log('FETCHER', fetcherParams);
+          // console.log('FETCHER', fetcherParams);
           return allValues(c.fetcher(...fetcherParams));
         });
       }

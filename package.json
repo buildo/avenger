@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/buildo/avenger",
   "dependencies": {
-    "debug": "*",
+    "debug": "^2.2.0",
     "lodash": "^3.9.3",
     "tcomb": "*"
   },
