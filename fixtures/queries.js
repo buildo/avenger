@@ -29,16 +29,16 @@ export default function(API) {
     dependencies: [
       {
         query: worklist,
-        fetchParams: (wlq) => ({
-          worklistId: wlq.worklist._id
+        fetchParams: ({ worklist }) => ({
+          worklistId: worklist._id
         })
       }
     ],
     fetchResultType: t.struct({
       samples: t.list(m.Sample)
     }),
-    fetch: () => (wlq) => ({
-      samples: API.fetchSamples(wlq.worklistId)
+    fetch: () => ({ worklistId }) => ({
+      samples: API.fetchSamples(worklistId)
     })
   });
 
@@ -61,16 +61,16 @@ export default function(API) {
     dependencies: [
       {
         query: sample,
-        fetchParams: (sq) => ({
-          sampleId: sq.sample._id
+        fetchParams: ({ sample }) => ({
+          sampleId: sample._id
         })
       }
     ],
     fetchResultType: t.struct({
       tests: t.list(m.Test)
     }),
-    fetch: () => (sq) => ({
-      tests: API.fetchTests(sq.sampleId)
+    fetch: () => ({ sampleId }) => ({
+      tests: API.fetchTests(sampleId)
     })
   });
 
@@ -80,16 +80,16 @@ export default function(API) {
     dependencies: [
       {
         query: sampleTests,
-        fetchParams: (stq) => ({
-          testKindIds: uniq(stq.tests.map((test) => test._testKindId))
+        fetchParams: ({ tests }) => ({
+          testKindIds: uniq(tests.map((test) => test._testKindId))
         })
       }
     ],
     fetchResultType: t.struct({
       testKinds: m.TestKind
     }),
-    fetch: () => (stq) => ({
-      testKinds: Promise.all(stq.testKindIds.map(id => API.fetchTestKind(id)))
+    fetch: () => ({ testKindIds }) => ({
+      testKinds: Promise.all(testKindIds.map(id => API.fetchTestKind(id)))
     })
   });
 

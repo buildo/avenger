@@ -113,7 +113,7 @@ describe('In fixtures', () => {
 describe('avenger', () => {
   it('should correctly compute the upset', () => {
     const { sample, sampleTestsKind } = queries({});
-    const input = AvengerInput([
+    const input = AvengerInput({ queries: [
       {
         query: sampleTestsKind
       },
@@ -123,7 +123,7 @@ describe('avenger', () => {
           sampleId: '123'
         })
       }
-    ]);
+    ]});
     const up = upset(input);
     expect(up.map(({ id }) => id)).toEqual([
       'sampleTestsKind', 'sampleTests', 'sample' ]);
@@ -138,7 +138,7 @@ describe('avenger', () => {
       fetch: sinon.spy()
     });
 
-    const input = AvengerInput([
+    const input = AvengerInput({ queries: [
       {
         query: sampleTestKindsMock
       },
@@ -148,7 +148,7 @@ describe('avenger', () => {
           sampleId: '123'
         })
       }
-    ]);
+    ]});
     actualizeParameters(input);
 
     expect(sampleTestKindsMock.fetch.calledOnce).toBe(true);
@@ -191,7 +191,7 @@ describe('avenger', () => {
 
     it('should pass correct data to fetchers', done => {
       const { sampleTestsKind, sample } = queries(API);
-      const input = AvengerInput([
+      const input = AvengerInput({ queries: [
         {
           query: sampleTestsKind
         },
@@ -201,7 +201,7 @@ describe('avenger', () => {
             sampleId: 'a1'
           })
         }
-      ]);
+      ]});
 
       schedule(input).then(() => {
         expect(API.fetchSample.calledOnce).toBe(true);
@@ -220,7 +220,7 @@ describe('avenger', () => {
 
     it('should output the upset data', done => {
       const { sampleTestsKind, sample } = queries(API);
-      const input = AvengerInput([
+      const input = AvengerInput({ queries: [
         {
           query: sampleTestsKind
         },
@@ -230,7 +230,7 @@ describe('avenger', () => {
             sampleId: 'a1'
           })
         }
-      ]);
+      ]});
 
       schedule(input).then(output => {
         expect(output.length).toBe(3);
@@ -260,11 +260,11 @@ describe('avenger', () => {
         _cid: 55
       }));
       const { cQuery } = queries(APIABC);
-      const input = AvengerInput([
+      const input = AvengerInput({ queries: [
         {
           query: cQuery
         }
-      ]);
+      ]});
       schedule(input).then(output => {
         expect(APIABC.fetchA.calledOnce).toBe(true);
         expect(APIABC.fetchA.calledWith()).toBe(true);
@@ -284,6 +284,34 @@ describe('avenger', () => {
         expect(output).toContain({
           cc: { _cid: 55 }
         });
+
+        done();
+      }).catch(e => console.log(e));
+    });
+
+    it('should pass implicit state as last positional param to fetchers', done => {
+      const API = {}
+      API.fetchA = sinon.stub().returns(Promise.resolve({}));
+      API.fetchB = sinon.stub().returns(Promise.resolve({}));
+      API.fetchC = sinon.stub().returns(Promise.resolve({}));
+      const { cQuery } = queries(API);
+
+      const stub = sinon.stub().returns(Promise.resolve({}));
+      const cQueryMock = assign({}, cQuery, {
+        fetch: () => stub
+      });
+
+      const implicitState = { token: 'asd' };
+      const input = AvengerInput({
+        queries: [{
+          query: cQueryMock
+        }],
+        implicitState
+      });
+
+      schedule(input).then(output => {
+        const { args } = stub.getCall(0);
+        expect(args[args.length - 1]).toEqual(implicitState);
 
         done();
       }).catch(e => console.log(e));
