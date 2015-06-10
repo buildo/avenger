@@ -24,7 +24,7 @@ export function schedule(avengerInput) {
         log(`considering '${c.query.id}'`);
 
         const dependentPrepareds = (c.query.dependencies || []).map((d) =>
-          ps.filter((p) => p.query.id === d.query.id)[0])
+          ps.filter((p) => p.query.id === d.query.id)[0]);
         log(`'${c.query.id}' depends on: [${dependentPrepareds.map(({ query }) => query.id).join(', ')}]`);
 
         _schedule(dependentPrepareds);
