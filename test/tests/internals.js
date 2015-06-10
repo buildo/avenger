@@ -8,7 +8,8 @@ import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
 import Query from '../../src/Query';
-import { upset, schedule, actualizeParameters, AvengerInput } from '../../src';
+import { schedule, AvengerInput } from '../../src';
+import { upset, actualizeParameters } from '../../src/internals';
 
 describe('Query', () => {
   it('should have the right structure', () => {

@@ -1,53 +1,12 @@
-import { allValues } from './util';
-
 import t from 'tcomb';
+import { allValues } from './util';
 import Query from './Query';
+import AvengerInput from './AvengerInput';
+import { actualizeParameters } from './internals';
+
 export Query from './Query';
+export AvengerInput from './AvengerInput';
 
-export const AvengerInput = t.subtype(t.list(t.struct({
-  query: Query,
-  params: t.maybe(t.Obj)
-})), list => list.length > 0, 'AvengerInput');
-
-// export for tests
-export function upset(avengerInput) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(avengerInput));
-  }
-
-  const res = {};
-  function _upset(input) {
-    input.map((q) => {
-      res[q.id] = q;
-      if (q.dependencies) {
-        _upset(q.dependencies.map((d) => d.query));
-      }
-    });
-  }
-  _upset(avengerInput.map((i) => i.query));
-  return Object.keys(res).map((k) => res[k]);
-}
-
-// export for tests
-export function actualizeParameters(avengerInput) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(avengerInput));
-  }
-
-  return upset(avengerInput).map((query) => {
-    const ai = avengerInput.filter((i) =>
-      i.query === query
-    )[0];
-    const params = ai ? ai.params : {};
-    return {
-      id: query.id,
-      query: query,
-      fetcher: query.fetch(params)
-    };
-  });
-}
-
-// export for tests
 export function schedule(avengerInput) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
