@@ -13,7 +13,7 @@ const Query = t.struct({
   paramsType: Type,
   fetchResultType: Type,
   dependencies: t.maybe(t.list(Dependency)),
-  fetch: t.Func(t.Any, t.Func(t.Any, t.Any))
+  fetch: t.Func // paramsType -> Any -> fetchResultType
 }, 'Query');
 
 module.exports = Query;
