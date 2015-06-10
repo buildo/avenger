@@ -1,7 +1,7 @@
 import t from 'tcomb';
 import expect from 'expect';
 import sinon from 'sinon';
-import { merge } from 'ramda';
+import assign from 'lodash/object/assign';
 
 import { allValues } from '../../src/util';
 import queries from '../../fixtures/queries';
@@ -130,12 +130,13 @@ describe('avenger', () => {
 
   it('should correctly actualize parameters', () => {
     const { sampleTestsKindQuery, sampleQuery } = queries({});
-    const sampleTestKindsQueryMock = merge(sampleTestsKindQuery, {
+    const sampleTestKindsQueryMock = assign({}, sampleTestsKindQuery, {
       fetch: sinon.spy()
     });
-    const sampleQueryMock = merge(sampleQuery, {
+    const sampleQueryMock = assign({}, sampleQuery, {
       fetch: sinon.spy()
     });
+    console.dir(sampleTestKindsQueryMock);
 
     const input = new avenger.AvengerInput([
       {

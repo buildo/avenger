@@ -6,7 +6,7 @@ require('../src/util');
 const Query = require('../src/Query');
 const assert = require('better-assert');
 const m = require('./models');
-import { uniq } from 'ramda';
+import uniq from 'lodash/array/uniq';
 
 export default function(API) {
 
