@@ -4,7 +4,6 @@ import { allValues } from './util';
 import Query from './Query';
 import AvengerInput from './AvengerInput';
 import { actualizeParameters } from './internals';
-import { extend } from 'lodash/object';
 
 const log = debug('Avenger');
 
