@@ -100,7 +100,7 @@ const FromJSONParams = t.struct({
 export default class Avenger {
 
   static fromJSON(serialized) {
-    const { json, allQueries } =  new FromJSONParams(serialized);
+    const { json, allQueries } = new FromJSONParams(serialized);
 
     const input = AvengerInput(json.map(q => {
       if (process.env.NODE_ENV !== 'production') {
@@ -130,7 +130,7 @@ export default class Avenger {
   }
 
   run() {
-    return _schedule(this.input);
+    return schedule(this.input);
   }
 
 }
