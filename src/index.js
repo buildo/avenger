@@ -1,18 +1,19 @@
 import { allValues } from './util';
 
-import assert from 'better-assert';
 import t from 'tcomb';
 import Query from './Query';
 export Query from './Query';
 
-export const AvengerInput = t.list(t.struct({
+export const AvengerInput = t.subtype(t.list(t.struct({
   query: Query,
-  params: t.maybe(t.dict(t.Str, t.Any))
-}));
+  params: t.maybe(t.Obj)
+})), list => list.length > 0, 'AvengerInput');
 
 // export for tests
 export function upset(avengerInput) {
-  assert(AvengerInput.is(avengerInput));
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
 
   const res = {};
   function _upset(input) {
@@ -29,7 +30,9 @@ export function upset(avengerInput) {
 
 // export for tests
 export function actualizeParameters(avengerInput) {
-  assert(AvengerInput.is(avengerInput));
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
 
   return upset(avengerInput).map((query) => {
     const ai = avengerInput.filter((i) =>
@@ -46,7 +49,9 @@ export function actualizeParameters(avengerInput) {
 
 // export for tests
 export function schedule(avengerInput) {
-  assert(AvengerInput.is(avengerInput));
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
 
   const ps = actualizeParameters(avengerInput);
   console.log(ps);
@@ -90,14 +95,13 @@ const FromJSONParams = t.struct({
   // TODO(gio) be more restrictive
   json: t.list(t.Any),
   allQueries: t.dict(t.Str, Query)
-});
+}, 'FromJSONParams');
 
-// FIXME(gio): should probably remove the NODE_ENV checks, already handled by t?
 export default class Avenger {
-  static fromJSON({ json, allQueries }) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(FromJSONParams.is(new FromJSONParams({ json, allQueries })));
-    }
+
+  static fromJSON(serialized) {
+    const { json, allQueries } =  new FromJSONParams(serialized);
+
     const input = new AvengerInput(json.map(q => {
       if (process.env.NODE_ENV !== 'production') {
         t.assert(Object.keys(q).length === 1, `invalid format for query in: ${q}`);
@@ -111,6 +115,7 @@ export default class Avenger {
         params: q[id]
       };
     }));
+
     return new Avenger(input);
   }
 
@@ -131,4 +136,5 @@ export default class Avenger {
   run() {
     return _schedule(this.input);
   }
+
 }
