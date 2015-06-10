@@ -16,4 +16,6 @@ const Query = t.struct({
   fetch: t.Func // paramsType -> Any -> fetchResultType
 }, 'Query');
 
+Dependency.meta.props.query = Query;
+
 module.exports = Query;
