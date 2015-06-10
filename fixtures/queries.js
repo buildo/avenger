@@ -50,14 +50,9 @@ export default function(API) {
     fetchResultType: t.struct({
       sample: m.Sample
     }),
-    fetch: ({ sampleId }) => () => {
-      console.log("***** sample", { sampleId });
-      const res = {
-        sample: API.fetchSample(sampleId)
-      };
-      console.log('res', res);
-      return res;
-    }
+    fetch: ({ sampleId }) => () => ({
+      sample: API.fetchSample(sampleId)
+    })
   });
 
   const sampleTests = new Query({
@@ -74,12 +69,9 @@ export default function(API) {
     fetchResultType: t.struct({
       tests: t.list(m.Test)
     }),
-    fetch: () => (sq) => {
-      console.log('**** sampleTests', sq);
-      return {
-        tests: API.fetchTests(sq.sampleId)
-      };
-    }
+    fetch: () => (sq) => ({
+      tests: API.fetchTests(sq.sampleId)
+    })
   });
 
   const sampleTestsKind = new Query({
