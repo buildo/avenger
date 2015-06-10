@@ -248,6 +248,48 @@ describe('avenger', () => {
       });
     });
 
+    it('should deal with multiple dependencies', done => {
+      const APIABC = {}
+      APIABC.fetchA = sinon.stub().returns(Promise.resolve({
+        _aid: 33
+      }));
+      APIABC.fetchB = sinon.stub().returns(Promise.resolve({
+        _bid: 44
+      }));
+      APIABC.fetchC = sinon.stub().withArgs(33, 44).returns(Promise.resolve({
+        _cid: 55
+      }));
+      const { cQuery } = queries(APIABC);
+      const input = new avenger.AvengerInput([
+        {
+          query: cQuery
+        }
+      ]);
+      avenger.schedule(input).then(output => {
+        expect(APIABC.fetchA.calledOnce).toBe(true);
+        expect(APIABC.fetchA.calledWith()).toBe(true);
+
+        expect(APIABC.fetchB.calledOnce).toBe(true);
+        expect(APIABC.fetchB.calledWith()).toBe(true);
+
+        expect(APIABC.fetchC.calledOnce).toBe(true);
+        expect(APIABC.fetchC.calledWith(33, 44)).toBe(true);
+
+        console.dir(output);
+        expect(output).toContain({
+          aa: { _aid: 33 }
+        });
+        expect(output).toContain({
+          bb: { _bid: 44 }
+        });
+        expect(output).toContain({
+          cc: { _cid: 55 }
+        });
+
+        done();
+      }).catch(e => console.log(e));
+    });
+
   });
 
 });

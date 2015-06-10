@@ -104,11 +104,70 @@ export default function(API) {
     }
   });
 
+  //   A   B
+  //    \ /
+  //     C
+  const aQuery = new Query({
+    name: 'a',
+    paramsType: t.Nil,
+    fetchResultType: t.struct({
+      aa: t.struct({
+        _aid: t.Str
+      })
+    }),
+    fetch: () => () => ({
+      aa: API.fetchA()
+    })
+  });
+
+  const bQuery = new Query({
+    name: 'b',
+    paramsType: t.Nil,
+    fetchResultType: t.struct({
+      bb: t.struct({
+        _bid: t.Str
+      })
+    }),
+    fetch: () => () => ({
+      bb: API.fetchB()
+    })
+  });
+
+  const cQuery = new Query({
+    name: 'c',
+    paramsType: t.Nil,
+    dependencies: [
+      {
+        query: aQuery,
+        fetchParams: ({ aa }) => ({
+          aid: aa._aid
+        })
+      },
+      {
+        query: bQuery,
+        fetchParams: ({ bb }) => ({
+          bid: bb._bid
+        })
+      }
+    ],
+    fetchResultType: t.struct({
+      cc: t.struct({
+        _cid: t.Str
+      })
+    }),
+    fetch: () => ({ aid }, { bid }) => ({
+      cc: API.fetchC(aid, bid)
+    })
+  })
+
   return {
     worklistQuery,
     worklistSamplesQuery,
     sampleQuery,
     sampleTestsQuery,
-    sampleTestsKindQuery
+    sampleTestsKindQuery,
+    aQuery,
+    bQuery,
+    cQuery
   };
 }
