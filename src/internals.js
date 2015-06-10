@@ -16,7 +16,7 @@ export function upset(avengerInput) {
       }
     });
   }
-  _upset(avengerInput.map((i) => i.query));
+  _upset(avengerInput.queries.map((i) => i.query));
   return Object.keys(res).map((k) => res[k]);
 }
 
@@ -26,7 +26,7 @@ export function actualizeParameters(avengerInput) {
   }
 
   return upset(avengerInput).map((query) => {
-    const ai = avengerInput.filter((i) =>
+    const ai = avengerInput.queries.filter((i) =>
       i.query === query
     )[0];
     const params = ai ? ai.params : {};

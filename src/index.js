@@ -15,6 +15,7 @@ export function schedule(avengerInput) {
     t.assert(AvengerInput.is(avengerInput));
   }
 
+  const { implicitState = {} } = avengerInput;
   const ps = actualizeParameters(avengerInput);
   log('actualizedInput: %o', ps);
 
@@ -46,7 +47,7 @@ export function schedule(avengerInput) {
             mang[frk](fetchResults[frk])
           );
           // console.log('FETCHER', fetcherParams);
-          return allValues(c.fetcher(...fetcherParams));
+          return allValues(c.fetcher(...fetcherParams, implicitState));
         });
       }
       return c.promise;
