@@ -51,10 +51,8 @@ export function schedule(avengerInput) {
     return curr.map((c) => {
       if (!c.promise) {
         console.log('considering ' + c.query.name);
-        // must be in order
-        //console.log(c.query.dependencies.map((q) => q.query.name));
-        const dependentPrepareds =
-          ps.filter((p) => c.query.dependencies && (c.query.dependencies.map((q) => q.query.name).indexOf(p.query.name) !== -1));
+        const dependentPrepareds = (c.query.dependencies || []).map((d) =>
+          ps.filter((p) => p.query.name === d.query.name)[0])
         console.log(dependentPrepareds);
         _schedule(dependentPrepareds);
         const names = dependentPrepareds.map((p) => p.query.name);
@@ -70,11 +68,11 @@ export function schedule(avengerInput) {
         console.log('scheduling ' + c.query.name);
         c.promise = allValues(gnam).then((fetchResults) => {
           console.log('!!', fetchResults);
-          const ppp = Object.keys(fetchResults).map((frk) =>
+          const fetcherParams = Object.keys(fetchResults).map((frk) =>
             mang[frk](fetchResults[frk])
           );
-          console.log('FETCHER', ppp);
-          return allValues(c.fetcher(ppp[0]));
+          console.log('FETCHER', fetcherParams);
+          return allValues(c.fetcher(...fetcherParams));
         });
       }
       return c.promise;
