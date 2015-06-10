@@ -9,18 +9,18 @@ describe('Avenger', () => {
 
   it('should accept valid AvengerInput', () => {
     expect(() => {
-      new Avenger(new AvengerInput([]));
-    }).toThrow(/invalid/);
+      new Avenger(AvengerInput([]));
+    }).toThrow(/Invalid/);
 
     expect(() => {
-      new Avenger(new AvengerInput([{
+      new Avenger(AvengerInput([{
         query: sample
       }]));
     }).toNotThrow();
   });
 
   it('should be serializable', () => {
-    const av = new Avenger(new AvengerInput([{
+    const av = new Avenger(AvengerInput([{
       query: sample,
       params: new sample.paramsType({
         sampleId: 'a1'

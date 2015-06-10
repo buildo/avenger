@@ -8,7 +8,7 @@ import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
 import Query from '../../src/Query';
-import * as avenger from '../../src';
+import { upset, schedule, actualizeParameters, AvengerInput } from '../../src';
 
 describe('Query', () => {
   it('should have the right structure', () => {
@@ -112,7 +112,7 @@ describe('In fixtures', () => {
 describe('avenger', () => {
   it('should correctly compute the upset', () => {
     const { sample, sampleTestsKind } = queries({});
-    const input = new avenger.AvengerInput([
+    const input = AvengerInput([
       {
         query: sampleTestsKind
       },
@@ -123,8 +123,8 @@ describe('avenger', () => {
         })
       }
     ]);
-    const upset = avenger.upset(input);
-    expect(upset.map(({ id }) => id)).toEqual([
+    const up = upset(input);
+    expect(up.map(({ id }) => id)).toEqual([
       'sampleTestsKind', 'sampleTests', 'sample' ]);
   });
 
@@ -137,7 +137,7 @@ describe('avenger', () => {
       fetch: sinon.spy()
     });
 
-    const input = new avenger.AvengerInput([
+    const input = AvengerInput([
       {
         query: sampleTestKindsMock
       },
@@ -148,7 +148,7 @@ describe('avenger', () => {
         })
       }
     ]);
-    avenger.actualizeParameters(input);
+    actualizeParameters(input);
 
     expect(sampleTestKindsMock.fetch.calledOnce).toBe(true);
     expect(sampleMock.fetch.calledOnce).toBe(true);
@@ -190,7 +190,7 @@ describe('avenger', () => {
 
     it('should pass correct data to fetchers', done => {
       const { sampleTestsKind, sample } = queries(API);
-      const input = new avenger.AvengerInput([
+      const input = AvengerInput([
         {
           query: sampleTestsKind
         },
@@ -202,7 +202,7 @@ describe('avenger', () => {
         }
       ]);
 
-      avenger.schedule(input).then(() => {
+      schedule(input).then(() => {
         expect(API.fetchSample.calledOnce).toBe(true);
         expect(API.fetchSample.calledWith('a1')).toBe(true);
 
@@ -219,7 +219,7 @@ describe('avenger', () => {
 
     it('should output the upset data', done => {
       const { sampleTestsKind, sample } = queries(API);
-      const input = new avenger.AvengerInput([
+      const input = AvengerInput([
         {
           query: sampleTestsKind
         },
@@ -231,7 +231,7 @@ describe('avenger', () => {
         }
       ]);
 
-      avenger.schedule(input).then(output => {
+      schedule(input).then(output => {
         expect(output.length).toBe(3);
         expect(output).toContain({
           sample: { _id: 'a1', valid: false }

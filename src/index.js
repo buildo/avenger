@@ -102,7 +102,7 @@ export default class Avenger {
   static fromJSON(serialized) {
     const { json, allQueries } =  new FromJSONParams(serialized);
 
-    const input = new AvengerInput(json.map(q => {
+    const input = AvengerInput(json.map(q => {
       if (process.env.NODE_ENV !== 'production') {
         t.assert(Object.keys(q).length === 1, `invalid format for query in: ${q}`);
       }
@@ -120,11 +120,7 @@ export default class Avenger {
   }
 
   constructor(input) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(AvengerInput.is(input), `invalid input`);
-      t.assert(input.length > 0, `invalid input: empty set`);
-    }
-    this.input = input;
+    this.input = AvengerInput(input);
   }
 
   toJSON() {
