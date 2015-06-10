@@ -6,10 +6,10 @@ const Dependency = t.struct({
   query: t.Any,
   fetchParams: t.Func,
   multi: t.maybe(t.Str)
-});
+}, 'Dependency');
 
 const Query = t.struct({
-  name: t.Str,
+  id: t.Str,
   paramsType: Type,
   fetchResultType: Type,
   dependencies: t.maybe(t.list(Dependency)),

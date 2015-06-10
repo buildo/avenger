@@ -10,8 +10,8 @@ import uniq from 'lodash/array/uniq';
 
 export default function(API) {
 
-  const worklistQuery = new Query({
-    name: 'worklistQuery',
+  const worklist = new Query({
+    id: 'worklist',
     paramsType: t.struct({
       worklistId: t.Str
     }),
@@ -23,12 +23,12 @@ export default function(API) {
     })
   });
 
-  const worklistSamplesQuery = new Query({
-    name: 'worklistSamplesQuery',
+  const worklistSamples = new Query({
+    id: 'worklistSamples',
     paramsType: t.Nil,
     dependencies: [
       {
-        query: worklistQuery,
+        query: worklist,
         fetchParams: (wlq) => ({
           worklistId: wlq.worklist._id
         })
@@ -42,8 +42,8 @@ export default function(API) {
     })
   });
 
-  const sampleQuery = new Query({
-    name: 'sampleQuery',
+  const sample = new Query({
+    id: 'sample',
     paramsType: t.struct({
       sampleId: t.Str
     }),
@@ -51,7 +51,7 @@ export default function(API) {
       sample: m.Sample
     }),
     fetch: ({ sampleId }) => () => {
-      console.log("***** sampleQuery", { sampleId });
+      console.log("***** sample", { sampleId });
       const res = {
         sample: API.fetchSample(sampleId)
       };
@@ -60,12 +60,12 @@ export default function(API) {
     }
   });
 
-  const sampleTestsQuery = new Query({
-    name: 'sampleTestsQuery',
+  const sampleTests = new Query({
+    id: 'sampleTests',
     paramsType: t.Nil,
     dependencies: [
       {
-        query: sampleQuery,
+        query: sample,
         fetchParams: (sq) => ({
           sampleId: sq.sample._id
         })
@@ -75,19 +75,19 @@ export default function(API) {
       tests: t.list(m.Test)
     }),
     fetch: () => (sq) => {
-      console.log('**** sampleTestsQuery', sq);
+      console.log('**** sampleTests', sq);
       return {
         tests: API.fetchTests(sq.sampleId)
       };
     }
   });
 
-  const sampleTestsKindQuery = new Query({
-    name: 'sampleTestsKindQuery',
+  const sampleTestsKind = new Query({
+    id: 'sampleTestsKind',
     paramsType: t.Nil,
     dependencies: [
       {
-        query: sampleTestsQuery,
+        query: sampleTests,
         fetchParams: (stq) => ({
           testKindIds: uniq(stq.tests.map((test) => test._testKindId))
         })
@@ -96,19 +96,16 @@ export default function(API) {
     fetchResultType: t.struct({
       testKinds: m.TestKind
     }),
-    fetch: () => (stq) => {
-      console.log('>> stq', stq);
-      return {
-        testKinds: Promise.all(stq.testKindIds.map(id => API.fetchTestKind(id)))
-      };
-    }
+    fetch: () => (stq) => ({
+      testKinds: Promise.all(stq.testKindIds.map(id => API.fetchTestKind(id)))
+    })
   });
 
   //   A   B
   //    \ /
   //     C
   const aQuery = new Query({
-    name: 'a',
+    id: 'a',
     paramsType: t.Nil,
     fetchResultType: t.struct({
       aa: t.struct({
@@ -121,7 +118,7 @@ export default function(API) {
   });
 
   const bQuery = new Query({
-    name: 'b',
+    id: 'b',
     paramsType: t.Nil,
     fetchResultType: t.struct({
       bb: t.struct({
@@ -134,7 +131,7 @@ export default function(API) {
   });
 
   const cQuery = new Query({
-    name: 'c',
+    id: 'c',
     paramsType: t.Nil,
     dependencies: [
       {
@@ -161,11 +158,11 @@ export default function(API) {
   })
 
   return {
-    worklistQuery,
-    worklistSamplesQuery,
-    sampleQuery,
-    sampleTestsQuery,
-    sampleTestsKindQuery,
+    worklist,
+    worklistSamples,
+    sample,
+    sampleTests,
+    sampleTestsKind,
     aQuery,
     bQuery,
     cQuery

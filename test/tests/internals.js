@@ -8,12 +8,13 @@ import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
 import Query from '../../src/Query';
-import * as avenger from '../../src';
+import { schedule, AvengerInput } from '../../src';
+import { upset, actualizeParameters } from '../../src/internals';
 
 describe('Query', () => {
   it('should have the right structure', () => {
     const q1 = new Query({
-      name: 'q1',
+      id: 'q1',
       paramsType: t.struct({
         orderId: t.Num
       }),
@@ -25,7 +26,7 @@ describe('Query', () => {
       })
     });
     const q2 = new Query({
-      name: 'q2',
+      id: 'q2',
       paramsType: t.struct({
         id: t.Num
       }),
@@ -72,8 +73,8 @@ describe('In fixtures', () => {
       _id: 'a1',
       name: 'b2'
     })));
-    const { worklistQuery } = queries(API);
-    const worklistPromise = worklistQuery.fetch('a1')();
+    const { worklist } = queries(API);
+    const worklistPromise = worklist.fetch('a1')();
 
     allValues(worklistPromise).then((w) => {
       expect(w).toEqual({
@@ -101,8 +102,8 @@ describe('In fixtures', () => {
         })
       ]
     }
-    const { sampleTestsKindQuery } = queries({});
-    const sampleTestsKindFetchParams = sampleTestsKindQuery.dependencies[0].fetchParams(sampleTestsResult);
+    const { sampleTestsKind } = queries({});
+    const sampleTestsKindFetchParams = sampleTestsKind.dependencies[0].fetchParams(sampleTestsResult);
     expect(sampleTestsKindFetchParams).toEqual({
       testKindIds: ["asdf", "qwer"]
     });
@@ -111,49 +112,48 @@ describe('In fixtures', () => {
 
 describe('avenger', () => {
   it('should correctly compute the upset', () => {
-    const { sampleQuery, sampleTestsKindQuery } = queries({});
-    const input = new avenger.AvengerInput([
+    const { sample, sampleTestsKind } = queries({});
+    const input = AvengerInput([
       {
-        query: sampleTestsKindQuery
+        query: sampleTestsKind
       },
       {
-        query: sampleQuery,
-        params: new sampleQuery.paramsType({
+        query: sample,
+        params: new sample.paramsType({
           sampleId: '123'
         })
       }
     ]);
-    const upset = avenger.upset(input);
-    expect(upset.map(({ name }) => name)).toEqual(
-        [ 'sampleTestsKindQuery', 'sampleTestsQuery', 'sampleQuery' ]);
+    const up = upset(input);
+    expect(up.map(({ id }) => id)).toEqual([
+      'sampleTestsKind', 'sampleTests', 'sample' ]);
   });
 
   it('should correctly actualize parameters', () => {
-    const { sampleTestsKindQuery, sampleQuery } = queries({});
-    const sampleTestKindsQueryMock = assign({}, sampleTestsKindQuery, {
+    const { sampleTestsKind, sample } = queries({});
+    const sampleTestKindsMock = assign({}, sampleTestsKind, {
       fetch: sinon.spy()
     });
-    const sampleQueryMock = assign({}, sampleQuery, {
+    const sampleMock = assign({}, sample, {
       fetch: sinon.spy()
     });
-    console.dir(sampleTestKindsQueryMock);
 
-    const input = new avenger.AvengerInput([
+    const input = AvengerInput([
       {
-        query: sampleTestKindsQueryMock
+        query: sampleTestKindsMock
       },
       {
-        query: sampleQueryMock,
-        params: new sampleQueryMock.paramsType({
+        query: sampleMock,
+        params: new sampleMock.paramsType({
           sampleId: '123'
         })
       }
     ]);
-    avenger.actualizeParameters(input);
+    actualizeParameters(input);
 
-    expect(sampleTestKindsQueryMock.fetch.calledOnce).toBe(true);
-    expect(sampleQueryMock.fetch.calledOnce).toBe(true);
-    expect(sampleQueryMock.fetch.calledWith({ sampleId: '123' })).toBe(true);
+    expect(sampleTestKindsMock.fetch.calledOnce).toBe(true);
+    expect(sampleMock.fetch.calledOnce).toBe(true);
+    expect(sampleMock.fetch.calledWith({ sampleId: '123' })).toBe(true);
   });
 
   describe('data dependencies', () => {
@@ -190,20 +190,20 @@ describe('avenger', () => {
     })));
 
     it('should pass correct data to fetchers', done => {
-      const { sampleTestsKindQuery, sampleQuery } = queries(API);
-      const input = new avenger.AvengerInput([
+      const { sampleTestsKind, sample } = queries(API);
+      const input = AvengerInput([
         {
-          query: sampleTestsKindQuery
+          query: sampleTestsKind
         },
         {
-          query: sampleQuery,
-          params: new sampleQuery.paramsType({
+          query: sample,
+          params: new sample.paramsType({
             sampleId: 'a1'
           })
         }
       ]);
 
-      avenger.schedule(input).then(() => {
+      schedule(input).then(() => {
         expect(API.fetchSample.calledOnce).toBe(true);
         expect(API.fetchSample.calledWith('a1')).toBe(true);
 
@@ -219,20 +219,20 @@ describe('avenger', () => {
     });
 
     it('should output the upset data', done => {
-      const { sampleTestsKindQuery, sampleQuery } = queries(API);
-      const input = new avenger.AvengerInput([
+      const { sampleTestsKind, sample } = queries(API);
+      const input = AvengerInput([
         {
-          query: sampleTestsKindQuery
+          query: sampleTestsKind
         },
         {
-          query: sampleQuery,
-          params: new sampleQuery.paramsType({
+          query: sample,
+          params: new sample.paramsType({
             sampleId: 'a1'
           })
         }
       ]);
 
-      avenger.schedule(input).then(output => {
+      schedule(input).then(output => {
         expect(output.length).toBe(3);
         expect(output).toContain({
           sample: { _id: 'a1', valid: false }
@@ -260,12 +260,12 @@ describe('avenger', () => {
         _cid: 55
       }));
       const { cQuery } = queries(APIABC);
-      const input = new avenger.AvengerInput([
+      const input = AvengerInput([
         {
           query: cQuery
         }
       ]);
-      avenger.schedule(input).then(output => {
+      schedule(input).then(output => {
         expect(APIABC.fetchA.calledOnce).toBe(true);
         expect(APIABC.fetchA.calledWith()).toBe(true);
 
