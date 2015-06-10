@@ -289,6 +289,34 @@ describe('avenger', () => {
       }).catch(e => console.log(e));
     });
 
+    it('should pass implicit state as last positional param to fetchers', done => {
+      const API = {}
+      API.fetchA = sinon.stub().returns(Promise.resolve({}));
+      API.fetchB = sinon.stub().returns(Promise.resolve({}));
+      API.fetchC = sinon.stub().returns(Promise.resolve({}));
+      const { cQuery } = queries(API);
+
+      const stub = sinon.stub().returns(Promise.resolve({}));
+      const cQueryMock = assign({}, cQuery, {
+        fetch: () => stub
+      });
+
+      const implicitState = { token: 'asd' };
+      const input = AvengerInput({
+        queries: [{
+          query: cQueryMock
+        }],
+        implicitState
+      });
+
+      schedule(input).then(output => {
+        const { args } = stub.getCall(0);
+        expect(args[args.length - 1]).toEqual(implicitState);
+
+        done();
+      }).catch(e => console.log(e));
+    });
+
   });
 
 });
