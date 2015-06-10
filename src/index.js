@@ -4,6 +4,7 @@ import { allValues } from './util';
 import Query from './Query';
 import AvengerInput from './AvengerInput';
 import { actualizeParameters } from './internals';
+import { extend } from 'lodash/object';
 
 const log = debug('Avenger');
 
@@ -59,34 +60,42 @@ export function schedule(avengerInput) {
 
 const FromJSONParams = t.struct({
   // TODO(gio) be more restrictive
-  json: t.list(t.Any),
+  json: t.struct({
+    queries: t.list(t.Any),
+    implicitState: t.maybe(t.Obj)
+  }),
   allQueries: t.dict(t.Str, Query)
 }, 'FromJSONParams');
 
 export function avengerInputFromJson(serialized) {
   const { json, allQueries } = new FromJSONParams(serialized);
 
-  return AvengerInput(json.map(q => {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(Object.keys(q).length === 1, `invalid format for query in: ${q}`);
-    }
-    const id = Object.keys(q)[0];
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(Query.is(allQueries[id]), `query not found: ${id}`);
-    }
-    return {
-      query: allQueries[id],
-      params: q[id]
-    };
-  }));
+  return AvengerInput({
+    implicitState: json.implicitState,
+    queries: json.queries.map(q => {
+      if (process.env.NODE_ENV !== 'production') {
+        t.assert(Object.keys(q).length === 1, `invalid format for query in: ${q}`);
+      }
+      const id = Object.keys(q)[0];
+      if (process.env.NODE_ENV !== 'production') {
+        t.assert(Query.is(allQueries[id]), `query not found: ${id}`);
+      }
+      return {
+        query: allQueries[id],
+        params: q[id]
+      };
+    })
+  });
 }
 
 export function avengerInputToJson(avengerInput) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(avengerInput));
-  }
-
-  return avengerInput.map(avIn => ({
+  const { implicitState } = AvengerInput(avengerInput);
+  const queries = avengerInput.queries.map(avIn => ({
     [avIn.query.id]: avIn.params || {}
   }));
+  const json = { queries };
+  if (implicitState) {
+    json.implicitState = implicitState;
+  }
+  return json;
 }

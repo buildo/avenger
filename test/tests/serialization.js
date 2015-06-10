@@ -28,15 +28,15 @@ describe('serialization', () => {
     }]});
     const serialized = avenger.avengerInputToJson(input);
 
-    expect(serialized).toEqual([{
+    expect(serialized).toEqual({ queries: [{
       sample: { sampleId: 'a1' }
-    }]);
+    }]});
   });
 
   it('should be deserializable', () => {
-    const serialized = [{
+    const serialized = { queries: [{
       sample: { sampleId: 'a1' }
-    }];
+    }]};
     const allQueries = queries({});
     expect(() => {
       avenger.avengerInputFromJson({
@@ -54,6 +54,22 @@ describe('serialization', () => {
     expect(
         avenger.avengerInputToJson(
           avenger.avengerInputFromJson({ allQueries, json: serialized }))).toEqual(serialized);
+  });
+
+  it('should support implicitState', () => {
+    const serialized = {
+      queries: [{
+        sample: { sampleId: 'a1' }
+      }],
+      implicitState: { foo: 'bar' }
+    };
+    const allQueries = queries({});
+    expect(() => {
+      avenger.avengerInputFromJson({
+        json: serialized,
+        allQueries
+      });
+    }).toNotThrow();
   });
 
 });
