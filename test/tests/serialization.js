@@ -1,32 +1,32 @@
 import expect from 'expect';
-import Avenger from '../../src';
+import * as avenger from '../../src';
 import { AvengerInput } from '../../src';
 import queries from '../../fixtures/queries';
 
-describe('Avenger', () => {
+describe('serialization', () => {
 
   const { sample } = queries({});
 
   it('should accept valid AvengerInput', () => {
     expect(() => {
-      new Avenger(AvengerInput([]));
+      AvengerInput([]);
     }).toThrow(/Invalid/);
 
     expect(() => {
-      new Avenger(AvengerInput([{
+      AvengerInput([{
         query: sample
-      }]));
+      }]);
     }).toNotThrow();
   });
 
-  it('should be serializable', () => {
-    const av = new Avenger(AvengerInput([{
+  it('avengerInput should be serializable', () => {
+    const input = AvengerInput([{
       query: sample,
       params: new sample.paramsType({
         sampleId: 'a1'
       })
-    }]));
-    const serialized = av.toJSON();
+    }]);
+    const serialized = avenger.avengerInputToJson(input);
 
     expect(serialized).toEqual([{
       sample: { sampleId: 'a1' }
@@ -39,7 +39,7 @@ describe('Avenger', () => {
     }];
     const allQueries = queries({});
     expect(() => {
-      Avenger.fromJSON({
+      avenger.avengerInputFromJson({
         json: serialized,
         allQueries
       });
@@ -51,7 +51,9 @@ describe('Avenger', () => {
       sample: { sampleId: 'a1' }
     }];
     const allQueries = queries({});
-    expect(Avenger.fromJSON({ allQueries, json: serialized }).toJSON()).toEqual(serialized);
+    expect(
+        avenger.avengerInputToJson(
+          avenger.avengerInputFromJson({ allQueries, json: serialized }))).toEqual(serialized);
   });
 
 });

@@ -97,40 +97,30 @@ const FromJSONParams = t.struct({
   allQueries: t.dict(t.Str, Query)
 }, 'FromJSONParams');
 
-export default class Avenger {
+export function avengerInputFromJson(serialized) {
+  const { json, allQueries } = new FromJSONParams(serialized);
 
-  static fromJSON(serialized) {
-    const { json, allQueries } = new FromJSONParams(serialized);
+  return AvengerInput(json.map(q => {
+    if (process.env.NODE_ENV !== 'production') {
+      t.assert(Object.keys(q).length === 1, `invalid format for query in: ${q}`);
+    }
+    const id = Object.keys(q)[0];
+    if (process.env.NODE_ENV !== 'production') {
+      t.assert(Query.is(allQueries[id]), `query not found: ${id}`);
+    }
+    return {
+      query: allQueries[id],
+      params: q[id]
+    };
+  }));
+}
 
-    const input = AvengerInput(json.map(q => {
-      if (process.env.NODE_ENV !== 'production') {
-        t.assert(Object.keys(q).length === 1, `invalid format for query in: ${q}`);
-      }
-      const id = Object.keys(q)[0];
-      if (process.env.NODE_ENV !== 'production') {
-        t.assert(Query.is(allQueries[id]), `query not found: ${id}`);
-      }
-      return {
-        query: allQueries[id],
-        params: q[id]
-      };
-    }));
-
-    return new Avenger(input);
+export function avengerInputToJson(avengerInput) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
   }
 
-  constructor(input) {
-    this.input = AvengerInput(input);
-  }
-
-  toJSON() {
-    return this.input.map(avIn => ({
-      [avIn.query.id]: avIn.params || {}
-    }));
-  }
-
-  run() {
-    return schedule(this.input);
-  }
-
+  return avengerInput.map(avIn => ({
+    [avIn.query.id]: avIn.params || {}
+  }));
 }
