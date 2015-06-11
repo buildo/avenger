@@ -4,8 +4,7 @@ const Type = t.Any;
 
 const Dependency = t.struct({
   query: t.Any,
-  fetchParams: t.Func,
-  multi: t.maybe(t.Str)
+  fetchParams: t.Func
 }, 'Dependency');
 
 const Query = t.struct({
