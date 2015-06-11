@@ -7,64 +7,8 @@ import { allValues } from '../../src/util';
 import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
-import Query from '../../src/Query';
 import { schedule, AvengerInput } from '../../src';
 import { upset, actualizeParameters } from '../../src/internals';
-
-describe('Query', () => {
-  it('should have the right structure', () => {
-    const q1 = new Query({
-      id: 'q1',
-      paramsType: t.struct({
-        orderId: t.Num
-      }),
-      fetchResultType: t.struct({
-        order: t.Any
-      }),
-      fetch: (params) => () => ({
-        order: null
-      })
-    });
-    const q2 = new Query({
-      id: 'q2',
-      paramsType: t.struct({
-        id: t.Num
-      }),
-      fetchResultType: t.struct({
-        result: t.Any
-      }),
-      dependencies: [
-        {
-          query: q1,
-          fetchParams: (q1) => ({
-            a: 'a'
-          }),
-          multi: 'p1'
-        }
-      ],
-      fetch: (params) => (q1) => ({
-        result: q1.a
-      })
-    });
-    assert(Query.is(q1));
-    assert(Query.is(q2));
-  });
-});
-
-describe('allValues', () => {
-  it('should do its magic', done => {
-    allValues({
-      asdf: Promise.resolve(12),
-      qwer: Promise.resolve(24)
-    }).then((res) => {
-      expect(res).toEqual({
-        asdf: 12,
-        qwer: 24
-      });
-      done();
-    }).catch(e => { throw e });
-  });
-});
 
 describe('In fixtures', () => {
   it('fetch should be correct', (done) => {
