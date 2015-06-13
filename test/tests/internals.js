@@ -8,7 +8,7 @@ import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
 import { schedule, AvengerInput } from '../../src';
-import { upset, actualizeParameters } from '../../src/internals';
+import { scheduleActualized, upset, actualizeParameters } from '../../src/internals';
 import AvengerActualizedCache from '../../src/AvengerActualizedCache';
 
 describe('In fixtures', () => {
@@ -147,7 +147,7 @@ describe('avenger', () => {
         }
       ]});
 
-      return schedule(input).then(() => {
+      return scheduleActualized(actualizeParameters(input)).then(() => {
         expect(API.fetchSample.calledOnce).toBe(true);
         expect(API.fetchSample.calledWith('a1')).toBe(true);
 
@@ -174,7 +174,7 @@ describe('avenger', () => {
         }
       ]});
 
-      return schedule(input).then(output => {
+      return scheduleActualized(actualizeParameters(input)).then(output => {
         expect(output.length).toBe(3);
         expect(output).toContain({
           sample: { _id: 'a1', valid: false }
@@ -206,7 +206,7 @@ describe('avenger', () => {
         }
       ]});
 
-      return schedule(input).then(output => {
+      return scheduleActualized(actualizeParameters(input)).then(output => {
         expect(APIABC.fetchA.calledOnce).toBe(true);
         expect(APIABC.fetchA.calledWith()).toBe(true);
 
@@ -281,7 +281,7 @@ describe('avenger', () => {
         query: cacheDependentQ
       }] });
 
-      return schedule(input, AvengerActualizedCache(getFullCache())).then(output => {
+      return scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(getFullCache())).then(output => {
         expect(API.fetchImmutableFoo.notCalled).toBe(true);
         expect(API.fetchManualFoo.notCalled).toBe(true);
       });
@@ -294,7 +294,7 @@ describe('avenger', () => {
         query: cacheDependentQ
       }] });
 
-      return schedule(input, AvengerActualizedCache(getFullCache())).then(output => {
+      return scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(getFullCache())).then(output => {
         expect(API.fetchNoCacheFoo.calledOnce).toBe(true);
       });
     });
@@ -306,7 +306,7 @@ describe('avenger', () => {
         query: cacheDependentQ
       }] });
 
-      return schedule(input, AvengerActualizedCache(getFullCache())).then(output => {
+      return scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(getFullCache())).then(output => {
         expect(API.fetchOptimisticFoo.calledOnce).toBe(true);
       });
     });
@@ -321,7 +321,7 @@ describe('avenger', () => {
         optimisticQ: { set: sinon.stub() }
       };
 
-      return schedule(input, AvengerActualizedCache(cache)).then(output => {
+      return scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(cache)).then(output => {
         expect(cache.optimisticQ.set.calledOnce).toBe(true);
         expect(cache.optimisticQ.set.calledWith({
           optimistic: 'optimisticFoo'
@@ -342,7 +342,7 @@ describe('avenger', () => {
       };
 
       return new Promise(resolve => {
-        schedule(input, AvengerActualizedCache(cache)).then(() => {
+        scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(cache)).then(() => {
 
           expect(cache.immutableQ.set.calledOnce).toBe(true);
           const fetchResult = { immutable: 'immutableFoo' };
@@ -350,7 +350,7 @@ describe('avenger', () => {
           cache.immutableQ.value = fetchResult;
 
         }).then(() => {
-          schedule(input, AvengerActualizedCache(cache)).then(() => {
+          scheduleActualized(actualizeParameters(input), AvengerActualizedCache(cache)).then(() => {
 
             expect(cache.immutableQ.set.calledOnce).toBe(true);
 
@@ -372,7 +372,7 @@ describe('avenger', () => {
         }
       };
 
-      return schedule(input, AvengerActualizedCache(cache)).then(() => {
+      return scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(cache)).then(() => {
         expect(cache.noCacheQ.set.notCalled).toBe(true);
       });
     });
@@ -390,7 +390,7 @@ describe('avenger', () => {
       };
 
       return new Promise(resolve => {
-        schedule(input, AvengerActualizedCache(cache)).then(() => {
+        scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(cache)).then(() => {
 
           expect(cache.manualQ.set.calledOnce).toBe(true);
           const fetchResult = { manual: 'manualFoo' };
@@ -398,7 +398,7 @@ describe('avenger', () => {
           cache.manualQ.value = fetchResult;
 
         }).then(() => {
-          schedule(input, AvengerActualizedCache(cache)).then(() => {
+          scheduleActualized(actualizeParameters(input), null, AvengerActualizedCache(cache)).then(() => {
 
             expect(cache.manualQ.set.calledOnce).toBe(true);
 
