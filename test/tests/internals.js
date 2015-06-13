@@ -11,7 +11,7 @@ import { schedule, AvengerInput } from '../../src';
 import { upset, actualizeParameters } from '../../src/internals';
 
 describe('In fixtures', () => {
-  it('fetch should be correct', (done) => {
+  it('fetch should be correct', () => {
     const API = {}
     API.fetchWorklist = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Worklist({
       _id: 'a1',
@@ -20,14 +20,13 @@ describe('In fixtures', () => {
     const { worklist } = queries(API);
     const worklistPromise = worklist.fetch('a1')();
 
-    allValues(worklistPromise).then((w) => {
+    return allValues(worklistPromise).then((w) => {
       expect(w).toEqual({
         worklist: {
           _id: 'a1',
           name: 'b2'
         }
       });
-      done();
     });
   });
 
@@ -133,7 +132,7 @@ describe('avenger', () => {
       material: 'plasma'
     })));
 
-    it('should pass correct data to fetchers', done => {
+    it('should pass correct data to fetchers', () => {
       const { sampleTestsKind, sample } = queries(API);
       const input = AvengerInput({ queries: [
         {
@@ -147,7 +146,7 @@ describe('avenger', () => {
         }
       ]});
 
-      schedule(input).then(() => {
+      return schedule(input).then(() => {
         expect(API.fetchSample.calledOnce).toBe(true);
         expect(API.fetchSample.calledWith('a1')).toBe(true);
 
@@ -157,12 +156,10 @@ describe('avenger', () => {
         expect(API.fetchTestKind.calledTwice).toBe(true);
         expect(API.fetchTestKind.calledWith('tka')).toBe(true);
         expect(API.fetchTestKind.calledWith('tkb')).toBe(true);
-
-        done();
       });
     });
 
-    it('should output the upset data', done => {
+    it('should output the upset data', () => {
       const { sampleTestsKind, sample } = queries(API);
       const input = AvengerInput({ queries: [
         {
@@ -176,7 +173,7 @@ describe('avenger', () => {
         }
       ]});
 
-      schedule(input).then(output => {
+      return schedule(input).then(output => {
         expect(output.length).toBe(3);
         expect(output).toContain({
           sample: { _id: 'a1', valid: false }
@@ -187,12 +184,10 @@ describe('avenger', () => {
         expect(output).toContain({
           testKinds: [true, true]
         }, (a, b) => assert(a.testKinds.length === b.testKinds.length));
-
-        done();
       });
     });
 
-    it('should deal with multiple dependencies', done => {
+    it('should deal with multiple dependencies', () => {
       const APIABC = {}
       APIABC.fetchA = sinon.stub().returns(Promise.resolve({
         _aid: 33
@@ -209,7 +204,8 @@ describe('avenger', () => {
           query: cQuery
         }
       ]});
-      schedule(input).then(output => {
+
+      return schedule(input).then(output => {
         expect(APIABC.fetchA.calledOnce).toBe(true);
         expect(APIABC.fetchA.calledWith()).toBe(true);
 
@@ -228,12 +224,10 @@ describe('avenger', () => {
         expect(output).toContain({
           cc: { _cid: 55 }
         });
-
-        done();
-      }).catch(e => console.log(e));
+      });
     });
 
-    it('should pass implicit state as last positional param to fetchers', done => {
+    it('should pass implicit state as last positional param to fetchers', () => {
       const API = {}
       API.fetchA = sinon.stub().returns(Promise.resolve({}));
       API.fetchB = sinon.stub().returns(Promise.resolve({}));
@@ -253,9 +247,11 @@ describe('avenger', () => {
         implicitState
       });
 
-      schedule(input).then(output => {
+      return schedule(input).then(output => {
         const { args } = stub.getCall(0);
         expect(args[args.length - 1]).toEqual(implicitState);
+      });
+    });
 
         done();
       }).catch(e => console.log(e));
