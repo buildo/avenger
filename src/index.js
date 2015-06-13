@@ -5,10 +5,11 @@ import AvengerInput from './AvengerInput';
 import AvengerActualizedCache from './AvengerActualizedCache';
 import { actualizeParameters, scheduleActualized } from './internals';
 
-const log = debug('Avenger');
-
 export Query from './Query';
 export AvengerInput from './AvengerInput';
+export AvengerCache from './AvengerCache';
+
+const log = debug('Avenger');
 
 export function schedule(avengerInput, actualizableCache) {
   if (process.env.NODE_ENV !== 'production') {
