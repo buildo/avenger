@@ -147,7 +147,88 @@ export default function(API) {
     fetch: () => ({ aid }, { bid }) => ({
       cc: API.fetchC(aid, bid)
     })
-  })
+  });
+
+  const noCacheQ = new Query({
+    id: 'noCacheQ',
+    paramsType: t.Nil,
+    fetchResultType: t.struct({
+      opt: t.struct({
+        foo: t.Str
+      })
+    }),
+    fetch: () => () => ({
+      foo: API.fetchFoo()
+    })
+  });
+
+  const optimisticQ = new Query({
+    id: 'optimisticQ',
+    paramsType: t.Nil,
+    cache: 'optimistic',
+    fetchResultType: t.struct({
+      opt: t.struct({
+        foo: t.Str
+      })
+    }),
+    fetch: () => () => ({
+      foo: API.fetchFoo()
+    })
+  });
+
+  const manualQ = new Query({
+    id: 'manualQ',
+    paramsType: t.Nil,
+    cache: 'manual',
+    fetchResultType: t.struct({
+      opt: t.struct({
+        foo: t.Str
+      })
+    }),
+    fetch: () => () => ({
+      foo: API.fetchFoo()
+    })
+  });
+
+  const immutableQ = new Query({
+    id: 'immutableQ',
+    paramsType: t.Nil,
+    cache: 'immutable',
+    fetchResultType: t.struct({
+      opt: t.struct({
+        foo: t.Str
+      })
+    }),
+    fetch: () => () => ({
+      foo: API.fetchFoo()
+    })
+  });
+
+  const cacheDependentQ = new Query({
+    id: 'cacheDependentQ',
+    paramsType: t.Nil,
+    dependencies: [{
+      query: immutableQ,
+      fetchParams: ({ foo }) => ({ foo })
+    }, {
+      query: manualQ,
+      fetchParams: ({ foo }) => ({ foo })
+    }, {
+      query: optimisticQ,
+      fetchParams: ({ foo }) => ({ foo })
+    }, {
+      query: noCacheQ,
+      fetchParams: ({ foo }) => ({ foo })
+    }],
+    fetchResultType: t.struct({
+      opt: t.struct({
+        bar: t.Str
+      })
+    }),
+    fetch: () => ({ foo }, { foo }, { foo }, { foo }) => ({
+      bar: API.fetchBar(foo, foo, foo, foo)
+    })
+  });
 
   return {
     worklist,
@@ -155,8 +236,15 @@ export default function(API) {
     sample,
     sampleTests,
     sampleTestsKind,
+
     aQuery,
     bQuery,
-    cQuery
+    cQuery,
+
+    noCacheQ,
+    optimisticQ,
+    manualQ,
+    immutableQ,
+    cacheDependentQ
   };
 }

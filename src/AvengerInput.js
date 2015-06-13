@@ -8,7 +8,8 @@ const AvengerInputQueries = t.subtype(t.list(t.struct({
 
 const AvengerInput = t.struct({
   queries: AvengerInputQueries,
-  implicitState: t.maybe(t.Obj)
+  implicitState: t.maybe(t.Obj),
+  cache: t.maybe(t.Obj)
 });
 
 export default AvengerInput;
