@@ -377,6 +377,37 @@ describe('avenger', () => {
       });
     });
 
+    it('should set() updated cache values for manual only if not cached', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = {
+        manualQ: {
+          set: sinon.stub()
+        }
+      };
+
+      return new Promise(resolve => {
+        schedule(input, AvengerActualizedCache(cache)).then(() => {
+
+          expect(cache.manualQ.set.calledOnce).toBe(true);
+          const fetchResult = { manual: 'manualFoo' };
+          expect(cache.manualQ.set.calledWith(fetchResult)).toBe(true);
+          cache.manualQ.value = fetchResult;
+
+        }).then(() => {
+          schedule(input, AvengerActualizedCache(cache)).then(() => {
+
+            expect(cache.manualQ.set.calledOnce).toBe(true);
+
+            resolve();
+          });
+        });
+      });
+    });
+
   });
 
 });
