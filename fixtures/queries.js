@@ -7,6 +7,7 @@ const Query = require('../src/Query');
 const assert = require('better-assert');
 const m = require('./models');
 import uniq from 'lodash/array/uniq';
+import identity from 'lodash/utility/identity';
 
 export default function(API) {
 
@@ -153,12 +154,10 @@ export default function(API) {
     id: 'noCacheQ',
     paramsType: t.Nil,
     fetchResultType: t.struct({
-      opt: t.struct({
-        foo: t.Str
-      })
+      noCache: t.Str
     }),
     fetch: () => () => ({
-      foo: API.fetchFoo()
+      noCache: API.fetchNoCacheFoo()
     })
   });
 
@@ -167,12 +166,10 @@ export default function(API) {
     paramsType: t.Nil,
     cache: 'optimistic',
     fetchResultType: t.struct({
-      opt: t.struct({
-        foo: t.Str
-      })
+      optimistic: t.Str
     }),
     fetch: () => () => ({
-      foo: API.fetchFoo()
+      optimistic: API.fetchOptimisticFoo()
     })
   });
 
@@ -181,12 +178,10 @@ export default function(API) {
     paramsType: t.Nil,
     cache: 'manual',
     fetchResultType: t.struct({
-      opt: t.struct({
-        foo: t.Str
-      })
+      manual: t.Str
     }),
     fetch: () => () => ({
-      foo: API.fetchFoo()
+      manual: API.fetchManualFoo()
     })
   });
 
@@ -195,12 +190,10 @@ export default function(API) {
     paramsType: t.Nil,
     cache: 'immutable',
     fetchResultType: t.struct({
-      opt: t.struct({
-        foo: t.Str
-      })
+      immutable: t.Str
     }),
     fetch: () => () => ({
-      foo: API.fetchFoo()
+      immutable: API.fetchImmutableFoo()
     })
   });
 
@@ -209,24 +202,22 @@ export default function(API) {
     paramsType: t.Nil,
     dependencies: [{
       query: immutableQ,
-      fetchParams: ({ foo }) => ({ foo })
+      fetchParams: identity
     }, {
       query: manualQ,
-      fetchParams: ({ foo }) => ({ foo })
+      fetchParams: identity
     }, {
       query: optimisticQ,
-      fetchParams: ({ foo }) => ({ foo })
+      fetchParams: identity
     }, {
       query: noCacheQ,
-      fetchParams: ({ foo }) => ({ foo })
+      fetchParams: identity
     }],
     fetchResultType: t.struct({
-      opt: t.struct({
-        bar: t.Str
-      })
+      bar: t.Str
     }),
-    fetch: () => ({ foo }, { foo }, { foo }, { foo }) => ({
-      bar: API.fetchBar(foo, foo, foo, foo)
+    fetch: () => ({ immutable }, { manual }, { optimistic }, { noCache }) => ({
+      bar: API.fetchBar(immutable, manual, optimistic, noCache)
     })
   });
 

@@ -10,6 +10,6 @@ const AvengerInput = t.struct({
   queries: AvengerInputQueries,
   implicitState: t.maybe(t.Obj),
   cache: t.maybe(t.Obj)
-});
+}, 'AvengerInput');
 
 export default AvengerInput;

@@ -3,6 +3,7 @@ import t from 'tcomb';
 import { allValues } from './util';
 import Query from './Query';
 import AvengerInput from './AvengerInput';
+import AvengerActualizedCache from './AvengerActualizedCache';
 import { actualizeParameters } from './internals';
 
 const log = debug('Avenger');
@@ -10,9 +11,15 @@ const log = debug('Avenger');
 export Query from './Query';
 export AvengerInput from './AvengerInput';
 
-export function schedule(avengerInput) {
+const cacheables = ['optimistic', 'manual', 'immutable'];
+// FIXME(gio): null handles the default 'no' cache case
+// better written as a default somewhere else...
+const fetchables = [null, 'no', 'optimistic'];
+
+export function schedule(avengerInput, actualizedCache = {}) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
+    t.assert(AvengerActualizedCache.is(actualizedCache));
   }
 
   const { implicitState = {} } = avengerInput;
@@ -33,6 +40,7 @@ export function schedule(avengerInput) {
         const promises = dependentPrepareds.map((p) => p.promise);
         const fetchParams = dependentPrepareds.map((p) =>
             c.query.dependencies.filter((d) => d.query === p.query)[0].fetchParams);
+
         const gnam = {};
         const mang = {};
         for (var i = 0; i < ids.length; i++) {
@@ -42,12 +50,32 @@ export function schedule(avengerInput) {
         log(`scheduling '${c.query.id}'`);
 
         c.promise = allValues(gnam).then((fetchResults) => {
-          // console.log('!!', fetchResults);
           const fetcherParams = Object.keys(fetchResults).map((frk) =>
             mang[frk](fetchResults[frk])
           );
-          // console.log('FETCHER', fetcherParams);
-          return allValues(c.fetcher(...fetcherParams, implicitState));
+
+          const cache = (actualizedCache[c.query.id] || { set: () => {} });
+          const isCacheable = cacheables.indexOf(c.query.cache) !== -1;
+          const isCached = isCacheable && !!cache.value;
+          const isFetchable = fetchables.indexOf(c.query.cache) !== -1;
+          const needsFetch = (isCacheable && !isCached) || isFetchable;
+          log(`resolve allValues for ${c.query.id}, making cache decisions: isCacheable: ${isCacheable}, isCached: ${isCached}, isFetchable: ${isFetchable}, needsFetch: ${needsFetch}`);
+
+          return new Promise(resolve => {
+            if (isCached) {
+              resolve(cache.value);
+            }
+            if (needsFetch) {
+              allValues(c.fetcher(...fetcherParams, implicitState)).then(result => {
+                if (isCacheable) {
+                  cache.set(result);
+                }
+                if (!isCached) {
+                  resolve(result);
+                }
+              });
+            }
+          });
         });
       }
       return c.promise;

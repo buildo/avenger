@@ -9,6 +9,7 @@ import m from '../../fixtures/models';
 import assert from 'better-assert';
 import { schedule, AvengerInput } from '../../src';
 import { upset, actualizeParameters } from '../../src/internals';
+import AvengerActualizedCache from '../../src/AvengerActualizedCache';
 
 describe('In fixtures', () => {
   it('fetch should be correct', () => {
@@ -253,8 +254,61 @@ describe('avenger', () => {
       });
     });
 
-        done();
-      }).catch(e => console.log(e));
+  });
+
+  describe('cache', () => {
+
+    const getFullCache = () => AvengerActualizedCache({
+      'optimisticQ': { value: { optimistic: 'optimisticFoo' }, set: () => {} },
+      'manualQ': { value: { manual: 'manualFoo' }, set: () => {} },
+      'immutableQ': { value: { immutable: 'immutableFoo' }, set: () => {} }
+    });
+
+    const getAPI = () => {
+      const API = {};
+      API.fetchNoCacheFoo = sinon.stub().returns(Promise.resolve('noCacheFoo'));
+      API.fetchOptimisticFoo = sinon.stub().returns(Promise.resolve('optimisticFoo'));
+      API.fetchManualFoo = sinon.stub().returns(Promise.resolve('manualFoo'));
+      API.fetchImmutableFoo = sinon.stub().returns(Promise.resolve('immutableFoo'));
+      API.fetchBar = sinon.stub().returns(Promise.resolve('bar'));
+      return API;
+    };
+
+    it('should never fetch() immutable and manual if already cached', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+
+      return schedule(input, getFullCache()).then(output => {
+        expect(API.fetchImmutableFoo.notCalled).toBe(true);
+        expect(API.fetchManualFoo.notCalled).toBe(true);
+      });
+    });
+
+    it('should always fetch() noCache', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+
+      return schedule(input, getFullCache()).then(output => {
+        expect(API.fetchNoCacheFoo.calledOnce).toBe(true);
+      });
+    });
+
+    it('should always fetch() optimistic even if already cached', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+
+      return schedule(input, getFullCache()).then(output => {
+        expect(API.fetchOptimisticFoo.calledOnce).toBe(true);
+      });
     });
 
   });
