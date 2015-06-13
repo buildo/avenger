@@ -258,7 +258,7 @@ describe('avenger', () => {
 
   describe('cache', () => {
 
-    const getFullCache = () => AvengerActualizedCache({
+    const getFullCache = () => ({
       'optimisticQ': { value: { optimistic: 'optimisticFoo' }, set: () => {} },
       'manualQ': { value: { manual: 'manualFoo' }, set: () => {} },
       'immutableQ': { value: { immutable: 'immutableFoo' }, set: () => {} }
@@ -274,14 +274,14 @@ describe('avenger', () => {
       return API;
     };
 
-    it('should never fetch() immutable and manual if already cached', () => {
+    it('should never fetch() immutable and manual if cached', () => {
       const API = getAPI();
       const { cacheDependentQ } = queries(API);
       const input = AvengerInput({ queries: [{
         query: cacheDependentQ
       }] });
 
-      return schedule(input, getFullCache()).then(output => {
+      return schedule(input, AvengerActualizedCache(getFullCache())).then(output => {
         expect(API.fetchImmutableFoo.notCalled).toBe(true);
         expect(API.fetchManualFoo.notCalled).toBe(true);
       });
@@ -294,20 +294,86 @@ describe('avenger', () => {
         query: cacheDependentQ
       }] });
 
-      return schedule(input, getFullCache()).then(output => {
+      return schedule(input, AvengerActualizedCache(getFullCache())).then(output => {
         expect(API.fetchNoCacheFoo.calledOnce).toBe(true);
       });
     });
 
-    it('should always fetch() optimistic even if already cached', () => {
+    it('should always fetch() optimistic even if cached', () => {
       const API = getAPI();
       const { cacheDependentQ } = queries(API);
       const input = AvengerInput({ queries: [{
         query: cacheDependentQ
       }] });
 
-      return schedule(input, getFullCache()).then(output => {
+      return schedule(input, AvengerActualizedCache(getFullCache())).then(output => {
         expect(API.fetchOptimisticFoo.calledOnce).toBe(true);
+      });
+    });
+
+    it('should always set() updated cache values for optimistic', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = {
+        optimisticQ: { set: sinon.stub() }
+      };
+
+      return schedule(input, AvengerActualizedCache(cache)).then(output => {
+        expect(cache.optimisticQ.set.calledOnce).toBe(true);
+        expect(cache.optimisticQ.set.calledWith({
+          optimistic: 'optimisticFoo'
+        })).toBe(true);
+      });
+    });
+
+    it('should set() updated cache values for immutable queries only once', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = {
+        immutableQ: {
+          set: sinon.stub()
+        }
+      };
+
+      return new Promise(resolve => {
+        schedule(input, AvengerActualizedCache(cache)).then(() => {
+
+          expect(cache.immutableQ.set.calledOnce).toBe(true);
+          const fetchResult = { immutable: 'immutableFoo' };
+          expect(cache.immutableQ.set.calledWith(fetchResult)).toBe(true);
+          cache.immutableQ.value = fetchResult;
+
+        }).then(() => {
+          schedule(input, AvengerActualizedCache(cache)).then(() => {
+
+            expect(cache.immutableQ.set.calledOnce).toBe(true);
+
+            resolve();
+          });
+        });
+      });
+    });
+
+    it('should never set() updated cache values for noCache', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = {
+        noCacheQ: {
+          set: sinon.stub()
+        }
+      };
+
+      return schedule(input, AvengerActualizedCache(cache)).then(() => {
+        expect(cache.noCacheQ.set.notCalled).toBe(true);
       });
     });
 
