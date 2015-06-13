@@ -15,11 +15,16 @@ export function schedule(avengerInput, actualizableCache) {
     t.assert(AvengerInput.is(avengerInput));
   }
 
-  const { implicitState = {} } = avengerInput;
+  const { implicitState = {}, queries } = avengerInput;
   const actualized = actualizeParameters(avengerInput);
   log('actualizedInput: %o', actualized);
 
-  return scheduleActualized(actualized, implicitState);
+  const actualizedCache = actualizableCache ? actualizableCache.actualize(queries) : {};
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerActualizedCache.is(actualizedCache));
+  }
+
+  return scheduleActualized(actualized, implicitState, actualizedCache);
 }
 
 const FromJSONParams = t.struct({

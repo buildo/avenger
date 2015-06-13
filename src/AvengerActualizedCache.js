@@ -8,6 +8,6 @@ const ActualizedCache = t.struct({
   set: t.Func
 }, 'ActualizedCache');
 
-const AvengerActualizedInput = t.dict(t.Str, ActualizedCache, 'AvengerActualizedInput');
+const AvengerActualizedCache = t.dict(t.Str, ActualizedCache, 'AvengerActualizedCache');
 
-export default AvengerActualizedInput;
+export default AvengerActualizedCache;
