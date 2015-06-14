@@ -68,8 +68,8 @@ describe('avenger', () => {
         })
       }
     ]});
-    const up = upset(input);
-    expect(up.map(({ id }) => id)).toEqual([
+    const up = upset(input).queries;
+    expect(up.map(({ query }) => query.id)).toEqual([
       'sampleTestsKind', 'sampleTests', 'sample' ]);
   });
 

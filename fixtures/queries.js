@@ -1,13 +1,12 @@
 'use strict';
 
-const t = require('tcomb');
-require('../src/util');
-
-const Query = require('../src/Query');
-const assert = require('better-assert');
-const m = require('./models');
+import t from 'tcomb';
 import uniq from 'lodash/array/uniq';
 import identity from 'lodash/utility/identity';
+import assert from 'better-assert';
+
+import Query from '../src/Query';
+import m from './models';
 
 export default function(API) {
 

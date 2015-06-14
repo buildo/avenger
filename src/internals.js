@@ -1,35 +1,58 @@
 import debug from 'debug';
 import t from 'tcomb';
+import assign from 'lodash/object/assign';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
+import { AvengerActualizedInput } from './AvengerInput';
 
 const log = debug('Avenger:internals');
 
-export function upset(avengerInput) {
+export function upset(input) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(avengerInput));
+    t.assert(AvengerInput.is(input) || AvengerActualizedInput.is(input));
   }
 
   const res = {};
-  function _upset(input) {
-    input.map((q) => {
+  function _upset(inputQueries) {
+    inputQueries.map((q) => {
       res[q.id] = q;
       if (q.dependencies) {
         _upset(q.dependencies.map((d) => d.query));
       }
     });
   }
-  _upset(avengerInput.queries.map((i) => i.query));
-  return Object.keys(res).map((k) => res[k]);
+  _upset(input.queries.map(({ query }) => query));
+
+  // TODO: should handle params spreading on added queries
+  const queries = Object.keys(res).map(k => {
+    log(`mapping ${k}`);
+    const originalQuery = input.queries.filter(({ query }) => query.id === k)[0];
+    log(`original %o`, originalQuery);
+    const params = originalQuery ? originalQuery.params : null;
+    log(`params %o`, params);
+    return {
+      query: res[k],
+      params
+    };
+  });
+
+  // FIXME(gio) should be used both before and after actualization,
+  // but this is ugly
+  const returnType = AvengerActualizedInput.is(input) ? AvengerActualizedInput : AvengerInput;
+  return returnType(assign({}, input, {
+    queries
+  }));
 }
 
-export function actualizeParameters(avengerInput) {
+// export function actualizeFetchParams(AvengerInput input, ActualizedCache actualizedCache) {} -> AvengerActualizedInput
+
+export function actualizeParameters(input) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(avengerInput));
+    t.assert(AvengerActualizedInput.is(input));
   }
 
-  return upset(avengerInput).map((query) => {
-    const ai = avengerInput.queries.filter((i) =>
+  const fetcherInput = upset(input).queries.map((query) => {
+    const ai = input.queries.filter((i) =>
       i.query === query
     )[0];
     const params = ai ? ai.params : {};
@@ -39,6 +62,7 @@ export function actualizeParameters(avengerInput) {
       fetcher: query.fetch(params)
     };
   });
+  return AvengerFetcherInput(fetcherInput);
 }
 
 const cacheables = ['optimistic', 'manual', 'immutable'];
