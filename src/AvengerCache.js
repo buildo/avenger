@@ -60,22 +60,22 @@ export default class AvengerCache {
       this.state[id] = {};
     }
 
-    this.state.id[hashedParams(params)] = value;
+    this.state[id][hashedParams(params)] = value;
   };
 
-  actualize(queries) {
-    if (process.env.NODE_ENV !== 'production') {
-      AvengerInputActualizedQueries(queries);
-    }
+  // actualize(queries) {
+  //   if (process.env.NODE_ENV !== 'production') {
+  //     AvengerInputActualizedQueries(queries);
+  //   }
 
-    return queries.reduce((ac, { query, params = {} }) => {
-      const value = this.get(query.id, params);
-      return value === null ? ac : assign(ac, {
-        [query.id]: {
-          value,
-          set: this.set(query.id, params)
-        }
-      });
-    }, {});
-  }
+  //   return queries.reduce((ac, { query, params = {} }) => {
+  //     const value = this.get(query.id, params);
+  //     return value === null ? ac : assign(ac, {
+  //       [query.id]: {
+  //         value,
+  //         set: this.set(query.id, params)
+  //       }
+  //     });
+  //   }, {});
+  // }
 }

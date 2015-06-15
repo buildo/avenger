@@ -9,8 +9,9 @@ import m from '../../fixtures/models';
 import assert from 'better-assert';
 import { AvengerInput } from '../../src';
 import { AvengerActualizedInput } from '../../src/AvengerInput';
-import { scheduleActualized, upset, actualizeParameters, schedule } from '../../src/internals';
+import { scheduleActualized, upset, actualizeParameters, upsetParams, getQueriesToSkip, minimizeCache, schedule } from '../../src/internals';
 import AvengerActualizedCache from '../../src/AvengerActualizedCache';
+import AvengerCache from '../../src/AvengerCache';
 
 describe('In fixtures', () => {
   it('fetch should be correct', () => {
@@ -94,7 +95,6 @@ describe('avenger', () => {
       }]
     });
     const result = actualizeParameters(input);
-    console.dir(result);
     input.queries.map(({ query }) => {
       expect(Object.keys(result)).toContain(query.id);
     });
@@ -255,8 +255,9 @@ describe('avenger', () => {
         }],
         implicitState
       });
+      const fetchers = actualizeParameters(upset(input));
 
-      return schedule(input).then(output => {
+      return schedule(upset(input), fetchers, {}).then(output => {
         const { args } = stub.getCall(0);
         expect(args[args.length - 1]).toEqual(implicitState);
       });
@@ -272,6 +273,7 @@ describe('avenger', () => {
       'immutableQ': { value: { immutable: 'immutableFoo' }, set: () => {} }
     });
 
+
     const getAPI = () => {
       const API = {};
       API.fetchNoCacheFoo = sinon.stub().returns(Promise.resolve('noCacheFoo'));
@@ -284,13 +286,22 @@ describe('avenger', () => {
 
     it('should never fetch() immutable and manual if cached', () => {
       const API = getAPI();
-      const { cacheDependentQ } = queries(API);
+      const { cacheDependentQ, immutableQ, manualQ } = queries(API);
       const input = AvengerInput({ queries: [{
         query: cacheDependentQ
       }] });
+      const cache = new AvengerCache();
+      cache.set('immutableQ', upsetParams(upset(input), immutableQ))({
+        immutable: 'asdf'
+      });
+      cache.set('manualQ', upsetParams(upset(input), manualQ))({
+        manual: 'qqqq'
+      });
       const fetchers = actualizeParameters(upset(input));
+      const minimizedCache = minimizeCache(upset(input), cache);
+      const queriesToSkip = getQueriesToSkip(upset(input), cache);
 
-      return schedule(upset(input), fetchers, {}).then(output => {
+      return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then(output => {
         expect(API.fetchImmutableFoo.notCalled).toBe(true);
         expect(API.fetchManualFoo.notCalled).toBe(true);
       });

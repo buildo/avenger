@@ -41,18 +41,33 @@ export function upset(input) {
 // better written as a default somewhere else...
 const fetchables = [null, 'no', 'optimistic'];
 
+export function upsetParams(avengerInput, inQuery) {
+  const res = {};
+  function _upset(inputQueries) {
+    inputQueries.map((q) => {
+      res[q.id] = q;
+      if (q.dependencies) {
+        _upset(q.dependencies.map((d) => d.query));
+      }
+    });
+    return Object.values(res);
+  }
+  const __upset = _upset(avengerInput.queries.filter(({ query }) => query === inQuery).map((q) => q.query))
+  return __upset.map((query) => ({
+    [query.id]: (avengerInput.queries.filter((q) => q.query === query)[0] || {params: null}).params || {}
+  })).reduce((ac, item) => assign(ac, item), {});
+}
+
 export function minimizeCache(avengerInput, cache) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
   }
 
-  return avengerInput.queries.filter(({ queryRef }) => fetchables.indexOf(queryRef.query.cache) !== -1).map((queryRef) => {
-    const minCache = queryRef.query.dependencies.filter(({ cache }) => cache !== 'no').map(({ depQuery, fetchParams }) => {
-      const upsetParams = upset(avengerInput.queries.filter(({ query }) => query === depQuery)).map(({ query, params }) => ({
-        [query.id]: params
-      })).reduce((ac, item) => assign(ac, item), {});
+  return avengerInput.queries.filter(({ query }) => fetchables.indexOf(query.cache) !== -1).map((queryRef) => {
+    const minCache = (queryRef.query.dependencies || []).filter(({ cache }) => cache !== 'no').map(({ query: depQuery, fetchParams }) => {
+
       return {
-        [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams))
+        [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery)))
       }
     }).reduce((ac, item) => assign(ac, item), {});
     return { [queryRef.query.id]: minCache };
@@ -71,7 +86,19 @@ export function actualizeParameters(input) {
 
 const cacheables = ['optimistic', 'manual', 'immutable'];
 
-export function schedule(avengerInput, fetchers, minimizedCache) {
+export function getQueriesToSkip(avengerInput, cache) {
+  return avengerInput.queries.filter(({ query }) => {
+    const retrieved = cache.get(query.id, upsetParams(avengerInput, query));
+    const isCacheable = cacheables.indexOf(query.cache) !== -1;
+    const isCached = isCacheable && !!retrieved;
+    const isFetchable = fetchables.indexOf(query.cache) !== -1;
+    const needsFetch = (isCacheable && !isCached) || isFetchable;
+    log(`${query.id}, making cache decisions: isCacheable: ${isCacheable}, isCached: ${isCached}, isFetchable: ${isFetchable}, needsFetch: ${needsFetch}`);
+    return !needsFetch;
+  }).map(({ query }) => query.id);
+}
+
+export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip = []) {
   const { implicitState } = avengerInput;
   const queryRefs = avengerInput.queries.map((marmelade) => ({
     ...marmelade,
@@ -83,13 +110,9 @@ export function schedule(avengerInput, fetchers, minimizedCache) {
       if (!c.promise) {
         log(`considering '${c.query.id}'`);
 
-        console.dir(c.query.dependencies);
-        console.dir(queryRefs);
         const dependentPrepareds = (c.query.dependencies || []).map((d) => {
-          console.log(d.query.id);
           return queryRefs.filter((p) => p.query.id === d.query.id)[0];
         });
-        console.dir(dependentPrepareds);
         log(`'${c.query.id}' depends on: [${dependentPrepareds.map(({ query }) => query.id).join(', ')}]`);
 
         _schedule(dependentPrepareds);
@@ -107,33 +130,17 @@ export function schedule(avengerInput, fetchers, minimizedCache) {
         log(`scheduling '${c.query.id}'`);
 
         c.promise = allValues(gnam).then((fetchResults) => {
-          const fetcherParams = Object.keys(fetchResults).map((frk) =>
-            mang[frk](fetchResults[frk])
-          );
+          if (queriesToSkip.indexOf(c.query.id) === -1) {
+            const fetcherParams = Object.keys(fetchResults).map((frk) =>
+              (!!fetchResults[frk]) ?
+                mang[frk](fetchResults[frk]) :
+                minimizedCache[c.query.id][frk]
+            );
 
-          const cache = (minimizedCache[c.query.id] || { set: () => {} });
-          const isCacheable = cacheables.indexOf(c.query.cache) !== -1;
-          const isCached = isCacheable && !!cache.value;
-          const isFetchable = fetchables.indexOf(c.query.cache) !== -1;
-          const needsFetch = (isCacheable && !isCached) || isFetchable;
-          log(`resolve allValues for ${c.query.id}, making cache decisions: isCacheable: ${isCacheable}, isCached: ${isCached}, isFetchable: ${isFetchable}, needsFetch: ${needsFetch}`);
-
-          return new Promise(resolve => {
-            if (isCached) {
-              resolve(cache.value);
-            }
-            if (needsFetch) {
-              console.dir(c);
-              allValues(c.fetcher(...fetcherParams, implicitState)).then(result => {
-                if (isCacheable) {
-                  cache.set(result);
-                }
-                if (!isCached) {
-                  resolve(result);
-                }
-              });
-            }
-          });
+            return allValues(c.fetcher(...fetcherParams, implicitState));
+          } else {
+            return Promise.resolve(null);
+          }
         });
       }
       return c.promise;
