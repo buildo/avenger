@@ -9,7 +9,7 @@ import { AvengerInputActualizedQueries } from './AvengerInput';
 const AllowedParam = t.subtype(t.Any, p => {
   return t.Str.is(p) || t.Num.is(p) || t.Bool.is(p);
 }, 'AllowedParam');
-const AllowedParams = t.dict(t.Str, AllowedParam, 'AllowedParams');
+const AllowedParams = t.dict(t.Str, t.dict(t.Str, AllowedParam, 'AllowedParams'));
 
 export function hashedParams(params) {
   if (process.env.NODE_ENV !== 'production') {
@@ -17,7 +17,11 @@ export function hashedParams(params) {
   }
   const keys = Object.keys(params);
   keys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-  const hashed = keys.map(k => `${k}:${params[k]}`).join('-');
+  const hashed = keys.map((k1) => {
+    const childkeys = Object.keys(params[k1]);
+    childkeys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
+    return childkeys.map(k2 => `${k1}.${k2}:${params[k1][k2]}`).join('-');
+  }).join('-');
   return hashed ? hashed : '∅';
 }
 

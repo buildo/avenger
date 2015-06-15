@@ -6,56 +6,25 @@ const nonEmptyList = list => list.length > 0;
 
 // AvengerInput
 
-const AvengerInputQuery = t.struct({
+const AvengerQueryRef = t.struct({
   query: Query,
   params: t.maybe(t.Obj)
 });
 
-export const AvengerInputQueries = t.subtype(
-  t.list(AvengerInputQuery),
+export const AvengerQueryRefs = t.subtype(
+  t.list(AvengerQueryRef),
   nonEmptyList,
   'AvengerInputQueries'
 );
 
 const AvengerInput = t.struct({
-  queries: AvengerInputQueries,
+  queries: AvengerQueryRefs,
   implicitState: t.maybe(t.Obj)
 }, 'AvengerInput');
 
 export default AvengerInput;
 
-// AvengerActualizedInput
+// MinimizedCache
 
-const AvengerInputActualizedQuery = t.struct({
-  query: ActualizedQuery,
-  params: t.maybe(t.Obj)
-}, 'AvengerInputActualizedQuery');
-
-export const AvengerInputActualizedQueries = t.subtype(
-  t.list(AvengerInputActualizedQuery),
-  nonEmptyList,
-  'AvengerInputActualizedQueries'
-);
-
-export const AvengerActualizedInput = t.struct({
-  queries: AvengerInputActualizedQueries,
-  implicitState: t.maybe(t.Obj)
-}, 'AvengerActualizedInput');
-
-// AvengerFetcherInput
-
-const AvengerInputFetcherQuery = t.struct({
-  query: FetcherQuery,
-  params: t.maybe(t.Obj)
-}, 'AvengerInputFetcherQuery');
-
-const AvengerInputFetcherQueries = t.subtype(
-  t.list(AvengerInputFetcherQuery),
-  nonEmptyList,
-  'AvengerInputFetcherQueries'
-);
-
-export const AvengerFetcherInput = t.struct({
-  queries: AvengerInputFetcherQueries,
-  implicitState: t.maybe(t.Obj)
-}, 'AvengerFetcherInput');
+const MinimizedCache = t.dict(t.Str, t.Obj);
+// const MinimizedCache = t.struct

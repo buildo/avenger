@@ -3,13 +3,12 @@ import t from 'tcomb';
 import assign from 'lodash/object/assign';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
-import { AvengerActualizedInput, AvengerFetcherInput } from './AvengerInput';
 
 const log = debug('Avenger:internals');
 
 export function upset(input) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(input) || AvengerActualizedInput.is(input));
+    t.assert(AvengerInput.is(input));
   }
 
   const res = {};
@@ -33,45 +32,64 @@ export function upset(input) {
     };
   });
 
-  // FIXME(gio) should be used both before and after actualization,
-  // but this is ugly
-  const returnType = AvengerActualizedInput.is(input) ? AvengerActualizedInput : AvengerInput;
-  return returnType(assign({}, input, {
+  return AvengerInput(assign({}, input, {
     queries
   }));
 }
-
-// export function actualizeFetchParams(AvengerInput input, ActualizedCache actualizedCache) {} -> AvengerActualizedInput
-
-export function actualizeParameters(input) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerActualizedInput.is(input));
-  }
-
-  const queries = input.queries.map(q => {
-    const query = assign({}, q.query, {
-      fetcher: q.query.fetch(q.params || {})
-    });
-    return assign({}, q, {
-      query
-    });
-  });
-  return AvengerFetcherInput(assign({}, input, { queries }));
-}
-
-const cacheables = ['optimistic', 'manual', 'immutable'];
 // FIXME(gio): null handles the default 'no' cache case
+//
 // better written as a default somewhere else...
 const fetchables = [null, 'no', 'optimistic'];
 
-export function scheduleActualized(actualized, implicitState = {}, actualizedCache = {}) {
+export function minimizeCache(avengerInput, cache) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
+
+  return avengerInput.queries.filter(({ queryRef }) => fetchables.indexOf(queryRef.query.cache) !== -1).map((queryRef) => {
+    const minCache = queryRef.query.dependencies.filter(({ cache }) => cache !== 'no').map(({ depQuery, fetchParams }) => {
+      const upsetParams = upset(avengerInput.queries.filter(({ query }) => query === depQuery)).map(({ query, params }) => ({
+        [query.id]: params
+      })).reduce((ac, item) => assign(ac, item), {});
+      return {
+        [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams))
+      }
+    }).reduce((ac, item) => assign(ac, item), {});
+    return { [queryRef.query.id]: minCache };
+  }).reduce((ac, item) => assign(ac, item), {});
+}
+
+export function actualizeParameters(input) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(input));
+  }
+
+  return input.queries.map(q => ({
+    [q.query.id]: q.query.fetch(q.params || {})
+  })).reduce((ac, item) => assign(ac, item), {});
+}
+
+const cacheables = ['optimistic', 'manual', 'immutable'];
+
+export function schedule(avengerInput, fetchers, minimizedCache) {
+  const { implicitState } = avengerInput;
+  const queryRefs = avengerInput.queries.map((marmelade) => ({
+    ...marmelade,
+    fetcher: fetchers[marmelade.query.id]
+  }));
+  
   function _schedule(curr) {
     return curr.map((c) => {
       if (!c.promise) {
         log(`considering '${c.query.id}'`);
 
-        const dependentPrepareds = (c.query.dependencies || []).map((d) =>
-          actualized.filter((p) => p.query.id === d.query.id)[0]);
+        console.dir(c.query.dependencies);
+        console.dir(queryRefs);
+        const dependentPrepareds = (c.query.dependencies || []).map((d) => {
+          console.log(d.query.id);
+          return queryRefs.filter((p) => p.query.id === d.query.id)[0];
+        });
+        console.dir(dependentPrepareds);
         log(`'${c.query.id}' depends on: [${dependentPrepareds.map(({ query }) => query.id).join(', ')}]`);
 
         _schedule(dependentPrepareds);
@@ -93,7 +111,7 @@ export function scheduleActualized(actualized, implicitState = {}, actualizedCac
             mang[frk](fetchResults[frk])
           );
 
-          const cache = (actualizedCache[c.query.id] || { set: () => {} });
+          const cache = (minimizedCache[c.query.id] || { set: () => {} });
           const isCacheable = cacheables.indexOf(c.query.cache) !== -1;
           const isCached = isCacheable && !!cache.value;
           const isFetchable = fetchables.indexOf(c.query.cache) !== -1;
@@ -105,6 +123,7 @@ export function scheduleActualized(actualized, implicitState = {}, actualizedCac
               resolve(cache.value);
             }
             if (needsFetch) {
+              console.dir(c);
               allValues(c.fetcher(...fetcherParams, implicitState)).then(result => {
                 if (isCacheable) {
                   cache.set(result);
@@ -121,5 +140,5 @@ export function scheduleActualized(actualized, implicitState = {}, actualizedCac
     });
   }
 
-  return Promise.all(_schedule(actualized));
+  return Promise.all(_schedule(queryRefs));
 }
