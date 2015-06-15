@@ -8,6 +8,7 @@ import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
 import assert from 'better-assert';
 import { schedule, AvengerInput } from '../../src';
+import { AvengerActualizedInput } from '../../src/AvengerInput';
 import { scheduleActualized, upset, actualizeParameters } from '../../src/internals';
 import AvengerActualizedCache from '../../src/AvengerActualizedCache';
 
@@ -76,23 +77,22 @@ describe('avenger', () => {
   it('should correctly actualize parameters', () => {
     const { sampleTestsKind, sample } = queries({});
     const sampleTestKindsMock = assign({}, sampleTestsKind, {
-      fetch: sinon.spy()
+      fetch: sinon.stub().returns(() => {})
     });
     const sampleMock = assign({}, sample, {
-      fetch: sinon.spy()
+      fetch: sinon.stub().returns(() => {})
     });
 
-    const input = AvengerInput({ queries: [
-      {
+    const input = AvengerActualizedInput({
+      queries: [{
         query: sampleTestKindsMock
-      },
-      {
+      }, {
         query: sampleMock,
         params: new sampleMock.paramsType({
           sampleId: '123'
         })
-      }
-    ]});
+      }]
+    });
     actualizeParameters(input);
 
     expect(sampleTestKindsMock.fetch.calledOnce).toBe(true);

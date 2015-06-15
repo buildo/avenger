@@ -31,7 +31,7 @@ const AvengerInputActualizedQuery = t.struct({
   params: t.maybe(t.Obj)
 }, 'AvengerInputActualizedQuery');
 
-const AvengerInputActualizedQueries = t.subtype(
+export const AvengerInputActualizedQueries = t.subtype(
   t.list(AvengerInputActualizedQuery),
   nonEmptyList,
   'AvengerInputActualizedQueries'

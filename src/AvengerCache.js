@@ -4,7 +4,7 @@
 
 import assign from 'lodash/object/assign';
 import t from 'tcomb';
-import { AvengerInputQueries } from './AvengerInput';
+import { AvengerInputActualizedQueries } from './AvengerInput';
 
 const AllowedParam = t.subtype(t.Any, p => {
   return t.Str.is(p) || t.Num.is(p) || t.Bool.is(p);
@@ -61,7 +61,7 @@ export default class AvengerCache {
 
   actualize(queries) {
     if (process.env.NODE_ENV !== 'production') {
-      AvengerInputQueries(queries);
+      AvengerInputActualizedQueries(queries);
     }
 
     return queries.reduce((ac, { query, params = {} }) => {

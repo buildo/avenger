@@ -3,7 +3,7 @@ import t from 'tcomb';
 import assign from 'lodash/object/assign';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
-import { AvengerActualizedInput } from './AvengerInput';
+import { AvengerActualizedInput, AvengerFetcherInput } from './AvengerInput';
 
 const log = debug('Avenger:internals');
 
@@ -25,11 +25,8 @@ export function upset(input) {
 
   // TODO: should handle params spreading on added queries
   const queries = Object.keys(res).map(k => {
-    log(`mapping ${k}`);
     const originalQuery = input.queries.filter(({ query }) => query.id === k)[0];
-    log(`original %o`, originalQuery);
     const params = originalQuery ? originalQuery.params : null;
-    log(`params %o`, params);
     return {
       query: res[k],
       params
@@ -51,18 +48,15 @@ export function actualizeParameters(input) {
     t.assert(AvengerActualizedInput.is(input));
   }
 
-  const fetcherInput = upset(input).queries.map((query) => {
-    const ai = input.queries.filter((i) =>
-      i.query === query
-    )[0];
-    const params = ai ? ai.params : {};
-    return {
-      id: query.id,
-      query: query,
-      fetcher: query.fetch(params)
-    };
+  const queries = input.queries.map(q => {
+    const query = assign({}, q.query, {
+      fetcher: q.query.fetch(q.params || {})
+    });
+    return assign({}, q, {
+      query
+    });
   });
-  return AvengerFetcherInput(fetcherInput);
+  return AvengerFetcherInput(assign({}, input, { queries }));
 }
 
 const cacheables = ['optimistic', 'manual', 'immutable'];
