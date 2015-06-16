@@ -149,9 +149,9 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
   }
 
   return Promise.all(_schedule(queryRefs)).then((output) =>
-      zip(output, queryRefs.map(({query}) => query.id)).map(([r, id]) => ({
-        [id]: r
-      })).reduce((ac, item) => assign(ac, item), {}));
+    zip(output, queryRefs.map(({query}) => query.id)).filter((x) => !!x[0]).map(([r, id]) => ({
+      [id]: r
+    })).reduce((ac, item) => assign(ac, item), {}));
 }
 
 export function smoosh(avengerInput, fetchResults, cache) {
