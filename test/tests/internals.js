@@ -184,15 +184,15 @@ describe('avenger', () => {
       return schedule(upset(input), fetchers, {}).then(output => {
         console.dir(output);
         expect(Object.keys(output).length).toBe(3);
-        expect(output.sampleQuery).toEqual({
+        expect(output.sample).toEqual({
           sample: { _id: 'a1', valid: false }
         });
-        expect(output.sampleTestsQuery).toEqual({
-          tests: [true, true, true]
-        }, (a, b) => assert(a.tests.length === b.tests.length));
-        expect(output).toContain({
-          testKinds: [true, true]
-        }, (a, b) => assert(a.testKinds.length === b.testKinds.length));
+        expect(output.sampleTests.tests.map((x) => x.blocked)).toEqual(
+            [true, false, true]);
+        expect(output.sampleTestsKind.testKinds.map((x) => x.material)).toEqual(
+            ["blood", "plasma"]);
+        console.log('********');
+        return Promise.resolve();
       });
     });
 
