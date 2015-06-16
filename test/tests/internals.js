@@ -2,6 +2,7 @@ import t from 'tcomb';
 import expect from 'expect';
 import sinon from 'sinon';
 import assign from 'lodash/object/assign';
+import zip from 'lodash/array/zip';
 
 import { allValues } from '../../src/util';
 import queries from '../../fixtures/queries';
@@ -9,7 +10,7 @@ import m from '../../fixtures/models';
 import assert from 'better-assert';
 import { AvengerInput } from '../../src';
 import { AvengerActualizedInput } from '../../src/AvengerInput';
-import { scheduleActualized, upset, actualizeParameters, upsetParams, getQueriesToSkip, minimizeCache, schedule } from '../../src/internals';
+import { scheduleActualized, upset, actualizeParameters, upsetParams, getQueriesToSkip, minimizeCache, schedule, smoosh, setCache } from '../../src/internals';
 import AvengerActualizedCache from '../../src/AvengerActualizedCache';
 import AvengerCache from '../../src/AvengerCache';
 
@@ -181,11 +182,12 @@ describe('avenger', () => {
       const fetchers = actualizeParameters(upset(input));
 
       return schedule(upset(input), fetchers, {}).then(output => {
-        expect(output.length).toBe(3);
-        expect(output).toContain({
+        console.dir(output);
+        expect(Object.keys(output).length).toBe(3);
+        expect(output.sampleQuery).toEqual({
           sample: { _id: 'a1', valid: false }
         });
-        expect(output).toContain({
+        expect(output.sampleTestsQuery).toEqual({
           tests: [true, true, true]
         }, (a, b) => assert(a.tests.length === b.tests.length));
         expect(output).toContain({
@@ -339,16 +341,22 @@ describe('avenger', () => {
       const input = AvengerInput({ queries: [{
         query: cacheDependentQ
       }] });
-      const cache = {
-        optimisticQ: { set: sinon.stub() }
-      };
+      const cache = new AvengerCache();
+      const cacheSetSpy = sinon.spy(cache, 'set');
       const fetchers = actualizeParameters(upset(input));
 
       return schedule(upset(input), fetchers, {}).then(output => {
-        expect(cache.optimisticQ.set.calledOnce).toBe(true);
-        expect(cache.optimisticQ.set.calledWith({
-          optimistic: 'optimisticFoo'
+        console.dir(output);
+        setCache(upset(input), output, cache);
+        //expect(cacheSetSpy.calledOnce).toBe(true);
+        console.dir(cacheSetSpy.args);
+        expect(cacheSetSpy.calledWith('optimisticQ', {
+          optimisticQ: {}
         })).toBe(true);
+        expect(cache.get('optimisticQ', {
+          optimisticQ: {}
+        })).toEqual({ optimistic: "optimisticFoo" });
+        return Promise.resolve();
       });
     });
 
@@ -365,23 +373,19 @@ describe('avenger', () => {
       };
       const fetchers = actualizeParameters(upset(input));
 
-      return new Promise(resolve => {
-        schedule(upset(input), fetchers, {}).then(() => {
+      return schedule(upset(input), fetchers, {}).then(() => {
 
           expect(cache.immutableQ.set.calledOnce).toBe(true);
           const fetchResult = { immutable: 'immutableFoo' };
           expect(cache.immutableQ.set.calledWith(fetchResult)).toBe(true);
           cache.immutableQ.value = fetchResult;
+          return Promise.resolve();
 
-        }).then(() => {
-          schedule(upset(input), fetchers, {}).then(() => {
-
-            expect(cache.immutableQ.set.calledOnce).toBe(true);
-
-            resolve();
-          });
-        });
-      });
+      }).then(() =>
+        schedule(upset(input), fetchers, {}).then(() => {
+          expect(cache.immutableQ.set.calledOnce).toBe(true);
+        })
+      );
     });
 
     it('should never set() updated cache values for noCache', () => {
@@ -415,23 +419,21 @@ describe('avenger', () => {
       };
       const fetchers = actualizeParameters(upset(input));
 
-      return new Promise(resolve => {
+      return schedule(upset(input), fetchers, {}).then(() => {
+
+        expect(cache.manualQ.set.calledOnce).toBe(true);
+        const fetchResult = { manual: 'manualFoo' };
+        expect(cache.manualQ.set.calledWith(fetchResult)).toBe(true);
+        cache.manualQ.value = fetchResult;
+
+        return Promise.resolve();
+      }).then(() => 
         schedule(upset(input), fetchers, {}).then(() => {
 
           expect(cache.manualQ.set.calledOnce).toBe(true);
-          const fetchResult = { manual: 'manualFoo' };
-          expect(cache.manualQ.set.calledWith(fetchResult)).toBe(true);
-          cache.manualQ.value = fetchResult;
 
-        }).then(() => {
-          schedule(upset(input), fetchers, {}).then(() => {
-
-            expect(cache.manualQ.set.calledOnce).toBe(true);
-
-            resolve();
-          });
-        });
-      });
+        })
+      );
     });
 
   });

@@ -1,6 +1,7 @@
 import debug from 'debug';
 import t from 'tcomb';
 import assign from 'lodash/object/assign';
+import zip from 'lodash/array/zip';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
 
@@ -147,5 +148,23 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
     });
   }
 
-  return Promise.all(_schedule(queryRefs));
+  return Promise.all(_schedule(queryRefs)).then((output) =>
+      zip(output, queryRefs.map(({query}) => query.id)).map(([r, id]) => ({
+        [id]: r
+      })).reduce((ac, item) => assign(ac, item), {}));
+}
+
+export function smoosh(avengerInput, fetchResults, cache) {
+  avengerInput.queries.map(({ query }) => ({
+    [query.id]: fetchResults[query.id] || cache.get(query.id, upsetParams(avengerInput, query))
+  })).reduce((ac, item) => assign(ac, item), {});
+}
+
+export function setCache(avengerInput, fetchResults, cache) {
+  Object.keys(fetchResults).map((frk) => {
+    console.log(frk);
+    cache.set(frk, upsetParams(avengerInput,
+          avengerInput.queries.filter(({ query }) => query.id === frk)[0].query))(
+        fetchResults[frk]);
+  });
 }
