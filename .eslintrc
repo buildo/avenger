@@ -17,6 +17,6 @@
     "strict": [2, "global"],
     "no-underscore-dangle": 0,
     "quotes": [2, "single"],
-    "comma-dangle": "always",
+    "comma-dangle": 2,
   }
 }
