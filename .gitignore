@@ -1,2 +1,4 @@
 node_modules/
 mocha.json
+*.log
+lib
