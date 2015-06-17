@@ -323,13 +323,18 @@ describe('avenger', () => {
     it('should always fetch() optimistic even if cached', () => {
       const API = getAPI();
       const { cacheDependentQ } = queries(API);
+      const cache = new AvengerCache();
+      cache.set('optimisticQ', { optimisticQ: {} })({ optimistic: 'optimisticFoo' });
+      const cacheGet = sinon.spy(cache, 'get');
+      
       const input = AvengerInput({ queries: [{
         query: cacheDependentQ
       }] });
       const fetchers = actualizeParameters(upset(input));
-      throw 'this test should have a prefilled cache';
+      const minimizedCache = minimizeCache(upset(input), cache);
+      const queriesToSkip = getQueriesToSkip(upset(input), cache);
 
-      return schedule(upset(input), fetchers, {}).then(output => {
+      return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then(output => {
         expect(API.fetchOptimisticFoo.calledOnce).toBe(true);
       });
     });
@@ -346,6 +351,7 @@ describe('avenger', () => {
 
       return schedule(upset(input), fetchers, {}).then(output => {
         setCache(upset(input), output, cache);
+        console.dir(cacheSetSpy.args);
         expect(cacheSetSpy.calledWith('optimisticQ', {
           optimisticQ: {}
         })).toBe(true);
@@ -362,26 +368,31 @@ describe('avenger', () => {
       const input = AvengerInput({ queries: [{
         query: cacheDependentQ
       }] });
-      const cache = {
-        immutableQ: {
-          set: sinon.stub()
-        }
-      };
+      const cache = new AvengerCache();
+      const cacheSet = sinon.spy(cache, 'set');
+
       const fetchers = actualizeParameters(upset(input));
+      const minimizedCache = minimizeCache(upset(input), cache);
+      const queriesToSkip = getQueriesToSkip(upset(input), cache);
 
-      return schedule(upset(input), fetchers, {}).then(() => {
+      return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then((output) => {
+        setCache(upset(input), output, cache);
 
-          expect(cache.immutableQ.set.calledOnce).toBe(true);
-          const fetchResult = { immutable: 'immutableFoo' };
-          expect(cache.immutableQ.set.calledWith(fetchResult)).toBe(true);
-          cache.immutableQ.value = fetchResult;
+        console.dir(cacheSet.args);
+        expect(cacheSet.calledWith('immutableQ', { immutableQ: {} })).toBe(true);
+        expect(cache.get('immutableQ', { immutableQ: {} })).toEqual({ immutable: 'immutableFoo' });
+        return Promise.resolve();
+
+      }).then(() => {
+        const minimizedCache2 = minimizeCache(upset(input), cache);
+        const queriesToSkip2 = getQueriesToSkip(upset(input), cache);
+        return schedule(upset(input), fetchers, minimizedCache2, queriesToSkip2).then((output2) => {
+          setCache(upset(input), output2, cache);
+          expect(cacheSet.args.filter((x) => x[0] == 'immutableQ').length).toBe(1);
+
           return Promise.resolve();
-
-      }).then(() =>
-        schedule(upset(input), fetchers, {}).then(() => {
-          expect(cache.immutableQ.set.calledOnce).toBe(true);
         })
-      );
+      });
     });
 
     it('should never set() updated cache values for noCache', () => {
@@ -390,14 +401,13 @@ describe('avenger', () => {
       const input = AvengerInput({ queries: [{
         query: cacheDependentQ
       }] });
-      const cache = {
-        set: sinon.stub().returns((x) => null)
-      };
+      const cache = new AvengerCache();
+      const cacheSet = sinon.spy(cache, 'set');
       const fetchers = actualizeParameters(upset(input));
 
       return schedule(upset(input), fetchers, {}).then((output) => {
         setCache(upset(input), output, cache);
-        expect(cache.set.notCalled).toBe(true);
+        expect(cacheSet.args.filter((x) => x[0] === 'noCacheQ').length).toBe(0);
       });
     });
 
