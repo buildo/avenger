@@ -155,7 +155,7 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
 }
 
 export function smoosh(avengerInput, fetchResults, cache) {
-  avengerInput.queries.map(({ query }) => ({
+  return avengerInput.queries.map(({ query }) => ({
     [query.id]: fetchResults[query.id] || cache.get(query.id, upsetParams(avengerInput, query))
   })).reduce((ac, item) => assign(ac, item), {});
 }
