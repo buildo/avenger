@@ -1,9 +1,6 @@
-'use strict';
-
 import t from 'tcomb';
 import uniq from 'lodash/array/uniq';
 import identity from 'lodash/utility/identity';
-import assert from 'better-assert';
 
 import Query from '../src/Query';
 import m from './models';

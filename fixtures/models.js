@@ -1,5 +1,3 @@
-'use strict';
-
 const t = require('tcomb');
 
 module.exports = {
@@ -20,4 +18,4 @@ module.exports = {
     _id: t.Str,
     material: t.Str
   })
-}
+};

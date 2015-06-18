@@ -2,8 +2,7 @@ import debug from 'debug';
 import t from 'tcomb';
 import Query from './Query';
 import AvengerInput from './AvengerInput';
-import AvengerActualizedCache from './AvengerActualizedCache';
-import { actualizeParameters, scheduleActualized } from './internals';
+import { upset, actualizeParameters, getQueriesToSkip, minimizeCache, schedule as scheduleInternal, smoosh, setCache } from './internals';
 
 export Query from './Query';
 export AvengerInput from './AvengerInput';
@@ -11,21 +10,24 @@ export AvengerCache from './AvengerCache';
 
 const log = debug('Avenger');
 
-export function schedule(avengerInput, actualizableCache) {
+export function schedule(avengerInput, cache) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
   }
+
+  const inputUpset = upset(avengerInput);
+  const fetchers = actualizeParameters(inputUpset);
+  const minimizedCache = minimizeCache(inputUpset, cache);
+  const queriesToSkip = getQueriesToSkip(inputUpset, cache);
 
   const { implicitState = {}, queries } = avengerInput;
   const actualized = actualizeParameters(avengerInput);
   log('actualizedInput: %o', actualized);
 
-  const actualizedCache = actualizableCache ? actualizableCache.actualize(queries) : {};
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerActualizedCache.is(actualizedCache));
-  }
-
-  return scheduleActualized(actualized, implicitState, actualizedCache);
+  return scheduleInternal(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
+    setCache(inputUpset, output, cache);
+    return smoosh(avengerInput, output, cache);
+  });
 }
 
 const FromJSONParams = t.struct({

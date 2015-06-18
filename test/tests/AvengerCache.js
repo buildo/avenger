@@ -1,9 +1,6 @@
 import expect from 'expect';
 import AvengerCache from '../../src/AvengerCache';
-import AvengerInput from '../../src/AvengerInput';
-import { actualizeParameters } from '../../src/internals';
 import { hashedParams } from '../../src/AvengerCache';
-import queries from '../../fixtures/queries';
 
 const fixtureState = {
   myId: {
@@ -52,20 +49,5 @@ describe('AvengerCache', () => {
   it('should be serializable', () => {
     expect(new AvengerCache(fixtureState).toJSON()).toEqual(fixtureState);
   });
-
-  // it('should be actualizable', () => {
-  //   const { cacheDependentQ } = queries({});
-  //   const input = AvengerInput({ queries: [{
-  //     query: cacheDependentQ
-  //   }] });
-  //   const cache = new AvengerCache(fixtureState);
-  //   const actualizedCache = cache.actualize(actualizeParameters(input));
-
-  //   expect(Object.keys(actualizedCache).length).toBe(2);
-  //   expect(Object.keys(actualizedCache)).toContain('optimisticQ');
-  //   expect(Object.keys(actualizedCache)).toContain('manualQ');
-  //   expect(actualizedCache.optimisticQ.value).toEqual(fixtureState.optimisticQ['∅']);
-  //   expect(actualizedCache.manualQ.value).toEqual(fixtureState.manualQ['∅']);
-  // });
 
 });
