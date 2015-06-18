@@ -53,7 +53,7 @@ export function upsetParams(avengerInput, inQuery) {
     });
     return Object.values(res);
   }
-  const __upset = _upset(avengerInput.queries.filter(({ query }) => query === inQuery).map((q) => q.query))
+  const __upset = _upset(avengerInput.queries.filter(({ query }) => query === inQuery).map((q) => q.query));
   return __upset.map((query) => ({
     [query.id]: (avengerInput.queries.filter((q) => q.query === query)[0] || {params: null}).params || {}
   })).reduce((ac, item) => assign(ac, item), {});
@@ -69,7 +69,7 @@ export function minimizeCache(avengerInput, cache) {
 
       return {
         [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery)))
-      }
+      };
     }).reduce((ac, item) => assign(ac, item), {});
     return { [queryRef.query.id]: minCache };
   }).reduce((ac, item) => assign(ac, item), {});
@@ -105,7 +105,7 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
     ...marmelade,
     fetcher: fetchers[marmelade.query.id]
   }));
-  
+
   function _schedule(curr) {
     return curr.map((c) => {
       if (!c.promise) {
@@ -133,7 +133,7 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
         c.promise = allValues(gnam).then((fetchResults) => {
           if (queriesToSkip.indexOf(c.query.id) === -1) {
             const fetcherParams = Object.keys(fetchResults).map((frk) =>
-              (!!fetchResults[frk]) ?
+              (fetchResults[frk]) ?
                 mang[frk](fetchResults[frk]) :
                 minimizedCache[c.query.id][frk]
             );

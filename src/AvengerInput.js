@@ -1,6 +1,5 @@
 import t from 'tcomb';
 import Query from './Query';
-import { ActualizedQuery, FetcherQuery } from './Query';
 
 const nonEmptyList = list => list.length > 0;
 
@@ -26,5 +25,4 @@ export default AvengerInput;
 
 // MinimizedCache
 
-const MinimizedCache = t.dict(t.Str, t.Obj);
-// const MinimizedCache = t.struct
+// const MinimizedCache = t.dict(t.Str, t.Obj);

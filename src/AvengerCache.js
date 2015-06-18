@@ -2,9 +2,7 @@
 // ... assuming for now each param is a primitive with meaningful toString()
 // (i.e.: strings, numbers and bools)
 
-import assign from 'lodash/object/assign';
 import t from 'tcomb';
-import { AvengerInputActualizedQueries } from './AvengerInput';
 
 const AllowedParam = t.subtype(t.Any, p => {
   return t.Str.is(p) || t.Num.is(p) || t.Bool.is(p);
