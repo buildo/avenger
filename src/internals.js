@@ -162,7 +162,6 @@ export function smoosh(avengerInput, fetchResults, cache) {
 
 export function setCache(avengerInput, fetchResults, cache) {
   Object.keys(fetchResults).map((frk) => {
-    console.log(frk);
     const query = avengerInput.queries.filter(({ query }) => query.id === frk)[0].query;
     if (cacheables.indexOf(query.cache) !== -1) {
       cache.set(frk, upsetParams(avengerInput, query))(fetchResults[frk]);

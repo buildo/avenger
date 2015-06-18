@@ -351,7 +351,6 @@ describe('avenger', () => {
 
       return schedule(upset(input), fetchers, {}).then(output => {
         setCache(upset(input), output, cache);
-        console.dir(cacheSetSpy.args);
         expect(cacheSetSpy.calledWith('optimisticQ', {
           optimisticQ: {}
         })).toBe(true);
@@ -378,7 +377,6 @@ describe('avenger', () => {
       return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then((output) => {
         setCache(upset(input), output, cache);
 
-        console.dir(cacheSet.args);
         expect(cacheSet.calledWith('immutableQ', { immutableQ: {} })).toBe(true);
         expect(cache.get('immutableQ', { immutableQ: {} })).toEqual({ immutable: 'immutableFoo' });
         return Promise.resolve();
