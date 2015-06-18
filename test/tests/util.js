@@ -12,6 +12,6 @@ describe('allValues', () => {
         qwer: 24
       });
       done();
-    }).catch(e => { throw e });
+    }).catch(e => { throw e; });
   });
 });

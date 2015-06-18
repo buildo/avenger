@@ -1,12 +1,9 @@
-'use strict';
-
-const t = require('tcomb');
-require('../src/util');
-
-const Query = require('../src/Query');
-const assert = require('better-assert');
-const m = require('./models');
+import t from 'tcomb';
 import uniq from 'lodash/array/uniq';
+import identity from 'lodash/utility/identity';
+
+import Query from '../src/Query';
+import m from './models';
 
 export default function(API) {
 
@@ -147,7 +144,78 @@ export default function(API) {
     fetch: () => ({ aid }, { bid }) => ({
       cc: API.fetchC(aid, bid)
     })
-  })
+  });
+
+  const noCacheQ = new Query({
+    id: 'noCacheQ',
+    paramsType: t.Nil,
+    fetchResultType: t.struct({
+      noCache: t.Str
+    }),
+    fetch: () => () => ({
+      noCache: API.fetchNoCacheFoo()
+    })
+  });
+
+  const optimisticQ = new Query({
+    id: 'optimisticQ',
+    paramsType: t.Nil,
+    cache: 'optimistic',
+    fetchResultType: t.struct({
+      optimistic: t.Str
+    }),
+    fetch: () => () => ({
+      optimistic: API.fetchOptimisticFoo()
+    })
+  });
+
+  const manualQ = new Query({
+    id: 'manualQ',
+    paramsType: t.Nil,
+    cache: 'manual',
+    fetchResultType: t.struct({
+      manual: t.Str
+    }),
+    fetch: () => () => ({
+      manual: API.fetchManualFoo()
+    })
+  });
+
+  const immutableQ = new Query({
+    id: 'immutableQ',
+    paramsType: t.Nil,
+    cache: 'immutable',
+    fetchResultType: t.struct({
+      immutable: t.Str
+    }),
+    fetch: () => () => ({
+      immutable: API.fetchImmutableFoo()
+    })
+  });
+
+  const cacheDependentQ = new Query({
+    id: 'cacheDependentQ',
+    paramsType: t.Nil,
+    dependencies: [{
+      query: immutableQ,
+      fetchParams: identity
+    }, {
+      query: manualQ,
+      fetchParams: identity
+    }, {
+      query: optimisticQ,
+      fetchParams: identity
+    }, {
+      query: noCacheQ,
+      fetchParams: identity
+    }],
+    fetchResultType: t.struct({
+      bar: t.Str
+    }),
+    fetch: () => ({ immutable }, { manual }, { optimistic }, { noCache }) => ({
+      bar: API.fetchBar(immutable, manual, optimistic, noCache)
+    })
+  });
 
   return {
     worklist,
@@ -155,8 +223,15 @@ export default function(API) {
     sample,
     sampleTests,
     sampleTestsKind,
+
     aQuery,
     bQuery,
-    cQuery
+    cQuery,
+
+    noCacheQ,
+    optimisticQ,
+    manualQ,
+    immutableQ,
+    cacheDependentQ
   };
 }

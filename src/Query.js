@@ -1,4 +1,4 @@
-const t = require('tcomb');
+import t from 'tcomb';
 
 const Type = t.Any;
 
@@ -7,8 +7,13 @@ const Dependency = t.struct({
   fetchParams: t.Func
 }, 'Dependency');
 
+const CacheMode = t.enums.of([
+  'no', 'optimistic', 'manual', 'immutable'
+], 'CacheMode');
+
 const Query = t.struct({
   id: t.Str,
+  cache: t.maybe(CacheMode),
   paramsType: Type,
   fetchResultType: Type,
   dependencies: t.maybe(t.list(Dependency)),
@@ -17,4 +22,4 @@ const Query = t.struct({
 
 Dependency.meta.props.query = Query;
 
-module.exports = Query;
+export default Query;

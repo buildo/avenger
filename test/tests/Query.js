@@ -12,7 +12,7 @@ describe('Query', () => {
       fetchResultType: t.struct({
         order: t.Any
       }),
-      fetch: (params) => () => ({
+      fetch: () => () => ({
         order: null
       })
     });
@@ -27,13 +27,13 @@ describe('Query', () => {
       dependencies: [
         {
           query: q1,
-          fetchParams: (q1) => ({
+          fetchParams: () => ({
             a: 'a'
           }),
           multi: 'p1'
         }
       ],
-      fetch: (params) => (q1) => ({
+      fetch: () => (q1) => ({
         result: q1.a
       })
     });

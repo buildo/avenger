@@ -1,60 +1,33 @@
 import debug from 'debug';
 import t from 'tcomb';
-import { allValues } from './util';
 import Query from './Query';
 import AvengerInput from './AvengerInput';
-import { actualizeParameters } from './internals';
-
-const log = debug('Avenger');
+import { upset, actualizeParameters, getQueriesToSkip, minimizeCache, schedule as scheduleInternal, smoosh, setCache } from './internals';
 
 export Query from './Query';
 export AvengerInput from './AvengerInput';
+export AvengerCache from './AvengerCache';
 
-export function schedule(avengerInput) {
+const log = debug('Avenger');
+
+export function schedule(avengerInput, cache) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
   }
 
-  const { implicitState = {} } = avengerInput;
-  const ps = actualizeParameters(avengerInput);
-  log('actualizedInput: %o', ps);
+  const inputUpset = upset(avengerInput);
+  const fetchers = actualizeParameters(inputUpset);
+  const minimizedCache = minimizeCache(inputUpset, cache);
+  const queriesToSkip = getQueriesToSkip(inputUpset, cache);
 
-  function _schedule(curr) {
-    return curr.map((c) => {
-      if (!c.promise) {
-        log(`considering '${c.query.id}'`);
+  const { implicitState = {}, queries } = avengerInput;
+  const actualized = actualizeParameters(avengerInput);
+  log('actualizedInput: %o', actualized);
 
-        const dependentPrepareds = (c.query.dependencies || []).map((d) =>
-          ps.filter((p) => p.query.id === d.query.id)[0]);
-        log(`'${c.query.id}' depends on: [${dependentPrepareds.map(({ query }) => query.id).join(', ')}]`);
-
-        _schedule(dependentPrepareds);
-        const ids = dependentPrepareds.map((p) => p.query.id);
-        const promises = dependentPrepareds.map((p) => p.promise);
-        const fetchParams = dependentPrepareds.map((p) =>
-            c.query.dependencies.filter((d) => d.query === p.query)[0].fetchParams);
-        const gnam = {};
-        const mang = {};
-        for (var i = 0; i < ids.length; i++) {
-          gnam[ids[i]] = promises[i];
-          mang[ids[i]] = fetchParams[i];
-        }
-        log(`scheduling '${c.query.id}'`);
-
-        c.promise = allValues(gnam).then((fetchResults) => {
-          // console.log('!!', fetchResults);
-          const fetcherParams = Object.keys(fetchResults).map((frk) =>
-            mang[frk](fetchResults[frk])
-          );
-          // console.log('FETCHER', fetcherParams);
-          return allValues(c.fetcher(...fetcherParams, implicitState));
-        });
-      }
-      return c.promise;
-    });
-  }
-
-  return Promise.all(_schedule(ps));
+  return scheduleInternal(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
+    setCache(inputUpset, output, cache);
+    return smoosh(avengerInput, output, cache);
+  });
 }
 
 const FromJSONParams = t.struct({

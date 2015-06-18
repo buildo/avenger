@@ -1,4 +1,3 @@
-import t from 'tcomb';
 import expect from 'expect';
 import sinon from 'sinon';
 import assign from 'lodash/object/assign';
@@ -6,13 +5,13 @@ import assign from 'lodash/object/assign';
 import { allValues } from '../../src/util';
 import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
-import assert from 'better-assert';
-import { schedule, AvengerInput } from '../../src';
-import { upset, actualizeParameters } from '../../src/internals';
+import { AvengerInput } from '../../src';
+import { upset, actualizeParameters, upsetParams, getQueriesToSkip, minimizeCache, schedule, setCache } from '../../src/internals';
+import AvengerCache from '../../src/AvengerCache';
 
 describe('In fixtures', () => {
-  it('fetch should be correct', (done) => {
-    const API = {}
+  it('fetch should be correct', () => {
+    const API = {};
     API.fetchWorklist = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Worklist({
       _id: 'a1',
       name: 'b2'
@@ -20,14 +19,13 @@ describe('In fixtures', () => {
     const { worklist } = queries(API);
     const worklistPromise = worklist.fetch('a1')();
 
-    allValues(worklistPromise).then((w) => {
+    return allValues(worklistPromise).then((w) => {
       expect(w).toEqual({
         worklist: {
           _id: 'a1',
           name: 'b2'
         }
       });
-      done();
     });
   });
 
@@ -35,21 +33,21 @@ describe('In fixtures', () => {
     const sampleTestsResult = {
       tests: [
         new m.Test({
-          _id: "a1",
+          _id: 'a1',
           blocked: false,
-          _testKindId: "asdf"
+          _testKindId: 'asdf'
         }),
         new m.Test({
-          _id: "b2",
+          _id: 'b2',
           blocked: true,
-          _testKindId: "qwer"
+          _testKindId: 'qwer'
         })
       ]
-    }
+    };
     const { sampleTestsKind } = queries({});
     const sampleTestsKindFetchParams = sampleTestsKind.dependencies[0].fetchParams(sampleTestsResult);
     expect(sampleTestsKindFetchParams).toEqual({
-      testKindIds: ["asdf", "qwer"]
+      testKindIds: ['asdf', 'qwer']
     });
   });
 });
@@ -68,32 +66,34 @@ describe('avenger', () => {
         })
       }
     ]});
-    const up = upset(input);
-    expect(up.map(({ id }) => id)).toEqual([
+    const up = upset(input).queries;
+    expect(up.map(({ query }) => query.id)).toEqual([
       'sampleTestsKind', 'sampleTests', 'sample' ]);
   });
 
   it('should correctly actualize parameters', () => {
     const { sampleTestsKind, sample } = queries({});
     const sampleTestKindsMock = assign({}, sampleTestsKind, {
-      fetch: sinon.spy()
+      fetch: sinon.stub().returns(() => {})
     });
     const sampleMock = assign({}, sample, {
-      fetch: sinon.spy()
+      fetch: sinon.stub().returns(() => {})
     });
 
-    const input = AvengerInput({ queries: [
-      {
+    const input = AvengerInput({
+      queries: [{
         query: sampleTestKindsMock
-      },
-      {
+      }, {
         query: sampleMock,
         params: new sampleMock.paramsType({
           sampleId: '123'
         })
-      }
-    ]});
-    actualizeParameters(input);
+      }]
+    });
+    const result = actualizeParameters(input);
+    input.queries.map(({ query }) => {
+      expect(Object.keys(result)).toContain(query.id);
+    });
 
     expect(sampleTestKindsMock.fetch.calledOnce).toBe(true);
     expect(sampleMock.fetch.calledOnce).toBe(true);
@@ -101,7 +101,7 @@ describe('avenger', () => {
   });
 
   describe('data dependencies', () => {
-    const API = {}
+    const API = {};
     API.fetchSample = sinon.stub().withArgs('a1').returns(Promise.resolve(new m.Sample({
       _id: 'a1',
       valid: false
@@ -133,7 +133,7 @@ describe('avenger', () => {
       material: 'plasma'
     })));
 
-    it('should pass correct data to fetchers', done => {
+    it('should pass correct data to fetchers', () => {
       const { sampleTestsKind, sample } = queries(API);
       const input = AvengerInput({ queries: [
         {
@@ -146,8 +146,9 @@ describe('avenger', () => {
           })
         }
       ]});
+      const fetchers = actualizeParameters(upset(input));
 
-      schedule(input).then(() => {
+      return schedule(upset(input), fetchers, {}).then(() => {
         expect(API.fetchSample.calledOnce).toBe(true);
         expect(API.fetchSample.calledWith('a1')).toBe(true);
 
@@ -157,12 +158,10 @@ describe('avenger', () => {
         expect(API.fetchTestKind.calledTwice).toBe(true);
         expect(API.fetchTestKind.calledWith('tka')).toBe(true);
         expect(API.fetchTestKind.calledWith('tkb')).toBe(true);
-
-        done();
       });
     });
 
-    it('should output the upset data', done => {
+    it('should output the upset data', () => {
       const { sampleTestsKind, sample } = queries(API);
       const input = AvengerInput({ queries: [
         {
@@ -175,25 +174,23 @@ describe('avenger', () => {
           })
         }
       ]});
+      const fetchers = actualizeParameters(upset(input));
 
-      schedule(input).then(output => {
-        expect(output.length).toBe(3);
-        expect(output).toContain({
+      return schedule(upset(input), fetchers, {}).then(output => {
+        expect(Object.keys(output).length).toBe(3);
+        expect(output.sample).toEqual({
           sample: { _id: 'a1', valid: false }
         });
-        expect(output).toContain({
-          tests: [true, true, true]
-        }, (a, b) => assert(a.tests.length === b.tests.length));
-        expect(output).toContain({
-          testKinds: [true, true]
-        }, (a, b) => assert(a.testKinds.length === b.testKinds.length));
-
-        done();
+        expect(output.sampleTests.tests.map((x) => x.blocked)).toEqual(
+            [true, false, true]);
+        expect(output.sampleTestsKind.testKinds.map((x) => x.material)).toEqual(
+            ['blood', 'plasma']);
+        return Promise.resolve();
       });
     });
 
-    it('should deal with multiple dependencies', done => {
-      const APIABC = {}
+    it('should deal with multiple dependencies', () => {
+      const APIABC = {};
       APIABC.fetchA = sinon.stub().returns(Promise.resolve({
         _aid: 33
       }));
@@ -209,7 +206,10 @@ describe('avenger', () => {
           query: cQuery
         }
       ]});
-      schedule(input).then(output => {
+
+      const fetchers = actualizeParameters(upset(input));
+
+      return schedule(upset(input), fetchers, {}).then(output => {
         expect(APIABC.fetchA.calledOnce).toBe(true);
         expect(APIABC.fetchA.calledWith()).toBe(true);
 
@@ -219,22 +219,20 @@ describe('avenger', () => {
         expect(APIABC.fetchC.calledOnce).toBe(true);
         expect(APIABC.fetchC.calledWith(33, 44)).toBe(true);
 
-        expect(output).toContain({
+        expect(output.a).toEqual({
           aa: { _aid: 33 }
         });
-        expect(output).toContain({
+        expect(output.b).toEqual({
           bb: { _bid: 44 }
         });
-        expect(output).toContain({
+        expect(output.c).toEqual({
           cc: { _cid: 55 }
         });
-
-        done();
-      }).catch(e => console.log(e));
+      });
     });
 
-    it('should pass implicit state as last positional param to fetchers', done => {
-      const API = {}
+    it('should pass implicit state as last positional param to fetchers', () => {
+      const API = {};
       API.fetchA = sinon.stub().returns(Promise.resolve({}));
       API.fetchB = sinon.stub().returns(Promise.resolve({}));
       API.fetchC = sinon.stub().returns(Promise.resolve({}));
@@ -252,13 +250,188 @@ describe('avenger', () => {
         }],
         implicitState
       });
+      const fetchers = actualizeParameters(upset(input));
 
-      schedule(input).then(output => {
+      return schedule(upset(input), fetchers, {}).then(() => {
         const { args } = stub.getCall(0);
         expect(args[args.length - 1]).toEqual(implicitState);
+      });
+    });
 
-        done();
-      }).catch(e => console.log(e));
+  });
+
+  describe('cache', () => {
+
+    const getAPI = () => {
+      const API = {};
+      API.fetchNoCacheFoo = sinon.stub().returns(Promise.resolve('noCacheFoo'));
+      API.fetchOptimisticFoo = sinon.stub().returns(Promise.resolve('optimisticFoo'));
+      API.fetchManualFoo = sinon.stub().returns(Promise.resolve('manualFoo'));
+      API.fetchImmutableFoo = sinon.stub().returns(Promise.resolve('immutableFoo'));
+      API.fetchBar = sinon.stub().returns(Promise.resolve('bar'));
+      return API;
+    };
+
+    it('should never fetch() immutable and manual if cached', () => {
+      const API = getAPI();
+      const { cacheDependentQ, immutableQ, manualQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = new AvengerCache();
+      cache.set('immutableQ', upsetParams(upset(input), immutableQ))({
+        immutable: 'asdf'
+      });
+      cache.set('manualQ', upsetParams(upset(input), manualQ))({
+        manual: 'qqqq'
+      });
+      const fetchers = actualizeParameters(upset(input));
+      const minimizedCache = minimizeCache(upset(input), cache);
+      const queriesToSkip = getQueriesToSkip(upset(input), cache);
+
+      return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then(() => {
+        expect(API.fetchImmutableFoo.notCalled).toBe(true);
+        expect(API.fetchManualFoo.notCalled).toBe(true);
+      });
+    });
+
+    it('should always fetch() noCache', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const fetchers = actualizeParameters(upset(input));
+
+      return schedule(upset(input), fetchers, {}).then(() => {
+        expect(API.fetchNoCacheFoo.calledOnce).toBe(true);
+      });
+    });
+
+    it('should always fetch() optimistic even if cached', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const cache = new AvengerCache();
+      cache.set('optimisticQ', { optimisticQ: {} })({ optimistic: 'optimisticFoo' });
+
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const fetchers = actualizeParameters(upset(input));
+      const minimizedCache = minimizeCache(upset(input), cache);
+      const queriesToSkip = getQueriesToSkip(upset(input), cache);
+
+      return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then(() => {
+        expect(API.fetchOptimisticFoo.calledOnce).toBe(true);
+      });
+    });
+
+    it('should always set() updated cache values for optimistic', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = new AvengerCache();
+      const cacheSetSpy = sinon.spy(cache, 'set');
+      const fetchers = actualizeParameters(upset(input));
+
+      return schedule(upset(input), fetchers, {}).then(output => {
+        setCache(upset(input), output, cache);
+        expect(cacheSetSpy.calledWith('optimisticQ', {
+          optimisticQ: {}
+        })).toBe(true);
+        expect(cache.get('optimisticQ', {
+          optimisticQ: {}
+        })).toEqual({ optimistic: 'optimisticFoo' });
+        return Promise.resolve();
+      });
+    });
+
+    it('should set() updated cache values for immutable queries only once', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = new AvengerCache();
+      const cacheSet = sinon.spy(cache, 'set');
+
+      const fetchers = actualizeParameters(upset(input));
+      const minimizedCache = minimizeCache(upset(input), cache);
+      const queriesToSkip = getQueriesToSkip(upset(input), cache);
+
+      return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then((output) => {
+        setCache(upset(input), output, cache);
+
+        expect(cacheSet.calledWith('immutableQ', { immutableQ: {} })).toBe(true);
+        expect(cache.get('immutableQ', { immutableQ: {} })).toEqual({ immutable: 'immutableFoo' });
+        return Promise.resolve();
+
+      }).then(() => {
+        const minimizedCache2 = minimizeCache(upset(input), cache);
+        const queriesToSkip2 = getQueriesToSkip(upset(input), cache);
+        return schedule(upset(input), fetchers, minimizedCache2, queriesToSkip2).then((output2) => {
+          setCache(upset(input), output2, cache);
+          expect(cacheSet.args.filter((x) => x[0] === 'immutableQ').length).toBe(1);
+
+          return Promise.resolve();
+        });
+      });
+    });
+
+    it('should never set() updated cache values for noCache', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+      const cache = new AvengerCache();
+      const cacheSet = sinon.spy(cache, 'set');
+      const fetchers = actualizeParameters(upset(input));
+
+      return schedule(upset(input), fetchers, {}).then((output) => {
+        setCache(upset(input), output, cache);
+        expect(cacheSet.args.filter((x) => x[0] === 'noCacheQ').length).toBe(0);
+      });
+    });
+
+    it('should set() updated cache values for manual only if not cached', () => {
+      const API = getAPI();
+      const { cacheDependentQ } = queries(API);
+      const input = AvengerInput({ queries: [{
+        query: cacheDependentQ
+      }] });
+
+      const underlyingCache = new AvengerCache();
+      var cacheSetters = {};
+      const cache = {
+        set: sinon.spy((id, params) => {
+          cacheSetters[id] = cacheSetters[id] || sinon.spy((x) => underlyingCache.set(id, params)(x));
+          return cacheSetters[id];
+        }),
+        get: underlyingCache.get.bind(underlyingCache)
+      };
+      const fetchers = actualizeParameters(upset(input));
+
+      return schedule(upset(input), fetchers, {}).then((output) => {
+
+        setCache(upset(input), output, cache);
+        expect(cache.set.calledWith('manualQ', { manualQ: {} })).toBe(true);
+        expect(cacheSetters.manualQ.calledOnce).toBe(true);
+        expect(cacheSetters.manualQ.calledWith({ manual: 'manualFoo' })).toBe(true);
+
+        return Promise.resolve();
+      }).then(() => {
+        const minimizedCache = minimizeCache(upset(input), cache);
+        const queriesToSkip = getQueriesToSkip(upset(input), cache);
+
+        return schedule(upset(input), fetchers, minimizedCache, queriesToSkip).then((output2) => {
+          setCache(upset(input), output2, cache);
+          expect(cacheSetters.manualQ.calledOnce).toBe(true);
+          return Promise.resolve();
+        });
+      });
     });
 
   });
