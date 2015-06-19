@@ -1,6 +1,6 @@
 import expect from 'expect';
 import sinon from 'sinon';
-import Avenger, { QuerySet, QuerySetInput } from '../../src';
+import Avenger, { QuerySet } from '../../src';
 import queries from '../../fixtures/queries';
 
 describe('Avenger', () => {
