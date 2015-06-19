@@ -100,7 +100,6 @@ export function getQueriesToSkip(avengerInput, cache) {
 }
 
 export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip = []) {
-  const { implicitState } = avengerInput;
   const queryRefs = avengerInput.queries.map((marmelade) => ({
     ...marmelade,
     fetcher: fetchers[marmelade.query.id]
@@ -138,7 +137,7 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
                 minimizedCache[c.query.id][frk]
             );
 
-            return allValues(c.fetcher(...fetcherParams, implicitState));
+            return allValues(c.fetcher(...fetcherParams));
           } else {
             return Promise.resolve(null);
           }

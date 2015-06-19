@@ -17,8 +17,7 @@ export const AvengerQueryRefs = t.subtype(
 );
 
 const AvengerInput = t.struct({
-  queries: AvengerQueryRefs,
-  implicitState: t.maybe(t.Obj)
+  queries: AvengerQueryRefs
 }, 'AvengerInput');
 
 export default AvengerInput;

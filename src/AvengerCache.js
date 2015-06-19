@@ -25,8 +25,8 @@ export function hashedParams(params) {
 
 export default class AvengerCache {
 
-  constructor(initialState) {
-    this.state = initialState || {};
+  constructor(initialState = {}) {
+    this.state = initialState;
   }
 
   toJSON() {
