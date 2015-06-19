@@ -1,6 +1,7 @@
 import debug from 'debug';
 import t from 'tcomb';
 import assign from 'lodash/object/assign';
+import values from 'lodash/object/values';
 import zip from 'lodash/array/zip';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
@@ -51,7 +52,7 @@ export function upsetParams(avengerInput, inQuery) {
         _upset(q.dependencies.map((d) => d.query));
       }
     });
-    return Object.values(res);
+    return values(res);
   }
   const __upset = _upset(avengerInput.queries.filter(({ query }) => query === inQuery).map((q) => q.query));
   return __upset.map((query) => ({

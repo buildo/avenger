@@ -8,12 +8,12 @@ const nonEmptyList = list => list.length > 0;
 const AvengerQueryRef = t.struct({
   query: Query,
   params: t.maybe(t.Obj)
-});
+}, 'AvengerQueryRef');
 
 export const AvengerQueryRefs = t.subtype(
   t.list(AvengerQueryRef),
   nonEmptyList,
-  'AvengerInputQueries'
+  'AvengerQueryRefs'
 );
 
 const AvengerInput = t.struct({
