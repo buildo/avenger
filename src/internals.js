@@ -8,6 +8,32 @@ import AvengerInput from './AvengerInput';
 
 const log = debug('Avenger:internals');
 
+const runLog = debug('Avenger:internals:run');
+// full schedule. probably temporarily here
+export function run(avengerInput, cache) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
+
+  const inputUpset = upset(avengerInput);
+  runLog('upset: %o', inputUpset);
+  const fetchers = actualizeParameters(inputUpset);
+  runLog('fetchers: %o', fetchers);
+  const minimizedCache = minimizeCache(inputUpset, cache);
+  runLog('minimizedCache: %o', minimizedCache);
+  const queriesToSkip = getQueriesToSkip(inputUpset, cache);
+  runLog('queriesToSkip: %o', queriesToSkip);
+
+  const { implicitState = {}, queries } = avengerInput;
+  const actualized = actualizeParameters(avengerInput);
+  runLog('actualizedInput: %o', actualized);
+
+  return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
+    setCache(inputUpset, output, cache);
+    return smoosh(avengerInput, output, cache);
+  });
+}
+
 export function upset(input) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(input));
@@ -41,7 +67,8 @@ export function upset(input) {
 // FIXME(gio): null handles the default 'no' cache case
 //
 // better written as a default somewhere else...
-const fetchables = [null, 'no', 'optimistic'];
+const fetchables = [undefined, null, 'no', 'optimistic'];
+const nonCacheables = [undefined, null, 'no'];
 
 export function upsetParams(avengerInput, inQuery) {
   const res = {};
@@ -66,7 +93,7 @@ export function minimizeCache(avengerInput, cache) {
   }
 
   return avengerInput.queries.filter(({ query }) => fetchables.indexOf(query.cache) !== -1).map((queryRef) => {
-    const minCache = (queryRef.query.dependencies || []).filter(({ cache }) => cache !== 'no').map(({ query: depQuery, fetchParams }) => {
+    const minCache = (queryRef.query.dependencies || []).filter(({ cache }) => nonCacheables.indexOf(cache) === -1).map(({ query: depQuery, fetchParams }) => {
 
       return {
         [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery)))

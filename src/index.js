@@ -1,73 +1,70 @@
-import debug from 'debug';
 import t from 'tcomb';
+import EventEmitter3 from 'eventemitter3';
 import Query from './Query';
+import AvengerCache from './AvengerCache';
 import AvengerInput from './AvengerInput';
-import { upset, actualizeParameters, getQueriesToSkip, minimizeCache, schedule as scheduleInternal, smoosh, setCache } from './internals';
+import { run } from './internals';
 
-export Query from './Query';
-export AvengerInput from './AvengerInput';
-export AvengerCache from './AvengerCache';
+const AllQueries = t.dict(t.Str, Query, 'AllQueries');
+const Queries = t.dict(t.Str, t.Any, 'Queries');
+const StateKey = t.subtype(
+  t.Any,
+  v => t.Str.is(v) || t.Num.is(v) || t.Bool.is(v),
+  'StateKey'
+);
+const State = t.dict(t.Str, StateKey, 'State');
 
-const log = debug('Avenger');
+export const QuerySetInput = t.struct({
+  queries: Queries,
+  state: t.maybe(State)
+}, 'QuerySetInput');
 
-export function schedule(avengerInput, cache) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(avengerInput));
+// export for tests
+export class QuerySet {
+
+  constructor(allQueries, input, cache) {
+    this.input = QuerySetInput(input);
+    this.allQueries = allQueries;
+
+    if (process.env.NODE_ENV !== 'production') {
+      Object.keys(input.queries).forEach(qId => {
+        t.assert(Query.is(this.allQueries[qId]), `Invalid query id: '${qId}'`);
+      });
+    }
+
+    this.emitter = new EventEmitter3();
+    this.cache = cache;
   }
 
-  const inputUpset = upset(avengerInput);
-  const fetchers = actualizeParameters(inputUpset);
-  const minimizedCache = minimizeCache(inputUpset, cache);
-  const queriesToSkip = getQueriesToSkip(inputUpset, cache);
-
-  const { implicitState = {}, queries } = avengerInput;
-  const actualized = actualizeParameters(avengerInput);
-  log('actualizedInput: %o', actualized);
-
-  return scheduleInternal(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
-    setCache(inputUpset, output, cache);
-    return smoosh(avengerInput, output, cache);
-  });
-}
-
-const FromJSONParams = t.struct({
-  // TODO(gio) be more restrictive
-  json: t.struct({
-    queries: t.list(t.Any),
-    implicitState: t.maybe(t.Obj)
-  }),
-  allQueries: t.dict(t.Str, Query)
-}, 'FromJSONParams');
-
-export function avengerInputFromJson(serialized) {
-  const { json, allQueries } = new FromJSONParams(serialized);
-
-  return AvengerInput({
-    implicitState: json.implicitState,
-    queries: json.queries.map(q => {
-      if (process.env.NODE_ENV !== 'production') {
-        t.assert(Object.keys(q).length === 1, `invalid format for query in: ${q}`);
-      }
-      const id = Object.keys(q)[0];
-      if (process.env.NODE_ENV !== 'production') {
-        t.assert(Query.is(allQueries[id]), `query not found: ${id}`);
-      }
-      return {
-        query: allQueries[id],
-        params: q[id]
-      };
-    })
-  });
-}
-
-export function avengerInputToJson(avengerInput) {
-  const { implicitState } = AvengerInput(avengerInput);
-  const queries = avengerInput.queries.map(avIn => ({
-    [avIn.query.id]: avIn.params || {}
-  }));
-  const json = { queries };
-  if (implicitState) {
-    json.implicitState = implicitState;
+  on(...args) {
+    this.emitter.on(...args);
   }
-  return json;
+
+  run() {
+    const queries = Object.keys(this.input.queries).map(qId => ({
+      query: this.allQueries[qId],
+      params: this.input.state
+    }));
+    // todo should emit cache event first
+    return run(AvengerInput({
+      queries
+    }), this.cache).then(result => {
+      this.emitter.emit('change', result);
+      return result;
+    });
+  }
+
+}
+
+export default class Avenger {
+
+  constructor(queries = {}, cacheInitialState = {}) {
+    this.queries = AllQueries(queries);
+    this.cache = new AvengerCache(cacheInitialState);
+  }
+
+  querySet(input) {
+    return new QuerySet(this.queries, input, this.cache);
+  }
+
 }

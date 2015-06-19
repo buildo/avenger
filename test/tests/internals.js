@@ -5,7 +5,7 @@ import assign from 'lodash/object/assign';
 import { allValues } from '../../src/util';
 import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
-import { AvengerInput } from '../../src';
+import AvengerInput from '../../src/AvengerInput';
 import { upset, actualizeParameters, upsetParams, getQueriesToSkip, minimizeCache, schedule, setCache } from '../../src/internals';
 import AvengerCache from '../../src/AvengerCache';
 
@@ -120,7 +120,7 @@ describe('avenger', () => {
         params: implicitState
       }]
     });
-    const fetchers = actualizeParameters(upset(input));
+    actualizeParameters(upset(input));
 
     expect(stub.calledOnce).toBe(true);
     const { args } = stub.getCall(0);
