@@ -42,17 +42,48 @@ describe('Avenger', () => {
       });
     });
 
-    it('should emit change events, more than 1, in case of success', () => {
+    it('should emit change events, at least 2', () => {
       const qs = av.querySet(qsInput);
       const spy = sinon.spy();
       qs.on('change', spy);
 
       return qs.run().then(() => {
-        console.log(spy);
         expect(spy.callCount).toBeGreaterThan(1);
       });
     });
 
+  });
+
+  describe('QuerySet with cache', () => {
+    const { immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ } = queries({
+      fetchImmutableFoo: () => Promise.resolve({ immutable: 'immutableFoo' }),
+      fetchManualFoo: () => Promise.resolve({ manual: 'manualFoo' }),
+      fetchOptimisticFoo: () => Promise.resolve({ optimistic: 'optimisticFoo' }),
+      fetchNoCacheFoo: () => Promise.resolve({ noCache: 'noCacheFoo' }),
+      fetchBar: () => Promise.resolve({})
+    });
+    const cacheInit = {
+      immutableQ: { '∅': { immutable: 'immutableFoo' } },
+      manualQ: { '∅': { manual: 'manualFoo' } },
+      optimisticQ: { '∅': { optimistic: 'optimisticFoo' } }
+    };
+    const av = new Avenger({ immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ }, cacheInit);
+    const qsInput = { queries: { cacheDependentQ }, state: {} };
+
+    it('first change event should contain cached values for the QS', () => {
+      const qs = av.querySet(qsInput);
+      const stub = sinon.stub();
+      qs.on('change', stub);
+
+      return qs.run().then(() => {
+        expect(stub.callCount).toBeGreaterThan(1);
+        expect(stab.getCall(0).args).toEqual({
+          immutableQ: { immutable: 'immutableFoo' },
+          manualQ: { manual: 'manualFoo' },
+          optimisticQ: { optimistic: 'optimisticFoo' }
+        });
+      });
+    });
   });
 
 });

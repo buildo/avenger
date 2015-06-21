@@ -3,7 +3,7 @@ import EventEmitter3 from 'eventemitter3';
 import Query from './Query';
 import AvengerCache from './AvengerCache';
 import AvengerInput from './AvengerInput';
-import { run } from './internals';
+import { run, fromCache } from './internals';
 
 const AllQueries = t.dict(t.Str, Query, 'AllQueries');
 const Queries = t.dict(t.Str, t.Any, 'Queries');
@@ -45,10 +45,14 @@ export class QuerySet {
       query: this.allQueries[qId],
       params: this.input.state
     }));
-    // todo should emit cache event first
-    return run(AvengerInput({
+    const input = AvengerInput({
       queries
-    }), this.cache).then(result => {
+    });
+
+    const cached = fromCache(input, this.cache);
+    this.emitter.emit('change', cached);
+
+    return run(input, this.cache).then(result => {
       this.emitter.emit('change', result);
       return result;
     });

@@ -34,6 +34,27 @@ export function run(avengerInput, cache) {
   });
 }
 
+const cacheables = ['optimistic', 'manual', 'immutable'];
+
+export function fromCache(avengerInput, cache) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
+
+  const inputUpset = upset(avengerInput);
+  log('upset: %o', inputUpset);
+
+  const cached = inputUpset.queries.filter(
+    ({ query }) => cacheables.indexOf(query.cache) !== -1
+  ).map(
+    ({ query }) => ({
+      [query.id]: cache.get(query.id, upsetParams(inputUpset, query))
+    })
+  ).reduce((ac, c) => assign(ac, c), {});
+
+  return cached;
+}
+
 export function upset(input) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(input));
@@ -113,11 +134,10 @@ export function actualizeParameters(input) {
   })).reduce((ac, item) => assign(ac, item), {});
 }
 
-const cacheables = ['optimistic', 'manual', 'immutable'];
-
 export function getQueriesToSkip(avengerInput, cache) {
   return avengerInput.queries.filter(({ query }) => {
     const retrieved = cache.get(query.id, upsetParams(avengerInput, query));
+    log(`${query.id} retrieved: %o`, retrieved);
     const isCacheable = cacheables.indexOf(query.cache) !== -1;
     const isCached = isCacheable && !!retrieved;
     const isFetchable = fetchables.indexOf(query.cache) !== -1;
