@@ -66,7 +66,8 @@ describe('Avenger', () => {
           worklistSamples: {
             worklist: 'foo'
           }
-        }
+        },
+        queriesToSkip: ['worklist']
       });
 
       return qs.run().then(data => {
@@ -106,22 +107,6 @@ describe('Avenger', () => {
           optimisticQ: { optimistic: 'optimisticFoo' }
         });
       });
-    });
-  });
-
-  describe('queriesToSkip utility', () => {
-    it('should extract query ids to skip from recipe fetchParams', () => {
-      expect(_.sortBy(queriesToSkip({
-        a: {
-          b: {}, c: {}
-        },
-        d: {
-          e: {}
-        },
-        e: {
-          f: {}
-        }
-      }))).toEqual(['b', 'c', 'e', 'f']);
     });
   });
 

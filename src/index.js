@@ -33,21 +33,14 @@ export const QuerySetInput = t.struct({
 }, 'QuerySetInput');
 
 export const Recipe = QuerySetInput.extend({
-  fetchParams: FetchParams
+  fetchParams: FetchParams,
+  queriesToSkip: t.list(t.Str)
 }, Recipe);
-
-// export for tests
-export function queriesToSkip(fetchParams) {
-  const fps = fetchParams;
-  return uniq(flatten(
-    Object.keys(fps).map(k => Object.keys(fps[k]))
-  ));
-}
 
 // export for tests
 export class QuerySet {
 
-  constructor(allQueries, input, cache, fetchParams = null) {
+  constructor(allQueries, input, cache = null, fromRecipe = null) {
     this.input = QuerySetInput(input);
     this.allQueries = allQueries;
 
@@ -59,7 +52,7 @@ export class QuerySet {
 
     this.emitter = new EventEmitter3();
     this.cache = cache;
-    this.fetchParams = fetchParams;
+    this.fromRecipe = fromRecipe;
   }
 
   on(...args) {
@@ -75,10 +68,11 @@ export class QuerySet {
       queries
     });
 
-    if (this.fetchParams) {
+    if (this.fromRecipe) {
       // running from recipe.
+      const { fetchParams, queriesToSkip } = this.fromRecipe;
       // not emitting events here for simplicity
-      return runCached(input, this.fetchParams, queriesToSkip(this.fetchParams));
+      return runCached(input, fetchParams, queriesToSkip);
     } else {
       // entire run is local
       const cached = fromCache(input, this.cache);
@@ -105,11 +99,11 @@ export default class Avenger {
   }
 
   querySetFromRecipe(recipe) {
-    const { queries, state, fetchParams } = Recipe(recipe);
+    const { queries, state, fetchParams, queriesToSkip } = Recipe(recipe);
     const input = QuerySetInput({
       queries, state
     });
-    return new QuerySet(this.queries, input, {}, fetchParams);
+    return new QuerySet(this.queries, input, null, { fetchParams, queriesToSkip });
   }
 
 }
