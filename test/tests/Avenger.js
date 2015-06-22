@@ -1,7 +1,8 @@
 import expect from 'expect';
 import sinon from 'sinon';
-import Avenger, { QuerySet } from '../../src';
+import Avenger, { QuerySet, queriesToSkip } from '../../src';
 import queries from '../../fixtures/queries';
+import _ from 'lodash';
 
 describe('Avenger', () => {
 
@@ -52,6 +53,28 @@ describe('Avenger', () => {
       });
     });
 
+    it('should be run()able from a recipe, skipping minCached queries', () => {
+      const api = _.assign({}, API, {
+        fetchWorklist: sinon.spy()
+      });
+      const { worklist, worklistSamples } = queries(api);
+      const av = new Avenger({ worklist, worklistSamples });
+      const qs = av.querySetFromRecipe({
+        queries: { worklistSamples },
+        state: { worklistId: 'foo' },
+        fetchParams: {
+          worklistSamples: {
+            worklist: 'foo'
+          }
+        }
+      });
+
+      return qs.run().then(data => {
+        expect(data).toEqual({ worklistSamples: { samples: { samples: [] } } });
+        expect(api.fetchWorklist.notCalled).toBe(true);
+      });
+    });
+
   });
 
   describe('QuerySet with cache', () => {
@@ -83,6 +106,22 @@ describe('Avenger', () => {
           optimisticQ: { optimistic: 'optimisticFoo' }
         });
       });
+    });
+  });
+
+  describe('queriesToSkip utility', () => {
+    it('should extract query ids to skip from recipe fetchParams', () => {
+      expect(_.sortBy(queriesToSkip({
+        a: {
+          b: {}, c: {}
+        },
+        d: {
+          e: {}
+        },
+        e: {
+          f: {}
+        }
+      }))).toEqual(['b', 'c', 'e', 'f']);
     });
   });
 

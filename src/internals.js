@@ -8,23 +8,23 @@ import AvengerInput from './AvengerInput';
 
 const log = debug('Avenger:internals');
 
-const runLog = debug('Avenger:internals:run');
-// full schedule. probably temporarily here
+// FIXME(gio): null handles the default 'no' cache case
+//
+// better written as a default somewhere else...
+const fetchables = [undefined, null, 'no', 'optimistic'];
+const cacheables = ['optimistic', 'manual', 'immutable'];
+
+// full local run
 export function run(avengerInput, cache) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
   }
 
   const inputUpset = upset(avengerInput);
-  runLog('upset: %o', inputUpset);
   const fetchers = actualizeParameters(inputUpset);
-  runLog('fetchers: %o', fetchers);
   const minimizedCache = minimizeCache(inputUpset, cache);
-  runLog('minimizedCache: %o', minimizedCache);
   const queriesToSkip = getQueriesToSkip(inputUpset, cache);
-  runLog('queriesToSkip: %o', queriesToSkip);
   const actualized = actualizeParameters(avengerInput);
-  runLog('actualizedInput: %o', actualized);
 
   return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
     setCache(inputUpset, output, cache);
@@ -32,12 +32,20 @@ export function run(avengerInput, cache) {
   });
 }
 
-// FIXME(gio): null handles the default 'no' cache case
-//
-// better written as a default somewhere else...
-const fetchables = [undefined, null, 'no', 'optimistic'];
-const cacheables = ['optimistic', 'manual', 'immutable'];
+// run from recipe
+export function runCached(avengerInput, minimizedCache, queriesToSkip) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
 
+  const inputUpset = upset(avengerInput);
+  const fetchers = actualizeParameters(inputUpset);
+  const actualized = actualizeParameters(avengerInput);
+
+  return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => smooshWithoutCache(avengerInput, output));
+}
+
+// extract cached data only
 export function fromCache(avengerInput, cache) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
@@ -207,6 +215,12 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
 export function smoosh(avengerInput, fetchResults, cache) {
   return avengerInput.queries.map(({ query }) => ({
     [query.id]: fetchResults[query.id] || cache.get(query.id, upsetParams(avengerInput, query))
+  })).reduce((ac, item) => assign(ac, item), {});
+}
+
+export function smooshWithoutCache(avengerInput, fetchResults) {
+  return avengerInput.queries.map(({ query }) => ({
+    [query.id]: fetchResults[query.id]
   })).reduce((ac, item) => assign(ac, item), {});
 }
 

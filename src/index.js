@@ -1,9 +1,11 @@
 import t from 'tcomb';
 import EventEmitter3 from 'eventemitter3';
+import uniq from 'lodash/array/uniq';
+import flatten from 'lodash/array/flatten';
 import Query from './Query';
 import AvengerCache from './AvengerCache';
 import AvengerInput from './AvengerInput';
-import { run, fromCache } from './internals';
+import { run, fromCache, runCached } from './internals';
 
 const AllQueries = t.dict(t.Str, Query, 'AllQueries');
 const Queries = t.dict(t.Str, t.Any, 'Queries');
@@ -15,11 +17,12 @@ const StateKey = t.subtype(
 const State = t.dict(t.Str, StateKey, 'State');
 
 // pre computed fetch params. Used for serialization
+// output of internals/minimizeCache
 const FetchParams = t.dict(
-  t.Str,    // depended upon qId
+  t.Str,    // qId
   t.dict(
-    t.Str,  // dependent qId
-    t.Obj   // dependent.deps.dependedUpon.fetchParams() result
+    t.Str,  // dependency qId
+    t.Any   // dependency cached value
   ),
   'FetchParams'
 );
@@ -34,9 +37,17 @@ export const Recipe = QuerySetInput.extend({
 }, Recipe);
 
 // export for tests
+export function queriesToSkip(fetchParams) {
+  const fps = fetchParams;
+  return uniq(flatten(
+    Object.keys(fps).map(k => Object.keys(fps[k]))
+  ));
+}
+
+// export for tests
 export class QuerySet {
 
-  constructor(allQueries, input, cache) {
+  constructor(allQueries, input, cache, fetchParams = null) {
     this.input = QuerySetInput(input);
     this.allQueries = allQueries;
 
@@ -48,6 +59,7 @@ export class QuerySet {
 
     this.emitter = new EventEmitter3();
     this.cache = cache;
+    this.fetchParams = fetchParams;
   }
 
   on(...args) {
@@ -63,13 +75,20 @@ export class QuerySet {
       queries
     });
 
-    const cached = fromCache(input, this.cache);
-    this.emitter.emit('change', cached);
+    if (this.fetchParams) {
+      // running from recipe.
+      // not emitting events here for simplicity
+      return runCached(input, this.fetchParams, queriesToSkip(this.fetchParams));
+    } else {
+      // entire run is local
+      const cached = fromCache(input, this.cache);
+      this.emitter.emit('change', cached);
 
-    return run(input, this.cache).then(result => {
-      this.emitter.emit('change', result);
-      return result;
-    });
+      return run(input, this.cache).then(result => {
+        this.emitter.emit('change', result);
+        return result;
+      });
+    }
   }
 
 }
@@ -86,11 +105,11 @@ export default class Avenger {
   }
 
   querySetFromRecipe(recipe) {
-    const { queries, state } = Recipe(recipe);
+    const { queries, state, fetchParams } = Recipe(recipe);
     const input = QuerySetInput({
       queries, state
     });
-    return new QuerySet(this.queries, input, this.cache);
+    return new QuerySet(this.queries, input, {}, fetchParams);
   }
 
 }
