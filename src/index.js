@@ -5,7 +5,9 @@ import flatten from 'lodash/array/flatten';
 import Query from './Query';
 import AvengerCache from './AvengerCache';
 import AvengerInput from './AvengerInput';
-import { run, fromCache, runCached } from './internals';
+import { run, fromCache, runCached,
+  minimizeCache as internalMinimizeCache,
+  getQueriesToSkip as internalGetQueriesToSkip } from './internals';
 
 const AllQueries = t.dict(t.Str, Query, 'AllQueries');
 const Queries = t.dict(t.Str, t.Any, 'Queries');
@@ -59,30 +61,40 @@ export class QuerySet {
     this.emitter.on(...args);
   }
 
-  run() {
-    const queries = Object.keys(this.input.queries).map(qId => ({
-      query: this.allQueries[qId],
-      params: this.input.state
-    }));
-    const input = AvengerInput({
-      queries
+  getAvengerInput() {
+    return AvengerInput({
+      queries: Object.keys(this.input.queries).map(qId => ({
+        query: this.allQueries[qId],
+        params: this.input.state
+      }))
     });
+  }
 
+  run() {
     if (this.fromRecipe) {
       // running from recipe.
       const { fetchParams, queriesToSkip } = this.fromRecipe;
       // not emitting events here for simplicity
-      return runCached(input, fetchParams, queriesToSkip);
+      return runCached(this.getAvengerInput(), fetchParams, queriesToSkip);
     } else {
       // entire run is local
-      const cached = fromCache(input, this.cache);
+      const cached = fromCache(this.getAvengerInput(), this.cache);
       this.emitter.emit('change', cached);
 
-      return run(input, this.cache).then(result => {
+      return run(this.getAvengerInput(), this.cache).then(result => {
         this.emitter.emit('change', result);
         return result;
       });
     }
+  }
+
+  toRecipe() {
+    const { queries, state } = this.input;
+    const fetchParams = internalMinimizeCache(this.getAvengerInput(), this.cache);
+    const queriesToSkip = internalGetQueriesToSkip(this.getAvengerInput(), this.cache);
+    return {
+      queries, state, fetchParams, queriesToSkip
+    };
   }
 
 }
