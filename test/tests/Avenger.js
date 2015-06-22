@@ -1,6 +1,6 @@
 import expect from 'expect';
 import sinon from 'sinon';
-import Avenger, { QuerySet, queriesToSkip } from '../../src';
+import Avenger, { QuerySet } from '../../src';
 import queries from '../../fixtures/queries';
 import _ from 'lodash';
 
@@ -73,6 +73,50 @@ describe('Avenger', () => {
       return qs.run().then(data => {
         expect(data).toEqual({ worklistSamples: { samples: { samples: [] } } });
         expect(api.fetchWorklist.notCalled).toBe(true);
+      });
+    });
+
+    it('should be serializable to a recipe', () => {
+      const qs = av.querySet(qsInput);
+
+      expect(qs.toRecipe()).toEqual({
+        queries: qsInput.queries,
+        state: qsInput.state,
+        fetchParams: { worklistSamples: {} },
+        queriesToSkip: []
+      });
+    });
+
+    it('serialized recipe should include computed fetchParams and queriesToSkip', () => {
+      const { cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ } = queries({
+
+      });
+      const av = new Avenger({ cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ }, {
+        immutableQ: {
+          '∅': { immutable: 'immutableFoo' }
+        }
+      });
+      const qs = av.querySet({ queries: { cacheDependentQ }, state: {} });
+
+      expect(qs.toRecipe()).toEqual({
+        queries: { cacheDependentQ },
+        state: {},
+        fetchParams: { cacheDependentQ: {
+          immutableQ: { immutable: 'immutableFoo' },
+          manualQ: null, optimisticQ: null
+        } },
+        queriesToSkip: ['immutableQ']
+      });
+    });
+
+    it('recipe there and back', () => {
+      const qs = av.querySet(qsInput);
+
+      return Promise.all([
+        qs.run(),
+        av.querySetFromRecipe(qs.toRecipe()).run()
+      ]).then(([a, b]) => {
+        expect(a).toEqual(b);
       });
     });
 

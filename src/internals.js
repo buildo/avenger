@@ -126,6 +126,7 @@ export function minimizeCache(avengerInput, cache) {
         [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery)))
       };
     }).reduce((ac, item) => assign(ac, item), {});
+    minLog(`${queryRef.query.id} minCache: %o`, minCache);
     return { [queryRef.query.id]: minCache };
   }).reduce((ac, item) => assign(ac, item), {});
 }

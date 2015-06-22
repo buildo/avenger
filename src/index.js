@@ -1,13 +1,12 @@
 import t from 'tcomb';
 import EventEmitter3 from 'eventemitter3';
-import uniq from 'lodash/array/uniq';
-import flatten from 'lodash/array/flatten';
 import Query from './Query';
 import AvengerCache from './AvengerCache';
 import AvengerInput from './AvengerInput';
 import { run, fromCache, runCached,
   minimizeCache as internalMinimizeCache,
-  getQueriesToSkip as internalGetQueriesToSkip } from './internals';
+  getQueriesToSkip as internalGetQueriesToSkip,
+  upset as internalUpset } from './internals';
 
 const AllQueries = t.dict(t.Str, Query, 'AllQueries');
 const Queries = t.dict(t.Str, t.Any, 'Queries');
@@ -91,7 +90,7 @@ export class QuerySet {
   toRecipe() {
     const { queries, state } = this.input;
     const fetchParams = internalMinimizeCache(this.getAvengerInput(), this.cache);
-    const queriesToSkip = internalGetQueriesToSkip(this.getAvengerInput(), this.cache);
+    const queriesToSkip = internalGetQueriesToSkip(internalUpset(this.getAvengerInput()), this.cache);
     return {
       queries, state, fetchParams, queriesToSkip
     };
