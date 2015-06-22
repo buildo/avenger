@@ -32,6 +32,10 @@ export function run(avengerInput, cache) {
   });
 }
 
+// FIXME(gio): null handles the default 'no' cache case
+//
+// better written as a default somewhere else...
+const fetchables = [undefined, null, 'no', 'optimistic'];
 const cacheables = ['optimistic', 'manual', 'immutable'];
 
 export function fromCache(avengerInput, cache) {
@@ -83,11 +87,6 @@ export function upset(input) {
     queries
   }));
 }
-// FIXME(gio): null handles the default 'no' cache case
-//
-// better written as a default somewhere else...
-const fetchables = [undefined, null, 'no', 'optimistic'];
-const nonCacheables = [undefined, null, 'no'];
 
 export function upsetParams(avengerInput, inQuery) {
   const res = {};
@@ -106,13 +105,16 @@ export function upsetParams(avengerInput, inQuery) {
   })).reduce((ac, item) => assign(ac, item), {});
 }
 
+const minLog = debug('Avenger:internals:minimizeCache');
 export function minimizeCache(avengerInput, cache) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
   }
 
-  return avengerInput.queries.filter(({ query }) => fetchables.indexOf(query.cache) !== -1).map((queryRef) => {
-    const minCache = (queryRef.query.dependencies || []).filter(({ cache }) => nonCacheables.indexOf(cache) === -1).map(({ query: depQuery, fetchParams }) => {
+  return avengerInput.queries.map((queryRef) => {
+    minLog(`building minCache for ${queryRef.query.id}, deps: %o`, (queryRef.query.dependencies || []).map(({ query }) => query.id));
+    const minCache = (queryRef.query.dependencies || []).filter(({ query }) => cacheables.indexOf(query.cache) !== -1).map(({ query: depQuery, fetchParams }) => {
+      minLog(`dependency ${depQuery.id} minCache: %o`, fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery))));
 
       return {
         [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery)))
@@ -187,6 +189,7 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
             return allValues(c.fetcher(...fetcherParams));
           } else {
             log(`minimizedCache %o`, minimizedCache);
+            // TODO(gio): null? why?
             return Promise.resolve(null);
           }
         });
