@@ -23,8 +23,6 @@ export function run(avengerInput, cache) {
   runLog('minimizedCache: %o', minimizedCache);
   const queriesToSkip = getQueriesToSkip(inputUpset, cache);
   runLog('queriesToSkip: %o', queriesToSkip);
-
-  const { implicitState = {}, queries } = avengerInput;
   const actualized = actualizeParameters(avengerInput);
   runLog('actualizedInput: %o', actualized);
 
@@ -184,9 +182,11 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
                 mang[frk](fetchResults[frk]) :
                 minimizedCache[c.query.id][frk]
             );
+            log(`fetchResults %o, fetcherParams %o`, fetchResults, fetcherParams);
 
             return allValues(c.fetcher(...fetcherParams));
           } else {
+            log(`minimizedCache %o`, minimizedCache);
             return Promise.resolve(null);
           }
         });

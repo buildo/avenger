@@ -14,10 +14,24 @@ const StateKey = t.subtype(
 );
 const State = t.dict(t.Str, StateKey, 'State');
 
+// pre computed fetch params. Used for serialization
+const FetchParams = t.dict(
+  t.Str,    // depended upon qId
+  t.dict(
+    t.Str,  // dependent qId
+    t.Obj   // dependent.deps.dependedUpon.fetchParams() result
+  ),
+  'FetchParams'
+);
+
 export const QuerySetInput = t.struct({
   queries: Queries,
   state: t.maybe(State)
 }, 'QuerySetInput');
+
+export const Recipe = QuerySetInput.extend({
+  fetchParams: FetchParams
+}, Recipe);
 
 // export for tests
 export class QuerySet {
@@ -68,6 +82,14 @@ export default class Avenger {
   }
 
   querySet(input) {
+    return new QuerySet(this.queries, input, this.cache);
+  }
+
+  querySetFromRecipe(recipe) {
+    const { queries, state } = Recipe(recipe);
+    const input = QuerySetInput({
+      queries, state
+    });
     return new QuerySet(this.queries, input, this.cache);
   }
 

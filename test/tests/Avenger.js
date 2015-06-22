@@ -77,7 +77,7 @@ describe('Avenger', () => {
 
       return qs.run().then(() => {
         expect(stub.callCount).toBeGreaterThan(1);
-        expect(stab.getCall(0).args).toEqual({
+        expect(stub.getCall(0).args).toEqual({
           immutableQ: { immutable: 'immutableFoo' },
           manualQ: { manual: 'manualFoo' },
           optimisticQ: { optimistic: 'optimisticFoo' }
