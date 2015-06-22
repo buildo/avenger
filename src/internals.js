@@ -24,7 +24,6 @@ export function run(avengerInput, cache) {
   const fetchers = actualizeParameters(inputUpset);
   const minimizedCache = minimizeCache(inputUpset, cache);
   const queriesToSkip = getQueriesToSkip(inputUpset, cache);
-  const actualized = actualizeParameters(avengerInput);
 
   return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
     setCache(inputUpset, output, cache);
@@ -40,7 +39,6 @@ export function runCached(avengerInput, minimizedCache, queriesToSkip) {
 
   const inputUpset = upset(avengerInput);
   const fetchers = actualizeParameters(inputUpset);
-  const actualized = actualizeParameters(avengerInput);
 
   return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => smooshWithoutCache(avengerInput, output));
 }
