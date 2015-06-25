@@ -1,11 +1,67 @@
 import debug from 'debug';
 import t from 'tcomb';
 import assign from 'lodash/object/assign';
+import values from 'lodash/object/values';
 import zip from 'lodash/array/zip';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
 
 const log = debug('Avenger:internals');
+
+// FIXME(gio): null handles the default 'no' cache case
+//
+// better written as a default somewhere else...
+const fetchables = [undefined, null, 'no', 'optimistic'];
+const cacheables = ['optimistic', 'manual', 'immutable'];
+
+// full local run
+export function run(avengerInput, cache) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
+
+  const inputUpset = upset(avengerInput);
+  const fetchers = actualizeParameters(inputUpset);
+  const minimizedCache = minimizeCache(inputUpset, cache);
+  const queriesToSkip = getQueriesToSkip(inputUpset, cache);
+
+  return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
+    setCache(inputUpset, output, cache);
+    return smoosh(avengerInput, output, cache);
+  });
+}
+
+// run from recipe
+export function runCached(avengerInput, minimizedCache, queriesToSkip) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
+
+  const inputUpset = upset(avengerInput);
+  const fetchers = actualizeParameters(inputUpset);
+
+  return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => smooshWithoutCache(avengerInput, output));
+}
+
+// extract cached data only
+export function fromCache(avengerInput, cache) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+  }
+
+  const inputUpset = upset(avengerInput);
+  log('upset: %o', inputUpset);
+
+  const cached = inputUpset.queries.filter(
+    ({ query }) => cacheables.indexOf(query.cache) !== -1
+  ).map(
+    ({ query }) => ({
+      [query.id]: cache.get(query.id, upsetParams(inputUpset, query))
+    })
+  ).reduce((ac, c) => assign(ac, c), {});
+
+  return cached;
+}
 
 export function upset(input) {
   if (process.env.NODE_ENV !== 'production') {
@@ -37,10 +93,6 @@ export function upset(input) {
     queries
   }));
 }
-// FIXME(gio): null handles the default 'no' cache case
-//
-// better written as a default somewhere else...
-const fetchables = [null, 'no', 'optimistic'];
 
 export function upsetParams(avengerInput, inQuery) {
   const res = {};
@@ -51,7 +103,7 @@ export function upsetParams(avengerInput, inQuery) {
         _upset(q.dependencies.map((d) => d.query));
       }
     });
-    return Object.values(res);
+    return values(res);
   }
   const __upset = _upset(avengerInput.queries.filter(({ query }) => query === inQuery).map((q) => q.query));
   return __upset.map((query) => ({
@@ -59,18 +111,22 @@ export function upsetParams(avengerInput, inQuery) {
   })).reduce((ac, item) => assign(ac, item), {});
 }
 
+const minLog = debug('Avenger:internals:minimizeCache');
 export function minimizeCache(avengerInput, cache) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(AvengerInput.is(avengerInput));
   }
 
-  return avengerInput.queries.filter(({ query }) => fetchables.indexOf(query.cache) !== -1).map((queryRef) => {
-    const minCache = (queryRef.query.dependencies || []).filter(({ cache }) => cache !== 'no').map(({ query: depQuery, fetchParams }) => {
+  return avengerInput.queries.map((queryRef) => {
+    minLog(`building minCache for ${queryRef.query.id}, deps: %o`, (queryRef.query.dependencies || []).map(({ query }) => query.id));
+    const minCache = (queryRef.query.dependencies || []).filter(({ query }) => cacheables.indexOf(query.cache) !== -1).map(({ query: depQuery, fetchParams }) => {
+      minLog(`dependency ${depQuery.id} minCache: %o`, fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery))));
 
       return {
         [depQuery.id]: fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery)))
       };
     }).reduce((ac, item) => assign(ac, item), {});
+    minLog(`${queryRef.query.id} minCache: %o`, minCache);
     return { [queryRef.query.id]: minCache };
   }).reduce((ac, item) => assign(ac, item), {});
 }
@@ -85,11 +141,10 @@ export function actualizeParameters(input) {
   })).reduce((ac, item) => assign(ac, item), {});
 }
 
-const cacheables = ['optimistic', 'manual', 'immutable'];
-
 export function getQueriesToSkip(avengerInput, cache) {
   return avengerInput.queries.filter(({ query }) => {
     const retrieved = cache.get(query.id, upsetParams(avengerInput, query));
+    log(`${query.id} retrieved: %o`, retrieved);
     const isCacheable = cacheables.indexOf(query.cache) !== -1;
     const isCached = isCacheable && !!retrieved;
     const isFetchable = fetchables.indexOf(query.cache) !== -1;
@@ -100,7 +155,6 @@ export function getQueriesToSkip(avengerInput, cache) {
 }
 
 export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip = []) {
-  const { implicitState } = avengerInput;
   const queryRefs = avengerInput.queries.map((marmelade) => ({
     ...marmelade,
     fetcher: fetchers[marmelade.query.id]
@@ -137,9 +191,12 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
                 mang[frk](fetchResults[frk]) :
                 minimizedCache[c.query.id][frk]
             );
+            log(`fetchResults %o, fetcherParams %o`, fetchResults, fetcherParams);
 
-            return allValues(c.fetcher(...fetcherParams, implicitState));
+            return allValues(c.fetcher(...fetcherParams));
           } else {
+            log(`minimizedCache %o`, minimizedCache);
+            // TODO(gio): null? why?
             return Promise.resolve(null);
           }
         });
@@ -157,6 +214,12 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
 export function smoosh(avengerInput, fetchResults, cache) {
   return avengerInput.queries.map(({ query }) => ({
     [query.id]: fetchResults[query.id] || cache.get(query.id, upsetParams(avengerInput, query))
+  })).reduce((ac, item) => assign(ac, item), {});
+}
+
+export function smooshWithoutCache(avengerInput, fetchResults) {
+  return avengerInput.queries.map(({ query }) => ({
+    [query.id]: fetchResults[query.id]
   })).reduce((ac, item) => assign(ac, item), {});
 }
 

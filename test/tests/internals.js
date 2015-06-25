@@ -5,7 +5,7 @@ import assign from 'lodash/object/assign';
 import { allValues } from '../../src/util';
 import queries from '../../fixtures/queries';
 import m from '../../fixtures/models';
-import { AvengerInput } from '../../src';
+import AvengerInput from '../../src/AvengerInput';
 import { upset, actualizeParameters, upsetParams, getQueriesToSkip, minimizeCache, schedule, setCache } from '../../src/internals';
 import AvengerCache from '../../src/AvengerCache';
 
@@ -98,6 +98,33 @@ describe('avenger', () => {
     expect(sampleTestKindsMock.fetch.calledOnce).toBe(true);
     expect(sampleMock.fetch.calledOnce).toBe(true);
     expect(sampleMock.fetch.calledWith({ sampleId: '123' })).toBe(true);
+  });
+
+  it('should pass additional state as fetch params', () => {
+    // TODO(gio): this test is basically useless as it is now..
+    const API = {};
+    API.fetchA = sinon.stub().returns(Promise.resolve({}));
+    API.fetchB = sinon.stub().returns(Promise.resolve({}));
+    API.fetchC = sinon.stub().returns(Promise.resolve({}));
+    const { cQuery } = queries(API);
+
+    const stub = sinon.stub().returns(() => Promise.resolve({}));
+    const cQueryMock = assign({}, cQuery, {
+      fetch: stub
+    });
+
+    const implicitState = { token: 'asd' };
+    const input = AvengerInput({
+      queries: [{
+        query: cQueryMock,
+        params: implicitState
+      }]
+    });
+    actualizeParameters(upset(input));
+
+    expect(stub.calledOnce).toBe(true);
+    const { args } = stub.getCall(0);
+    expect(args[args.length - 1]).toEqual(implicitState);
   });
 
   describe('data dependencies', () => {
@@ -228,33 +255,6 @@ describe('avenger', () => {
         expect(output.c).toEqual({
           cc: { _cid: 55 }
         });
-      });
-    });
-
-    it('should pass implicit state as last positional param to fetchers', () => {
-      const API = {};
-      API.fetchA = sinon.stub().returns(Promise.resolve({}));
-      API.fetchB = sinon.stub().returns(Promise.resolve({}));
-      API.fetchC = sinon.stub().returns(Promise.resolve({}));
-      const { cQuery } = queries(API);
-
-      const stub = sinon.stub().returns(Promise.resolve({}));
-      const cQueryMock = assign({}, cQuery, {
-        fetch: () => stub
-      });
-
-      const implicitState = { token: 'asd' };
-      const input = AvengerInput({
-        queries: [{
-          query: cQueryMock
-        }],
-        implicitState
-      });
-      const fetchers = actualizeParameters(upset(input));
-
-      return schedule(upset(input), fetchers, {}).then(() => {
-        const { args } = stub.getCall(0);
-        expect(args[args.length - 1]).toEqual(implicitState);
       });
     });
 
