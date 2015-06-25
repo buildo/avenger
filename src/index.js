@@ -28,6 +28,8 @@ const FetchParams = t.dict(
   'FetchParams'
 );
 
+export Query from './Query';
+
 export const QuerySetInput = t.struct({
   queries: Queries,
   state: t.maybe(State)
