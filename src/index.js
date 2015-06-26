@@ -62,6 +62,10 @@ export class QuerySet {
     this.emitter.on(...args);
   }
 
+  off(...args) {
+    this.emitter.of(...args);
+  }
+
   getAvengerInput() {
     return AvengerInput({
       queries: Object.keys(this.input.queries).map(qId => ({
