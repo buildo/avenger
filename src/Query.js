@@ -14,6 +14,7 @@ const CacheMode = t.enums.of([
 const Query = t.struct({
   id: t.Str,
   cache: t.maybe(CacheMode),
+  cacheParams: t.maybe(t.list(t.Str)),
   paramsType: Type,
   fetchResultType: Type,
   dependencies: t.maybe(t.list(Dependency)),

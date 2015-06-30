@@ -217,6 +217,19 @@ export default function(API) {
     })
   });
 
+  const cacheParamsQ = new Query({
+    id: 'cacheParamsQ',
+    cache: 'manual',
+    cacheParams: ['param'],
+    dependencies: [{
+      query: immutableQ,
+      fetchParams: identity
+    }],
+    fetch: () => () => ({
+      cpq: Promise.resolve({})
+    })
+  });
+
   return {
     worklist,
     worklistSamples,
@@ -232,6 +245,8 @@ export default function(API) {
     optimisticQ,
     manualQ,
     immutableQ,
-    cacheDependentQ
+    cacheDependentQ,
+
+    cacheParamsQ
   };
 }

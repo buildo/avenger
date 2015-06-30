@@ -2,6 +2,7 @@ import debug from 'debug';
 import t from 'tcomb';
 import assign from 'lodash/object/assign';
 import values from 'lodash/object/values';
+import pick from 'lodash/object/pick';
 import zip from 'lodash/array/zip';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
@@ -106,9 +107,12 @@ export function upsetParams(avengerInput, inQuery) {
     return values(res);
   }
   const __upset = _upset(avengerInput.queries.filter(({ query }) => query === inQuery).map((q) => q.query));
-  return __upset.map((query) => ({
-    [query.id]: (avengerInput.queries.filter((q) => q.query === query)[0] || {params: null}).params || {}
-  })).reduce((ac, item) => assign(ac, item), {});
+  return __upset.map(query => {
+    const allParams = (avengerInput.queries.filter((q) => q.query === query)[0] || {params: null}).params || {};
+    return {
+      [query.id]: query.id === inQuery.id ? pick(allParams, inQuery.cacheParams) : allParams
+    };
+  }).reduce((ac, item) => assign(ac, item), {});
 }
 
 const minLog = debug('Avenger:internals:minimizeCache');
