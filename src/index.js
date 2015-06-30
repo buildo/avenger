@@ -63,7 +63,7 @@ export class QuerySet {
   }
 
   off(...args) {
-    this.emitter.of(...args);
+    this.emitter.off(...args);
   }
 
   getAvengerInput() {
