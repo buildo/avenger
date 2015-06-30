@@ -260,6 +260,30 @@ describe('avenger', () => {
 
   });
 
+  describe('upsetParams', () => {
+
+    it('should honor `cacheParams`', () => {
+
+      const { cacheParamsQ, immutableQ } = queries({
+        fetchImmutableFoo: () => Promise.resolve({})
+      });
+      const params = { a: 'a', b: 'b', c: 'c', param: 'value' };
+      const input = AvengerInput({ queries: [{
+        query: cacheParamsQ, params
+      }, {
+        query: immutableQ, params
+      }] });
+      const upp = upsetParams(input, cacheParamsQ);
+
+      expect(upp).toEqual({
+        cacheParamsQ: { param: 'value' },
+        immutableQ: params
+      });
+
+    });
+
+  });
+
   describe('cache', () => {
 
     const getAPI = () => {
