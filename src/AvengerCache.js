@@ -54,13 +54,13 @@ export default class AvengerCache {
 
   set = (id, params) => value => {
     const hp = hashedParams(params);
-    log(`set ${id} %o = %o`, params, value);
+    log(`set ${id} ${hp} = %o`, params, value);
     log(`current ${id} %o, ${id}[${hp}] (missing id: ${!this.state[id]})`, this.state[id], this.state[id] ? this.state[id][hp] : undefined);
     if (process.env.NODE_ENV !== 'production') {
       this.checkParams(params);
     }
 
-    if (!this.state.id) {
+    if (!this.state[id]) {
       this.state[id] = {};
     }
 
