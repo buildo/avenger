@@ -123,7 +123,10 @@ export function minimizeCache(avengerInput, cache) {
 
   return avengerInput.queries.map((queryRef) => {
     minLog(`building minCache for ${queryRef.query.id}, deps: %o`, (queryRef.query.dependencies || []).map(({ query }) => query.id));
-    const minCache = (queryRef.query.dependencies || []).filter(({ query }) => cacheables.indexOf(query.cache) !== -1).map(({ query: depQuery, fetchParams }) => {
+    const minCache = (queryRef.query.dependencies || [])
+      .filter(({ query }) => cacheables.indexOf(query.cache) !== -1)
+      .filter(({ query }) => !!cache.get(query.id, upsetParams(avengerInput, query)))
+      .map(({ query: depQuery, fetchParams }) => {
       minLog(`dependency ${depQuery.id} minCache: %o`, fetchParams(cache.get(depQuery.id, upsetParams(avengerInput, depQuery))));
 
       return {
