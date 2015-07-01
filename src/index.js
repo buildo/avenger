@@ -1,4 +1,5 @@
 import t from 'tcomb';
+import debug from 'debug';
 import EventEmitter3 from 'eventemitter3';
 import Query from './Query';
 import AvengerCache from './AvengerCache';
@@ -7,6 +8,8 @@ import { run, fromCache, runCached,
   minimizeCache as internalMinimizeCache,
   getQueriesToSkip as internalGetQueriesToSkip,
   upset as internalUpset } from './internals';
+
+const log = debug('Avenger');
 
 const AllQueries = t.dict(t.Str, Query, 'AllQueries');
 const Queries = t.dict(t.Str, t.Any, 'Queries');
@@ -77,17 +80,23 @@ export class QuerySet {
 
   run() {
     if (this.fromRecipe) {
+      log('running from recipe', this);
       // running from recipe.
       const { fetchParams, queriesToSkip } = this.fromRecipe;
       // not emitting events here for simplicity
       return runCached(this.getAvengerInput(), fetchParams, queriesToSkip);
     } else {
+      log('running local', this);
+      log('cache state', this.cache.state);
       // entire run is local
       const cached = fromCache(this.getAvengerInput(), this.cache);
       this.emitter.emit('change', cached);
+      log('from cache', cached);
 
       return run(this.getAvengerInput(), this.cache).then(result => {
         this.emitter.emit('change', result);
+        log('final result', result);
+        log('final cache', this.cache.state);
         return result;
       });
     }
