@@ -102,8 +102,7 @@ describe('Avenger', () => {
         queries: { cacheDependentQ },
         state: {},
         fetchParams: { cacheDependentQ: {
-          immutableQ: { immutable: 'immutableFoo' },
-          manualQ: null, optimisticQ: null
+          immutableQ: { immutable: 'immutableFoo' }
         } },
         queriesToSkip: ['immutableQ']
       });
