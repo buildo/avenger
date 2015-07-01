@@ -234,7 +234,9 @@ export function setCache(avengerInput, fetchResults, cache) {
   Object.keys(fetchResults).map((frk) => {
     const query = avengerInput.queries.filter(({ query }) => query.id === frk)[0].query;
     if (cacheables.indexOf(query.cache) !== -1) {
-      cache.set(frk, upsetParams(avengerInput, query))(fetchResults[frk]);
+      const upp = upsetParams(avengerInput, query);
+      log(`set cache for ${query.id}, upsetParams %o`, upp);
+      cache.set(query.id, upp)(fetchResults[frk]);
     }
   });
 }

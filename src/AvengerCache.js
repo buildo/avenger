@@ -3,6 +3,9 @@
 // (i.e.: strings, numbers and bools)
 
 import t from 'tcomb';
+import debug from 'debug';
+
+const log = debug('AvengerCache');
 
 const AllowedParam = t.subtype(t.Any, p => {
   return t.Str.is(p) || t.Num.is(p) || t.Bool.is(p);
@@ -50,6 +53,9 @@ export default class AvengerCache {
   }
 
   set = (id, params) => value => {
+    const hp = hashedParams(params);
+    log(`set ${id} %o = %o`, params, value);
+    log(`current ${id} %o, ${id}[${hp}] (missing id: ${!this.state[id]})`, this.state[id], this.state[id] ? this.state[id][hp] : undefined);
     if (process.env.NODE_ENV !== 'production') {
       this.checkParams(params);
     }
@@ -58,6 +64,6 @@ export default class AvengerCache {
       this.state[id] = {};
     }
 
-    this.state[id][hashedParams(params)] = value;
+    this.state[id][hp] = value;
   };
 }
