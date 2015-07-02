@@ -78,6 +78,12 @@ export class QuerySet {
     });
   }
 
+  cached() {
+    const cached = fromCache(this.getAvengerInput(), this.cache);
+    this.emitter.emit('change', cached);
+    log('from cache', cached);
+  }
+
   run() {
     if (this.fromRecipe) {
       log('running from recipe', this);
@@ -86,12 +92,11 @@ export class QuerySet {
       // not emitting events here for simplicity
       return runCached(this.getAvengerInput(), fetchParams, queriesToSkip);
     } else {
+      // entire run is local
       log('running local', this);
       log('cache state', this.cache.state);
-      // entire run is local
-      const cached = fromCache(this.getAvengerInput(), this.cache);
-      this.emitter.emit('change', cached);
-      log('from cache', cached);
+
+      this.cached();
 
       return run(this.getAvengerInput(), this.cache).then(result => {
         this.emitter.emit('change', result);
