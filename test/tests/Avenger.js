@@ -93,8 +93,11 @@ describe('Avenger', () => {
       });
       const av = new Avenger({ cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ }, {
         immutableQ: {
-          '∅': { immutable: 'immutableFoo' }
+          immutable: 'immutableFoo'
         }
+      }, {
+        queries: { cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ },
+        state: {}
       });
       const qs = av.querySet({ queries: { cacheDependentQ }, state: {} });
 
@@ -129,12 +132,15 @@ describe('Avenger', () => {
       fetchNoCacheFoo: () => Promise.resolve({ noCache: 'noCacheFoo' }),
       fetchBar: () => Promise.resolve({})
     });
-    const cacheInit = {
-      immutableQ: { '∅': { immutable: 'immutableFoo' } },
-      manualQ: { '∅': { manual: 'manualFoo' } },
-      optimisticQ: { '∅': { optimistic: 'optimisticFoo' } }
+    const data = {
+      immutableQ: { immutable: 'immutableFoo' },
+      manualQ: { manual: 'manualFoo' },
+      optimisticQ: { optimistic: 'optimisticFoo' }
     };
-    const av = new Avenger({ immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ }, cacheInit);
+    const av = new Avenger({ immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ }, data, {
+      queries: { immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ },
+      state: {}
+    });
     const qsInput = { queries: { cacheDependentQ }, state: {} };
 
     it('first change event should contain cached values for the QS', () => {
