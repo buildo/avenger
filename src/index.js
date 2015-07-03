@@ -125,7 +125,7 @@ export default class Avenger {
     this.queries = AllQueries(queries);
     this.cache = new AvengerCache({});
 
-    if (!!input) {
+    if (input) {
       const avInput = new QuerySet(this.queries, input, this.cache).getAvengerInput();
       internalSetCache(avInput, data, this.cache);
     }
