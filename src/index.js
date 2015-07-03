@@ -7,7 +7,8 @@ import AvengerInput from './AvengerInput';
 import { run, fromCache, runCached,
   minimizeCache as internalMinimizeCache,
   getQueriesToSkip as internalGetQueriesToSkip,
-  upset as internalUpset } from './internals';
+  upset as internalUpset,
+  setCache as internalSetCache } from './internals';
 
 const log = debug('Avenger');
 
@@ -120,9 +121,14 @@ export class QuerySet {
 
 export default class Avenger {
 
-  constructor(queries = {}, cacheInitialState = {}) {
+  constructor(queries = {}, data = {}, input) {
     this.queries = AllQueries(queries);
-    this.cache = new AvengerCache(cacheInitialState);
+    this.cache = new AvengerCache({});
+
+    if (input) {
+      const avInput = new QuerySet(this.queries, input, this.cache).getAvengerInput();
+      internalSetCache(avInput, data, this.cache);
+    }
   }
 
   querySet(input) {
@@ -135,6 +141,11 @@ export default class Avenger {
       queries, state
     });
     return new QuerySet(this.queries, input, null, { fetchParams, queriesToSkip });
+  }
+
+  patchCache(input, data) {
+    const avInput = new QuerySet(this.queries, input, this.cache).getAvengerInput();
+    internalSetCache(avInput, data, this.cache);
   }
 
 }

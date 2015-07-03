@@ -203,7 +203,6 @@ export function schedule(avengerInput, fetchers, minimizedCache, queriesToSkip =
             return allValues(c.fetcher(...fetcherParams));
           } else {
             log(`minimizedCache %o`, minimizedCache);
-            // TODO(gio): null? why?
             return Promise.resolve(null);
           }
         });
