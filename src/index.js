@@ -9,6 +9,7 @@ import { run, fromCache, runCached,
   getQueriesToSkip as internalGetQueriesToSkip,
   upset as internalUpset,
   setCache as internalSetCache } from './internals';
+import assign from 'lodash/object/assign';
 
 const log = debug('Avenger');
 
@@ -81,8 +82,18 @@ export class QuerySet {
 
   cached() {
     const cached = fromCache(this.getAvengerInput(), this.cache);
-    this.emitter.emit('change', cached);
-    log('from cache', cached);
+    const cachedWithMeta = assign({}, cached, {
+      _meta: Object.keys(this.input.queries).reduce((ac, qId) => assign(ac, {
+        [qId]: {
+          // DUMB
+          cached: !!cached[qId],
+          loading: !cached[qId] || this.allQueries[qId].cache === 'optimistic'
+        }
+      }), {})
+    });
+    this.emitter.emit('change', cachedWithMeta);
+    log('from cache', cachedWithMeta);
+    return cachedWithMeta;
   }
 
   run() {
@@ -97,11 +108,20 @@ export class QuerySet {
       log('running local', this);
       log('cache state', this.cache.state);
 
-      this.cached();
+      const { _meta: prevMeta } = this.cached();
 
       return run(this.getAvengerInput(), this.cache).then(result => {
-        this.emitter.emit('change', result);
-        log('final result', result);
+        const resultWithMeta = assign({}, result, {
+          _meta: Object.keys(this.input.queries).reduce((ac, qId) => assign(ac, {
+            [qId]: {
+              // DUMB
+              cached: prevMeta[qId].cached && [null, undefined, 'no', 'manual', 'immutable'].indexOf(this.allQueries[qId].cache) !== -1,
+              loading: false
+            }
+          }), {})
+        });
+        this.emitter.emit('change', resultWithMeta);
+        log('final result', resultWithMeta);
         log('final cache', this.cache.state);
         return result;
       });
