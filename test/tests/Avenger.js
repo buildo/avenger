@@ -39,7 +39,15 @@ describe('Avenger', () => {
       const qs = av.querySet(qsInput);
 
       return qs.run().then(data => {
-        expect(data).toEqual({ worklistSamples: { samples: { samples: [] } } });
+        expect(data).toEqual({
+          _meta: {
+            worklistSamples: {
+              cached: false,
+              loading: false
+            }
+          },
+          worklistSamples: { samples: { samples: [] } }
+        });
       });
     });
 
@@ -118,7 +126,14 @@ describe('Avenger', () => {
         qs.run(),
         av.querySetFromRecipe(qs.toRecipe()).run()
       ]).then(([a, b]) => {
-        expect(a).toEqual(b);
+        expect(a).toEqual(_.assign({}, b, {
+          _meta: {
+            worklistSamples: {
+              cached: false,
+              loading: false
+            }
+          }
+        }));
       });
     });
 

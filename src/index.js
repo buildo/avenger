@@ -123,7 +123,7 @@ export class QuerySet {
         this.emitter.emit('change', resultWithMeta);
         log('final result', resultWithMeta);
         log('final cache', this.cache.state);
-        return result;
+        return resultWithMeta;
       });
     }
   }
