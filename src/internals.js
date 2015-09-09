@@ -32,6 +32,26 @@ export function run(avengerInput, cache) {
   });
 }
 
+// run() a command
+export function runCommand(avengerInput, cache, cmd) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+    t.assert(Command.is(cmd));
+  }
+
+  return 
+}
+
+// invalidate for given command
+export function invalidate(avengerInput, cache, cmd) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+    t.assert(Command.is(cmd));
+  }
+
+  return 
+}
+
 // run from recipe
 export function runCached(avengerInput, minimizedCache, queriesToSkip) {
   if (process.env.NODE_ENV !== 'production') {

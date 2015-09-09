@@ -66,4 +66,6 @@ export default class AvengerCache {
 
     this.state[id][hp] = value;
   };
+
+  invalidate = (id, params) => this.set(id, params)(null);
 }

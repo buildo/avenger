@@ -4,7 +4,7 @@ import EventEmitter3 from 'eventemitter3';
 import Query from './Query';
 import AvengerCache from './AvengerCache';
 import AvengerInput from './AvengerInput';
-import { run, fromCache, runCached,
+import { run, fromCache, runCached, runCommand, invalidate,
   minimizeCache as internalMinimizeCache,
   getQueriesToSkip as internalGetQueriesToSkip,
   upset as internalUpset,
@@ -126,6 +126,27 @@ export class QuerySet {
         return resultWithMeta;
       });
     }
+  }
+
+  runCommand(cmd) {
+    // TODO(gio): not supporting `remote` yet
+    if (this.fromRecipe) {
+      throw new Error('not supporting `remote` yet');
+    }
+
+    // entire run is local
+    log('running cmd local', this, cmd);
+
+    return new Promise((resolve, reject) => {
+      runCommand(this.getAvengerInput(), this.cache, cmd).then(
+        () => {
+        // executed successfully command here, invalidate...
+        this.cache = invalidate(this.getAvengerInput(), this.cache, cmd);
+        log('cache state after command invalidation', this.cache.state);
+        // ... and re-fetch
+        this.run().then(resolve, reject);
+      });
+    });
   }
 
   toRecipe() {
