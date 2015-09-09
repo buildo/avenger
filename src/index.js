@@ -129,6 +129,10 @@ export class QuerySet {
   }
 
   runCommand(cmd) {
+    if (process.env.NODE_ENV !== 'production') {
+      t.assert(Command.is(cmd));
+    }
+
     // TODO(gio): not supporting `remote` yet
     if (this.fromRecipe) {
       throw new Error('not supporting `remote` yet');
@@ -137,15 +141,12 @@ export class QuerySet {
     // entire run is local
     log('running cmd local', this, cmd);
 
-    return new Promise((resolve, reject) => {
-      runCommand(this.getAvengerInput(), this.cache, cmd).then(
-        () => {
-        // executed successfully command here, invalidate...
-        this.cache = invalidate(this.getAvengerInput(), this.cache, cmd);
-        log('cache state after command invalidation', this.cache.state);
-        // ... and re-fetch
-        this.run().then(resolve, reject);
-      });
+    return cmd.run(state).then(() => {
+      // command executed successfully here, invalidate cache
+      invalidate(this.getAvengerInput(), this.cache, cmd);
+      log('cache state after command invalidation', this.cache.state);
+      // and re-fetch
+      return this.run();
     });
   }
 

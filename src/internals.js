@@ -2,6 +2,7 @@ import debug from 'debug';
 import t from 'tcomb';
 import assign from 'lodash/object/assign';
 import values from 'lodash/object/values';
+import mapValues from 'lodash/object/mapValues';
 import pick from 'lodash/object/pick';
 import zip from 'lodash/array/zip';
 import { allValues } from './util';
@@ -32,16 +33,6 @@ export function run(avengerInput, cache) {
   });
 }
 
-// run() a command
-export function runCommand(avengerInput, cache, cmd) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(avengerInput));
-    t.assert(Command.is(cmd));
-  }
-
-  return 
-}
-
 // invalidate for given command
 export function invalidate(avengerInput, cache, cmd) {
   if (process.env.NODE_ENV !== 'production') {
@@ -49,7 +40,10 @@ export function invalidate(avengerInput, cache, cmd) {
     t.assert(Command.is(cmd));
   }
 
-  return 
+  cmd.invalidates.map((query) => {
+    const upp = upsetParams(avengerInput, query);
+    cache.invalidate(query.id, upp);
+  });
 }
 
 // run from recipe
