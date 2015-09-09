@@ -4,7 +4,8 @@ import EventEmitter3 from 'eventemitter3';
 import Query from './Query';
 import AvengerCache from './AvengerCache';
 import AvengerInput from './AvengerInput';
-import { run, fromCache, runCached, runCommand, invalidate,
+import Command from './Command';
+import { run, fromCache, runCached, invalidate,
   minimizeCache as internalMinimizeCache,
   getQueriesToSkip as internalGetQueriesToSkip,
   upset as internalUpset,
@@ -141,12 +142,12 @@ export class QuerySet {
     // entire run is local
     log('running cmd local', this, cmd);
 
-    return cmd.run(state).then(() => {
+    return cmd.run(this.input.state).then((commandResult) => {
       // command executed successfully here, invalidate cache
       invalidate(this.getAvengerInput(), this.cache, cmd);
       log('cache state after command invalidation', this.cache.state);
       // and re-fetch
-      return this.run();
+      return this.run().then(() => commandResult);
     });
   }
 

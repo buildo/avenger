@@ -1,6 +1,7 @@
 import expect from 'expect';
 import sinon from 'sinon';
 import Avenger, { QuerySet } from '../../src';
+import Command from '../../src/Command';
 import queries from '../../fixtures/queries';
 import _ from 'lodash';
 
@@ -169,6 +170,52 @@ describe('Avenger', () => {
           immutableQ: { immutable: 'immutableFoo' },
           manualQ: { manual: 'manualFoo' },
           optimisticQ: { optimistic: 'optimisticFoo' }
+        });
+      });
+    });
+  });
+
+  describe('runCommand', () => {
+    it('should correctly run command and invalidate cache', () => {
+      const serverState = {
+        optimistic: 'optimisticFoo'
+      };
+      const { optimisticQ } = queries({
+        fetchOptimisticFoo: () => Promise.resolve({ optimistic: serverState.optimistic })
+      });
+      const data = {
+        optimisticQ: { optimistic: 'optimisticFoo' }
+      };
+      const av = new Avenger({ optimisticQ }, data, {
+        queries: { optimisticQ },
+        state: {}
+      });
+      const qsInput = { queries: { optimisticQ }, state: { state1: 'a' } };
+      const qs = av.querySet(qsInput);
+
+      const commandRun = sinon.spy(() => new Promise((resolve) => {
+        serverState.optimistic = 'optimisticBar';
+        resolve({result: 'success'});
+      }));
+      av.cache.invalidate = sinon.spy(av.cache.invalidate);
+
+      const onChange = sinon.stub();
+      qs.on('change', onChange);
+
+      return qs.run().then(() => {
+        const command = Command({
+          invalidates: [optimisticQ],
+          run: commandRun
+        });
+        return qs.runCommand(command);
+      }).then((commandResult) => {
+        expect(commandRun.calledOnce).toBe(true);
+        expect(av.cache.invalidate.calledOnce).toBe(true);
+        expect(av.cache.invalidate.calledWith(
+              optimisticQ.id, { optimisticQ: {} })).toBe(true);
+        expect(commandResult).toEqual({result: 'success'});
+        expect(onChange.lastCall.args[0].optimisticQ).toEqual({
+          optimistic: { optimistic: 'optimisticBar' }
         });
       });
     });

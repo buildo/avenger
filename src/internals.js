@@ -2,11 +2,11 @@ import debug from 'debug';
 import t from 'tcomb';
 import assign from 'lodash/object/assign';
 import values from 'lodash/object/values';
-import mapValues from 'lodash/object/mapValues';
 import pick from 'lodash/object/pick';
 import zip from 'lodash/array/zip';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
+import Command from './Command';
 
 const log = debug('Avenger:internals');
 
