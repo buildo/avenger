@@ -35,6 +35,7 @@ const FetchParams = t.dict(
 );
 
 export Query from './Query';
+export Command from './Command';
 
 export const QuerySetInput = t.struct({
   queries: Queries,
