@@ -18,7 +18,7 @@ const Query = t.struct({
   paramsType: Type,
   fetchResultType: Type,
   dependencies: t.maybe(t.list(Dependency)),
-  fetch: t.Func // paramsType -> Any -> fetchResultType
+  fetch: t.Func // state: t.Obj -> depFetchParams: t.Obj -> Promise[t.Obj]
 }, 'Query');
 
 Dependency.meta.props.query = Query;

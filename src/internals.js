@@ -6,6 +6,7 @@ import pick from 'lodash/object/pick';
 import zip from 'lodash/array/zip';
 import { allValues } from './util';
 import AvengerInput from './AvengerInput';
+import Command from './Command';
 
 const log = debug('Avenger:internals');
 
@@ -29,6 +30,19 @@ export function run(avengerInput, cache) {
   return schedule(inputUpset, fetchers, minimizedCache, queriesToSkip).then(output => {
     setCache(inputUpset, output, cache);
     return smoosh(avengerInput, output, cache);
+  });
+}
+
+// invalidate for given command
+export function invalidate(avengerInput, cache, cmd) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(AvengerInput.is(avengerInput));
+    t.assert(Command.is(cmd));
+  }
+
+  cmd.invalidates.map((query) => {
+    const upp = upsetParams(avengerInput, query);
+    cache.invalidate(query.id, upp);
   });
 }
 
