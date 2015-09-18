@@ -42,10 +42,20 @@ describe('invalidateLocal', () => {
     }
   };
 
-  it('should work with empty cache', () => {
+  it('should work 1', () => {
+    // should invalidate (wrt input)
+    // the following UPPERCASE queries:
+    //
+    //     A   f
+    //    /|\ /
+    //   C | B
+    //   | | |
+    //
     const cache = new AvengerCache({});
+    cache.set('A', state)(results1.A);
+    cache.set('F', state)(results1.F);
     const emit = sinon.spy();
-    const invalidate = build({ A }, all);
+    const invalidate = { A };
 
     return invalidateLocal({
       result: results1,
@@ -54,20 +64,32 @@ describe('invalidateLocal', () => {
       state, emit, cache
     }).then(r => {
       expect(r).toEqual(results1);
-      expect(emit.callCount).toBe(1);
-      expect(emit.getCall(0).args[0]).toEqual({ id: 'A' });
-      expect(emit.getCall(0).args[1]).toEqual(results1.A);
+      expect(emit.callCount).toBe(4);
+      ['A', 'F', 'C', 'B'].forEach(k => {
+        expect(emit.getCalls().map(c => c.args).filter(([{ id }, val]) => id === k && val.self === results1[k].self).length).toBe(1);
+      });
+      expect(emit.getCall(0).args).toEqual([{
+        cache: true, id: 'F'
+      }, results1.F]);
     }, err => {
       throw err;
     });
   });
 
-  it('should work invalidating cache', () => {
+  it('should work 2', () => {
+    // should invalidate (wrt input)
+    // the following UPPERCASE queries:
+    //
+    //     A   F
+    //    /|\ /
+    //   C | B
+    //   | | |
+    //
     const cache = new AvengerCache({});
     cache.set('A', state)(results1.A);
     cache.set('F', state)(results1.F);
     const emit = sinon.spy();
-    const invalidate = build({ A, F }, all);
+    const invalidate = { A, F };
 
     return invalidateLocal({
       result: results1,
@@ -76,8 +98,8 @@ describe('invalidateLocal', () => {
       state, emit, cache
     }).then(r => {
       expect(r).toEqual(results1);
-      expect(emit.callCount).toBe(2);
-      ['A', 'F'].forEach(k => {
+      expect(emit.callCount).toBe(4);
+      ['A', 'F', 'C', 'B'].forEach(k => {
         expect(emit.getCalls().map(c => c.args).filter(([{ id }, val]) => id === k && val.self === results1[k].self).length).toBe(1);
       });
     }, err => {

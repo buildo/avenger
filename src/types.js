@@ -8,6 +8,7 @@ const Dependency = t.struct({
   // (this should minimize size of dep. results):
   map: t.Func,
 
+  // TODO(gio): unused. use Query.cacheParams instead
   // override cache params from this dep
   cacheParams: t.maybe(t.list(t.Str))
 }, 'Dependency');
