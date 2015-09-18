@@ -8,11 +8,11 @@ export default function(
 
   // queries layout, for reference:
   //
-  //        A    F   H
-  //      / | \ /
-  //     C  |  B
-  //     |  | /
-  //     |  D
+  //        A    F   H   I   J
+  //      / | \ /         \ /
+  //     C  |  B           K
+  //     |  | /            |
+  //     |  D              L
   //     | / \
   //     E    G
 
@@ -119,5 +119,46 @@ export default function(
     fetch: resolve('H')
   });
 
-  return { A, B, C, D, E, F, G, H };
+  const I = Query({
+    id: 'I',
+    fetch: () => () => Promise.resolve(['I1', 'I2', 'I3'])
+  });
+
+  const J = Query({
+    id: 'J',
+    fetch: resolve('J')
+  });
+
+  const K = Query({
+    id: 'K',
+    dependencies: {
+      i: {
+        query: I,
+        map,
+        multi: map
+      },
+      j: {
+        query: J,
+        map
+      }
+    },
+    fetch: () => ({ i, j }) => Promise.resolve(`K ${i} ${JSON.stringify(j)}`)
+  });
+
+  const L = Query({
+    id: 'L',
+    dependencies: {
+      k: {
+        query: K,
+        map
+      }
+    },
+    fetch: () => ({ k }) => Promise.resolve(`L ${JSON.stringify(k)}`)
+  });
+
+  return {
+    A, B, C, D, E, F, G,
+    H,
+    I, J, K, L
+  };
 }

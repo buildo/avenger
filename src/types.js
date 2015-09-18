@@ -1,5 +1,8 @@
 import t from 'tcomb';
 
+// unique string id for the query
+const QueryId = t.Str;
+
 const Dependency = t.struct({
   // dep on this query
   query: t.Any, // circular, fixed below
@@ -11,7 +14,21 @@ const Dependency = t.struct({
   // TODO(gio): unused. use Query.cacheParams instead
   // override cache params from this dep
   // cacheParams: t.maybe(t.list(t.Str)),
+
+  // run dependent query (this query) once for
+  // each value returned by dependency query.
+  // make sure the query (or this dep. `map` fn) returns an array.
+  // optionally provide a function here to map multi-results.
+  // defaults to an array, same size as input array
+  multi: t.maybe(t.union([t.Bool, t.Func]))
 }, 'Dependency');
+
+const Dependencies = t.maybe(t.subtype(
+  t.dict(QueryId, Dependency),
+  // only a single `multi` dependency is allowed
+  deps => Object.keys(deps).map(k => deps[k]).filter(({ multi }) => !!multi).length <= 1,
+  'Dependencies'
+));
 
 const CacheMode = t.enums.of([
   // (default): results for this q. are never stored in cache
@@ -23,9 +40,6 @@ const CacheMode = t.enums.of([
   // (without manual intervention, never re-fetched)
   'manual'
 ], 'CacheMode');
-
-// unique string id for the query
-const QueryId = t.Str;
 
 export const Query = t.struct({
   // here for simplicity for now
@@ -41,7 +55,7 @@ export const Query = t.struct({
   cacheParams: t.maybe(t.dict(t.Str, t.union([t.Bool, t.Func]))),
 
   // dictionary of deps. { [queryId]: dep.map(queryRes), ... }
-  dependencies: t.maybe(t.dict(QueryId, Dependency)),
+  dependencies: Dependencies,
 
   // state: t.Obj -> depFetchParams: t.Obj -> Promise[t.Obj]
   fetch: t.Func

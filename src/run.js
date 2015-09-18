@@ -36,7 +36,14 @@ export function runLocal({
         depsResults => {
           return createFetcher({
             id, fetch, state, cache, cacheMode, cacheParams, emit,
-            depsParams: minDepsParams(dependencies || {}, depsResults)
+            depsParams: minDepsParams(dependencies || {}, depsResults),
+            multiDep: (() => {
+              const multiKey = Object.keys(dependencies || {}).filter(k => !!dependencies[k].multi)[0];
+              return multiKey && {
+                key: multiKey,
+                map: t.Func.is(dependencies[multiKey]) ? dependencies[multiKey] : v => v
+              };
+            }())
           }).then(res => {
             resolve(res);
             return res;

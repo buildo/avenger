@@ -6,7 +6,7 @@ import { runLocal } from '../../src/run';
 import AvengerCache from '../../src/AvengerCache';
 
 describe('runLocal', () => {
-  const { A, B, C, D, E, F, G, H } = queries(
+  const { A, B, C, D, E, F, G, H, I, J, K, L } = queries(
     k => state => deps => Promise.resolve({
       self: k, state, deps
     })
@@ -95,6 +95,45 @@ describe('runLocal', () => {
         { id: 'F', cache: true },
         results1.F
       ]);
+    }, err => {
+      throw err;
+    });
+  });
+
+
+  const inputMulti = build({ L }, { I, J, K, L });
+  const Jres = {
+    self: 'J', state, deps: {}
+  };
+  const StringJres = JSON.stringify(Jres);
+  const Kres = [
+    'K I1 ' + StringJres,
+    'K I2 ' + StringJres,
+    'K I3 ' + StringJres
+  ];
+  const resultsMulti = {
+    I: ['I1', 'I2', 'I3'],
+    J: Jres,
+    K: Kres,
+    L: 'L ' + JSON.stringify(Kres)
+  };
+
+  it('should support multi', () => {
+    const cache = new AvengerCache({});
+    const emit = sinon.spy();
+
+    return runLocal({
+      input: inputMulti,
+      oldInput, state, emit, cache }).then(r => {
+      expect(r).toEqual(resultsMulti);
+      // expect(emit.callCount).toBe(4);
+      // const callArgs = emit.getCalls().map(c => c.args);
+      // const cachedCallArgs = callArgs.filter(([{ cache }]) => cache);
+      // expect(cachedCallArgs.length).toBe(1);
+      // expect(cachedCallArgs[0]).toEqual([
+      //   { id: 'F', cache: true },
+      //   results1.F
+      // ]);
     }, err => {
       throw err;
     });
