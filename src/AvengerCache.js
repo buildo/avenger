@@ -4,13 +4,13 @@
 
 import debug from 'debug';
 import t from 'tcomb';
-import { CacheParams } from './types';
+import { State } from './types';
 
 const log = debug('AvengerCache');
 
 export function hashedParams(params) {
   if (process.env.NODE_ENV !== 'production') {
-    CacheParams(params);
+    State(params);
   }
   const keys = Object.keys(params);
   keys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
@@ -34,7 +34,7 @@ export default class AvengerCache {
 
   checkParams(params) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheParams.is(params));
+      t.assert(State.is(params));
     }
   }
 

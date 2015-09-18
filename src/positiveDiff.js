@@ -14,6 +14,6 @@ export default function positiveDiff(a, b) {
 
   return Object.keys(a).reduce((ac, nk) => ({
     ...ac,
-    [nk]: !b[nk] ? '+' : '='
+    [nk]: !b[nk]
   }), {});
 }

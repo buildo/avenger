@@ -94,6 +94,18 @@ const StateKey = t.subtype(
 );
 export const State = t.dict(t.Str, StateKey, 'State');
 
+export const MinimizedCache = t.dict(
+  // dependant qId
+  t.Str,
+  t.dict(
+      // dependency qId
+      t.Str,
+      // mapped (minimized) value
+      t.Any
+  ),
+  'MinimizedCache'
+);
+
 // export const Value = t.struct({
 //   val: t.Any,
 //   meta: t.struct({

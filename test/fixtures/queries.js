@@ -15,16 +15,20 @@ export default function(resolve = k => () => () => Promise.resolve(k)) {
 
   const A = Query({
     id: 'A',
+    cache: 'optimistic',
     fetch: resolve('A')
   });
 
   const F = Query({
     id: 'F',
+    cache: 'manual',
     fetch: resolve('F')
   });
 
   const B = Query({
     id: 'B',
+    cache: 'optimistic',
+    cacheParams: ['one'],
     dependencies: {
       foo: {
         query: A,

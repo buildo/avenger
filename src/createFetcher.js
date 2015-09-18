@@ -1,0 +1,42 @@
+import union from 'lodash/array/union';
+import t from 'tcomb';
+import { collect, error } from './util';
+
+export default function createFetcher({ id, fetch, cacheMode, cacheParams, depsParams, state, cache, emit, reject }) {
+  if (process.env.NODE_ENV !== 'production') {
+    // check for duplicate keys in state and depsParams
+    const stateKeys = Object.keys(state);
+    const depsKeys = Object.keys(depsParams);
+    t.assert(union(stateKeys, depsKeys).length === stateKeys.length + depsKeys.length, `duplicate keys between state params and dependencies params for query ${id}. state:`, state, 'deps:', depsParams);
+  }
+
+  const cacheable = cacheMode && cacheMode !== 'no';
+  const allParams = { ...state, ...depsParams };
+  const allKeys = Object.keys(allParams);
+  const filteredKeys = allKeys.filter(k => (cacheParams || allKeys).indexOf(k) !== -1);
+
+  // TODO(gio): should check params are actually there and typecheck
+  const filteredCacheParams = filteredKeys.reduce(...collect(allParams));
+  const fromCache = cacheable && cache.get(id, filteredCacheParams);
+  // console.log('fromCache:', fromCache);
+
+  if (fromCache) {
+    emit({ id, cache: true }, fromCache);
+  }
+
+  const needsFetch = cacheMode === 'optimistic' || !fromCache;
+  // console.log('needsFetch:', needsFetch);
+  // console.log('cacheable:', cacheable);
+  // console.log('fromCache:', !!fromCache);
+  if (needsFetch) {
+    return fetch(state)(depsParams).then(res => {
+      emit({ id }, res);
+      if (cacheable) {
+        cache.set(id, filteredCacheParams)(res);
+      }
+      return res;
+    }, error(emit, id, reject)).catch(error(emit, id, reject));
+  } else {
+    return Promise.resolve(fromCache);
+  }
+}

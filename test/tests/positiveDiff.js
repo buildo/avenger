@@ -12,13 +12,9 @@ describe('positiveDiff', () => {
     const second = build({ E, H }, all);
     const diff = positiveDiff(second, first);
 
-    expect(diff.A).toBe('=');
-    expect(diff.B).toBe('=');
-    expect(diff.C).toBe('+');
-    expect(diff.D).toBe('=');
-    expect(diff.E).toBe('+');
-    expect(diff.F).toBe('=');
-    expect(diff.H).toBe('+');
+    expect(diff).toEqual({
+      A: false, B: false, C: true, D: false, E: true, F: false, H: true
+    });
   });
 
 });
