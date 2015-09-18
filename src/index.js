@@ -11,17 +11,12 @@ import { run, fromCache, runCached, invalidate,
   upset as internalUpset,
   setCache as internalSetCache } from './internals';
 import assign from 'lodash/object/assign';
+import { State } from './types';
 
 const log = debug('Avenger');
 
 const AllQueries = t.dict(t.Str, Query, 'AllQueries');
 const Queries = t.dict(t.Str, t.Any, 'Queries');
-const StateKey = t.subtype(
-  t.Any,
-  v => t.Str.is(v) || t.Num.is(v) || t.Bool.is(v),
-  'StateKey'
-);
-const State = t.dict(t.Str, StateKey, 'State');
 
 // pre computed fetch params. Used for serialization
 // output of internals/minimizeCache
