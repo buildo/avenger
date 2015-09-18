@@ -1,7 +1,10 @@
-import { Query } from '../../src/types';
+import { Query, StateKey } from '../../src/types';
 
-export default function(resolve = k => () => () => Promise.resolve(k)) {
+export default function(
+  resolve = k => () => () => Promise.resolve(k)
+) {
   const map = v => v;
+  const safeCacheParamMap = v => StateKey.is(v) ? v : JSON.stringify(v);
 
   // queries layout, for reference:
   //
@@ -28,7 +31,10 @@ export default function(resolve = k => () => () => Promise.resolve(k)) {
   const B = Query({
     id: 'B',
     cache: 'optimistic',
-    cacheParams: ['one'],
+    cacheParams: {
+      foo: safeCacheParamMap,
+      bar: safeCacheParamMap
+    },
     dependencies: {
       foo: {
         query: A,
@@ -44,6 +50,9 @@ export default function(resolve = k => () => () => Promise.resolve(k)) {
 
   const C = Query({
     id: 'C',
+    cacheParams: {
+      foo: safeCacheParamMap
+    },
     dependencies: {
       foo: {
         query: A,
@@ -55,6 +64,10 @@ export default function(resolve = k => () => () => Promise.resolve(k)) {
 
   const D = Query({
     id: 'D',
+    cacheParams: {
+      foo: safeCacheParamMap,
+      bar: safeCacheParamMap
+    },
     dependencies: {
       foo: {
         query: A,
@@ -70,6 +83,10 @@ export default function(resolve = k => () => () => Promise.resolve(k)) {
 
   const E = Query({
     id: 'E',
+    cacheParams: {
+      foo: safeCacheParamMap,
+      bar: safeCacheParamMap
+    },
     dependencies: {
       foo: {
         query: C,
@@ -85,6 +102,9 @@ export default function(resolve = k => () => () => Promise.resolve(k)) {
 
   const G = Query({
     id: 'G',
+    cacheParams: {
+      foo: safeCacheParamMap
+    },
     dependencies: {
       foo: {
         query: D,

@@ -13,10 +13,15 @@ export default function createFetcher({ id, fetch, cacheMode, cacheParams, depsP
   const cacheable = cacheMode && cacheMode !== 'no';
   const allParams = { ...state, ...depsParams };
   const allKeys = Object.keys(allParams);
-  const filteredKeys = allKeys.filter(k => (cacheParams || allKeys).indexOf(k) !== -1);
+  const filteredKeys = allKeys.filter(k => (cacheParams ? Object.keys(cacheParams) : allKeys).indexOf(k) !== -1);
 
   // TODO(gio): should check params are actually there and typecheck
-  const filteredCacheParams = filteredKeys.reduce(...collect(allParams));
+  const filteredCacheParams = filteredKeys.reduce(
+    ...collect(
+      allParams,
+      (v, k) => cacheParams && t.Func.is(cacheParams[k]) ? cacheParams[k](v) : v
+    )
+  );
   const fromCache = cacheable && cache.get(id, filteredCacheParams);
   // console.log('fromCache:', fromCache);
 

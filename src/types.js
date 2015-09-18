@@ -10,7 +10,7 @@ const Dependency = t.struct({
 
   // TODO(gio): unused. use Query.cacheParams instead
   // override cache params from this dep
-  cacheParams: t.maybe(t.list(t.Str))
+  // cacheParams: t.maybe(t.list(t.Str)),
 }, 'Dependency');
 
 const CacheMode = t.enums.of([
@@ -35,9 +35,10 @@ export const Query = t.struct({
   cache: t.maybe(CacheMode),
 
   // cache params should default to all params + all deps params
-  // this overrides caching of state params
-  // deps cache params can be overridden in dep definition
-  cacheParams: t.maybe(t.list(t.Str)),
+  // this overrides caching of state params.
+  // optionally pass a function to map the cache param value
+  // remember that cache params should be primitive
+  cacheParams: t.maybe(t.dict(t.Str, t.union([t.Bool, t.Func]))),
 
   // dictionary of deps. { [queryId]: dep.map(queryRes), ... }
   dependencies: t.maybe(t.dict(QueryId, Dependency)),
@@ -88,7 +89,7 @@ QueryNodeEdges.meta.codomain = QueryNode;
 
 export const QueryNodes = QueryNodeEdges;
 
-const StateKey = t.subtype(
+export const StateKey = t.subtype(
   t.Any,
   v => t.Str.is(v) || t.Num.is(v) || t.Bool.is(v),
   'StateKey'

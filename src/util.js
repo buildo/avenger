@@ -14,7 +14,7 @@ export const allValues = prs => {
 export const collect = (o, map = v => v) => [
   (ac, k) => ({
     ...(ac || {}),
-    [k]: map(o[k])
+    [k]: map(o[k], k)
   }),
   {}
 ];

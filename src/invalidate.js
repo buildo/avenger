@@ -33,8 +33,13 @@ export function invalidateLocal({
       }), {});
     const allParams = { ...state, ...depsParams };
     const allKeys = Object.keys(allParams);
-    const filteredKeys = allKeys.filter(k => (cacheParams || allKeys).indexOf(k) !== -1);
-    const filteredCacheParams = filteredKeys.reduce(...collect(allParams));
+    const filteredKeys = allKeys.filter(k => (cacheParams ? Object.keys(cacheParams) : allKeys).indexOf(k) !== -1);
+    const filteredCacheParams = filteredKeys.reduce(
+      ...collect(
+        allParams,
+        (v, k) => cacheParams && t.Func.is(cacheParams[k]) ? cacheParams[k](v) : v
+      )
+    );
 
     // invalidate cache for this query
     cache.invalidate(id, filteredCacheParams);

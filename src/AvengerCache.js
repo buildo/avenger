@@ -34,7 +34,7 @@ export default class AvengerCache {
 
   checkParams(params) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(State.is(params));
+      t.assert(State.is(params), `Invalid params provided to cache: ${JSON.stringify(params)}`);
     }
   }
 
