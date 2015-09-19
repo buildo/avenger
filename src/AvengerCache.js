@@ -14,11 +14,7 @@ export function hashedParams(params) {
   }
   const keys = Object.keys(params);
   keys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-  const hashed = keys.map((k1) => {
-    const childkeys = Object.keys(params[k1]);
-    childkeys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-    return childkeys.map(k2 => `${k1}.${k2}:${params[k1][k2]}`).join('-');
-  }).join('-');
+  const hashed = keys.map(k1 => `${k1}:${params[k1]}`).join('-');
   return hashed ? hashed : '∅';
 }
 
@@ -62,5 +58,12 @@ export default class AvengerCache {
     this.state[id][hp] = value;
   };
 
-  invalidate = (id, params) => this.set(id, params)(null);
+  invalidate = (id, params) => {
+    this.checkParams(params);
+
+    if (this.state[id]) {
+      const hp = hashedParams(params);
+      delete this.state[id][hp];
+    }
+  };
 }

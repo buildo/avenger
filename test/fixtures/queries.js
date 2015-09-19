@@ -64,6 +64,7 @@ export default function(
 
   const D = Query({
     id: 'D',
+    cache: 'manual',
     cacheParams: {
       foo: safeCacheParamMap,
       bar: safeCacheParamMap
@@ -83,6 +84,7 @@ export default function(
 
   const E = Query({
     id: 'E',
+    cache: 'optimistic',
     cacheParams: {
       foo: safeCacheParamMap,
       bar: safeCacheParamMap
@@ -102,9 +104,6 @@ export default function(
 
   const G = Query({
     id: 'G',
-    cacheParams: {
-      foo: safeCacheParamMap
-    },
     dependencies: {
       foo: {
         query: D,

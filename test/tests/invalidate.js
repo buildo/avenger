@@ -43,7 +43,7 @@ describe('invalidateLocal', () => {
   };
 
   it('should work 1', () => {
-    // should invalidate (wrt input)
+    // should re-fetch (wrt input)
     // the following UPPERCASE queries:
     //
     //     A   f
@@ -54,6 +54,32 @@ describe('invalidateLocal', () => {
     const cache = new AvengerCache({});
     cache.set('A', state)(results1.A);
     cache.set('F', state)(results1.F);
+
+    // these (not part of input but cacheable)
+    // should be invalidated anyway:
+    const DCacheParams =  {
+      ...state,
+      foo: JSON.stringify(results1.A),
+      bar: JSON.stringify(results1.B)
+    };
+    cache.set('D', DCacheParams)(results1.D);
+    const Dresults = {
+      self: 'B', state, deps: {
+        foo: {
+          self: 'A', state, deps: {}
+        },
+        bar: {
+          self: 'F', state, deps: {}
+        }
+      }
+    };
+    const ECacheParams = {
+      ...state,
+      foo: JSON.stringify(results1.C),
+      bar: JSON.stringify(Dresults)
+    };
+    cache.set('E', ECacheParams)(results1.E);
+
     const emit = sinon.spy();
     const invalidate = { A };
 
@@ -71,13 +97,15 @@ describe('invalidateLocal', () => {
       expect(emit.getCall(0).args).toEqual([{
         cache: true, id: 'F'
       }, results1.F]);
+      expect(cache.get('D', DCacheParams)).toBe(null);
+      expect(cache.get('E', ECacheParams)).toBe(null);
     }, err => {
       throw err;
     });
   });
 
   it('should work 2', () => {
-    // should invalidate (wrt input)
+    // should re-fetch (wrt input)
     // the following UPPERCASE queries:
     //
     //     A   F
