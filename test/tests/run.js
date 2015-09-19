@@ -124,16 +124,23 @@ describe('runLocal', () => {
 
     return runLocal({
       input: inputMulti,
-      oldInput, state, emit, cache }).then(r => {
+      oldInput, state, emit, cache
+    }).then(r => {
       expect(r).toEqual(resultsMulti);
-      // expect(emit.callCount).toBe(4);
-      // const callArgs = emit.getCalls().map(c => c.args);
-      // const cachedCallArgs = callArgs.filter(([{ cache }]) => cache);
-      // expect(cachedCallArgs.length).toBe(1);
-      // expect(cachedCallArgs[0]).toEqual([
-      //   { id: 'F', cache: true },
-      //   results1.F
-      // ]);
+      expect(emit.callCount).toBe(7);
+      const callsArgs = emit.getCalls().map(c => c.args);
+      const KcallsArgs = callsArgs.filter(([{ id }]) => id === 'K');
+      expect(KcallsArgs.length).toBe(4);
+      expect(KcallsArgs.filter(([{ multi }]) => multi).length).toBe(KcallsArgs.length);
+      expect(KcallsArgs.filter(([{ multiAll }]) => multiAll).length).toBe(1);
+      const KmultiIndexCallsArgs = KcallsArgs.filter(([{ multiIndex }]) => typeof multiIndex !== 'undefined');
+      expect(KmultiIndexCallsArgs.length).toBe(3);
+      const indexes = KmultiIndexCallsArgs.map(([{ multiIndex }]) => multiIndex);
+      expect(indexes).toContain(0);
+      expect(indexes).toContain(1);
+      expect(indexes).toContain(2);
+      const multiValue = KcallsArgs.filter(([{ multiAll }]) => multiAll)[0][1];
+      expect(multiValue).toEqual(Kres);
     }, err => {
       throw err;
     });

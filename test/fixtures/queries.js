@@ -119,6 +119,16 @@ export default function(
     fetch: resolve('H')
   });
 
+
+  // multi queries layout:
+  //
+  //    I   J
+  //     \ /
+  //      K
+  //      |
+  //      L
+  //
+
   const I = Query({
     id: 'I',
     fetch: () => () => Promise.resolve(['I1', 'I2', 'I3'])

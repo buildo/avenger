@@ -47,15 +47,33 @@ export default function createFetcher({ multiDep, ...args }) {
     const multiParams = args.depsParams[multiDep.key];
     t.assert(t.Arr.is(multiParams), `Invalid (non-Array) result for dependency param ${multiDep.key} (among ${args.id} params)`);
 
+    const emit = index => (meta, value) => {
+      args.emit({
+        ...meta,
+        multi: true,
+        multiIndex: index
+      }, value);
+    };
+
     return Promise.all(
-      multiParams.map(multiDep.map).map(v => createFetcherInner({
+      multiParams.map(multiDep.map).map((v, i) => createFetcherInner({
         ...args,
+        emit: emit(i),
         depsParams: {
           ...args.depsParams,
           [multiDep.key]: v
         }
       }))
-    );
+    ).then(res => {
+      args.emit({
+        id: args.id,
+        multi: true,
+        multiAll: true
+      }, res);
+      return res;
+    }, err => {
+      throw err;
+    });
   } else {
     return createFetcherInner(args);
   }
