@@ -66,6 +66,7 @@ Dependency.meta.props.query = Query;
 
 export const Command = t.struct({
   // an optional list of queries to invalidate
+  // entire downset for these will be invalidated as well
   invalidates: t.maybe(t.list(Query)),
 
   // actual command
@@ -86,17 +87,13 @@ export const CacheParams = t.dict(
 
 export const AvengerInput = t.dict(t.Any, Query, 'AvengerInput');
 
-// build here
-
 const QueryNodeEdges = t.dict(t.Str, t.Any, 'QueryNodeEdges'); // circular, fixed below
 
+// a single DAG node
 export const QueryNode = t.struct({
-  // the query
-  query: Query,
-  // dependencies
-  parents: QueryNodeEdges,
-  // dependants
-  children: QueryNodeEdges
+  query: Query, // the query
+  parents: QueryNodeEdges, // dependencies
+  children: QueryNodeEdges // dependants
 }, 'QueryNode');
 
 QueryNodeEdges.meta.codomain = QueryNode;
