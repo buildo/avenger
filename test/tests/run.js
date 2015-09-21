@@ -48,12 +48,23 @@ describe('runLocal', () => {
 
     return runLocal({ input, oldInput, state, emit, cache }).then(r => {
       expect(r).toEqual(results1);
-      expect(emit.callCount).toBe(4);
+      // cache is empty, every query should emit with
+      // loading=true first, and then with loading=false when done
+      expect(emit.callCount).toBe(8);
       const callArgs = emit.getCalls().map(c => c.args);
       ['A', 'B', 'C', 'F'].forEach(k => {
-        expect(callArgs.filter(([{ id, error }, val]) => {
-          return !error && id === k && val && expect(val).toEqual(results1[k]);
-        }).length === 1).toBe(true);
+        const thisQArgs = callArgs.filter(([{ id }]) => id === k);
+        const [{ error, cache, loading }, val] = thisQArgs[0];
+        expect(!!error).toBe(false);
+        expect(!!cache).toBe(false);
+        expect(loading).toBe(true);
+        expect(val).toBe(null);
+
+        const [{ error: e, cache: c, loading: l }, value] = thisQArgs[1];
+        expect(!!e).toBe(false);
+        expect(!!c).toBe(false);
+        expect(!!l).toBe(false);
+        expect(value).toEqual(results1[k]);
       });
     }, err => {
       throw err;
@@ -67,14 +78,41 @@ describe('runLocal', () => {
 
     return runLocal({ input, oldInput, state, emit, cache }).then(r => {
       expect(r).toEqual(results1);
-      expect(emit.callCount).toBe(5);
+
+      // cache is empty except for A (optimistic), which
+      // should emit twice with a value. Every other query
+      // should emit twice as well, with
+      // loading=true first, and then with loading=false when done
+
+      expect(emit.callCount).toBe(8);
       const callArgs = emit.getCalls().map(c => c.args);
-      const cachedCallArgs = callArgs.filter(([{ cache }]) => cache);
-      expect(cachedCallArgs.length).toBe(1);
-      expect(cachedCallArgs[0]).toEqual([
-        { id: 'A', cache: true },
-        results1.A
-      ]);
+
+      const ACallArgs = callArgs.filter(([{ id }]) => id === 'A');
+      const [{ error, cache, loading }, val] = ACallArgs[0];
+      expect(!!error).toBe(false);
+      expect(cache).toBe(true);
+      expect(loading).toBe(true);
+      expect(val).toEqual(results1.A);
+      const [{ error: e, cache: c, loading: l }, value] = ACallArgs[1];
+      expect(!!e).toBe(false);
+      expect(!!c).toBe(false);
+      expect(!!l).toBe(false);
+      expect(value).toEqual(results1.A);
+
+      ['B', 'C', 'F'].forEach(k => {
+        const thisQArgs = callArgs.filter(([{ id }]) => id === k);
+        const [{ error, cache, loading }, val] = thisQArgs[0];
+        expect(!!error).toBe(false);
+        expect(!!cache).toBe(false);
+        expect(loading).toBe(true);
+        expect(val).toBe(null);
+
+        const [{ error: e, cache: c, loading: l }, value] = thisQArgs[1];
+        expect(!!e).toBe(false);
+        expect(!!c).toBe(false);
+        expect(!!l).toBe(false);
+        expect(value).toEqual(results1[k]);
+      });
     }, err => {
       throw err;
     });
@@ -87,14 +125,36 @@ describe('runLocal', () => {
 
     return runLocal({ input, oldInput, state, emit, cache }).then(r => {
       expect(r).toEqual(results1);
-      expect(emit.callCount).toBe(4);
+
+      // cache is empty except for F (manual), which
+      // should emit once with the value. Every other query
+      // should emit twice as well, with
+      // loading=true first, and then with loading=false when done
+
+      expect(emit.callCount).toBe(7);
       const callArgs = emit.getCalls().map(c => c.args);
-      const cachedCallArgs = callArgs.filter(([{ cache }]) => cache);
-      expect(cachedCallArgs.length).toBe(1);
-      expect(cachedCallArgs[0]).toEqual([
-        { id: 'F', cache: true },
-        results1.F
-      ]);
+
+      const FCallArgs = callArgs.filter(([{ id }]) => id === 'F');
+      const [{ error, cache, loading }, val] = FCallArgs[0];
+      expect(!!error).toBe(false);
+      expect(cache).toBe(true);
+      expect(loading).toBe(false);
+      expect(val).toEqual(results1.F);
+
+      ['A', 'B', 'C'].forEach(k => {
+        const thisQArgs = callArgs.filter(([{ id }]) => id === k);
+        const [{ error, cache, loading }, val] = thisQArgs[0];
+        expect(!!error).toBe(false);
+        expect(!!cache).toBe(false);
+        expect(loading).toBe(true);
+        expect(val).toBe(null);
+
+        const [{ error: e, cache: c, loading: l }, value] = thisQArgs[1];
+        expect(!!e).toBe(false);
+        expect(!!c).toBe(false);
+        expect(!!l).toBe(false);
+        expect(value).toEqual(results1[k]);
+      });
     }, err => {
       throw err;
     });
@@ -127,15 +187,22 @@ describe('runLocal', () => {
       oldInput, state, emit, cache
     }).then(r => {
       expect(r).toEqual(resultsMulti);
-      expect(emit.callCount).toBe(7);
+      // I, J, L: no cache queries (each one should emit twice)
+      // K is multi on I (3 results) -> should emit 3 times for partial
+      // multi results + one for final aggregated res.
+      // TODO(gio): should also emit for the aggregated INITIAL value?
+      // 13 = 2 * (3 * 1 + 1 * 3) + 1 <-- aggregated multi emit
+      expect(emit.callCount).toBe(13);
+
       const callsArgs = emit.getCalls().map(c => c.args);
       const KcallsArgs = callsArgs.filter(([{ id }]) => id === 'K');
-      expect(KcallsArgs.length).toBe(4);
+      expect(KcallsArgs.length).toBe(7);
       expect(KcallsArgs.filter(([{ multi }]) => multi).length).toBe(KcallsArgs.length);
       expect(KcallsArgs.filter(([{ multiAll }]) => multiAll).length).toBe(1);
       const KmultiIndexCallsArgs = KcallsArgs.filter(([{ multiIndex }]) => typeof multiIndex !== 'undefined');
-      expect(KmultiIndexCallsArgs.length).toBe(3);
+      expect(KmultiIndexCallsArgs.length).toBe(6);
       const indexes = KmultiIndexCallsArgs.map(([{ multiIndex }]) => multiIndex);
+      expect(indexes.length).toBe(6);
       expect(indexes).toContain(0);
       expect(indexes).toContain(1);
       expect(indexes).toContain(2);

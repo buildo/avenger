@@ -22,4 +22,5 @@ export const collect = (o, map = v => v) => [
 export const error = (emit, id, reject) => err => {
   emit({ id, error: true }, err);
   reject(err);
+  throw err;
 };

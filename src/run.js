@@ -5,15 +5,24 @@ import positiveDiff from './positiveDiff';
 import createFetcher from './createFetcher';
 import minDepsParams from './minDepsParams';
 
-export function runLocal({
-  input, oldInput,
-  state, cache,
-  emit
-}) {
+const RunLocalParams = t.struct({
+  input: QueryNodes,
+  oldInput: t.maybe(QueryNodes),
+  state: State,
+  cache: t.Any,
+  emit: t.Func
+}, 'RunLocalParams');
+
+export function runLocal(params) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(QueryNodes.is(input), `Invalid input provided to runLocal`);
-    t.assert(State.is(state), `Invalid state provided to runLocal`);
+    RunLocalParams(params);
   }
+
+  const {
+    input, oldInput,
+    state, cache,
+    emit
+  } = params;
 
   const diff = positiveDiff(input, oldInput);
   const toRun = Object.keys(input)

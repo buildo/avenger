@@ -1,224 +1,106 @@
-// import expect from 'expect';
-// import sinon from 'sinon';
-// import Avenger, { QuerySet } from '../../src';
-// import Command from '../../src/Command';
-// import queries from '../../fixtures/queries';
-// import _ from 'lodash';
+import expect from 'expect';
+import sinon from 'sinon';
+import queries from '../fixtures/queries';
+import Avenger, { Command } from '../../src/';
 
-// describe('Avenger', () => {
+describe('Avenger', () => {
+  const { A, B, C, D, E, F, G, H, I, J, K, L } = queries();
+  const all = { A, B, C, D, E, F, G, H, I, J, K, L };
+  const state = { s1: 'foo' };
+  const results1 = {
+    A: 'A',
+    B: 'B',
+    C: 'C',
+    D: 'D',
+    E: 'E',
+    F: 'F',
+    G: 'G'
+  };
 
-//   const API = {
-//     fetchWorklist: (_id) => Promise.resolve({ worklist: { _id } }),
-//     fetchSamples: () => Promise.resolve({ samples: [] })
-//   };
+  it('should be instantiable and have Emitter interface', () => {
+    const av = new Avenger(all);
+    expect(av.on).toBeA(Function);
+    expect(av.off).toBeA(Function);
+  });
 
-//   it('should be instantiable and accept valid queries set', () => {
-//     const { worklist } = queries(API);
-//     const av = new Avenger({ worklist });
+  it('run() should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const start = new Date().getTime() - 1;
 
-//     expect(av).toBeAn(Avenger);
-//   });
+    return av.run({ E, G }, state).then(res => {
+      const end = new Date().getTime() + 1;
+      expect(res).toEqual(results1);
+      expect(changeSpy.callCount).toBe(14);
+      const [{ __meta, ...value }] = changeSpy.getCall(13).args;
+      expect(value).toEqual(results1);
+      Object.keys(__meta).forEach(k => {
+        expect(__meta[k].cache).toBe(false);
+        expect(__meta[k].error).toBe(false);
+        expect(__meta[k].loading).toBe(false);
+        expect(__meta[k].timestamp).toBeMoreThan(start).toBeLessThan(end);
+      });
+    }, err => {
+      throw err;
+    });
+  });
 
-//   describe('QuerySet', () => {
-//     const { worklist, worklistSamples } = queries(API);
-//     const av = new Avenger({ worklist, worklistSamples });
-//     const qsInput = { queries: { worklistSamples }, state: { worklistId: 'foo' } };
+  it('invalidate() should work', () => {
+    const av = new Avenger(all);
 
-//     it('should be created given a valid input', () => {
-//       const qs = av.querySet(qsInput);
+    return new Promise((resolve, reject) => {
+      av.run({ E, G }, state).then(() => {
+        setTimeout(() => {
+          const changeSpy = sinon.spy();
+          av.on('change', changeSpy);
+          const start = new Date().getTime() - 1;
 
-//       expect(qs).toBeAn(QuerySet);
-//     });
+          av.invalidate(state, { F }).then(res => {
+            const end = new Date().getTime() + 1;
+            expect(res).toEqual(results1);
+            expect(changeSpy.callCount).toBe(14);
+            const [{ __meta, ...value }] = changeSpy.getCall(13).args;
+            Object.keys(__meta).forEach(k => {
+              expect(__meta[k].cache).toBe(false);
+              expect(__meta[k].error).toBe(false);
+              expect(__meta[k].loading).toBe(false);
+              expect(__meta[k].timestamp).toBeMoreThan(start).toBeLessThan(end);
+            });
 
-//     it('should be run()able and return a Promise', () => {
-//       const qs = av.querySet(qsInput);
+            resolve(res);
+          }, reject).catch(reject);
+        }, 50);
+      }, reject).catch(reject);
+    });
+  });
 
-//       expect(qs.run()).toBeAn(Promise);
-//     });
+  it('runCommand() should work', () => {
+    const av = new Avenger(all);
 
-//     it('should resolve the run() promise with the entire data set', () => {
-//       const qs = av.querySet(qsInput);
+    return new Promise((resolve, reject) => {
+      av.run({ E, G }, state).then(() => {
+        setTimeout(() => {
+          const changeSpy = sinon.spy();
+          av.on('change', changeSpy);
+          const cmdRes = 'cmdRes';
+          const command = Command({
+            invalidates: { D },
+            run: () => Promise.resolve(cmdRes)
+          });
 
-//       return qs.run().then(data => {
-//         expect(data).toEqual({
-//           _meta: {
-//             worklistSamples: {
-//               cached: false,
-//               loading: false
-//             }
-//           },
-//           worklistSamples: { samples: { samples: [] } }
-//         });
-//       });
-//     });
-
-//     it('should emit change events, at least 2', () => {
-//       const qs = av.querySet(qsInput);
-//       const spy = sinon.spy();
-//       qs.on('change', spy);
-
-//       return qs.run().then(() => {
-//         expect(spy.callCount).toBeGreaterThan(1);
-//       });
-//     });
-
-//     it('should be run()able from a recipe, skipping minCached queries', () => {
-//       const api = _.assign({}, API, {
-//         fetchWorklist: sinon.spy()
-//       });
-//       const { worklist, worklistSamples } = queries(api);
-//       const av = new Avenger({ worklist, worklistSamples });
-//       const qs = av.querySetFromRecipe({
-//         queries: { worklistSamples },
-//         state: { worklistId: 'foo' },
-//         fetchParams: {
-//           worklistSamples: {
-//             worklist: 'foo'
-//           }
-//         },
-//         queriesToSkip: ['worklist']
-//       });
-
-//       return qs.run().then(data => {
-//         expect(data).toEqual({ worklistSamples: { samples: { samples: [] } } });
-//         expect(api.fetchWorklist.notCalled).toBe(true);
-//       });
-//     });
-
-//     it('should be serializable to a recipe', () => {
-//       const qs = av.querySet(qsInput);
-
-//       expect(qs.toRecipe()).toEqual({
-//         queries: qsInput.queries,
-//         state: qsInput.state,
-//         fetchParams: { worklistSamples: {} },
-//         queriesToSkip: []
-//       });
-//     });
-
-//     it('serialized recipe should include computed fetchParams and queriesToSkip', () => {
-//       const { cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ } = queries({
-
-//       });
-//       const av = new Avenger({ cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ }, {
-//         immutableQ: {
-//           immutable: 'immutableFoo'
-//         }
-//       }, {
-//         queries: { cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ },
-//         state: {}
-//       });
-//       const qs = av.querySet({ queries: { cacheDependentQ }, state: {} });
-
-//       expect(qs.toRecipe()).toEqual({
-//         queries: { cacheDependentQ },
-//         state: {},
-//         fetchParams: { cacheDependentQ: {
-//           immutableQ: { immutable: 'immutableFoo' }
-//         } },
-//         queriesToSkip: ['immutableQ']
-//       });
-//     });
-
-//     it('recipe there and back', () => {
-//       const qs = av.querySet(qsInput);
-
-//       return Promise.all([
-//         qs.run(),
-//         av.querySetFromRecipe(qs.toRecipe()).run()
-//       ]).then(([a, b]) => {
-//         expect(a).toEqual(_.assign({}, b, {
-//           _meta: {
-//             worklistSamples: {
-//               cached: false,
-//               loading: false
-//             }
-//           }
-//         }));
-//       });
-//     });
-
-//   });
-
-//   describe('QuerySet with cache', () => {
-//     const { immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ } = queries({
-//       fetchImmutableFoo: () => Promise.resolve({ immutable: 'immutableFoo' }),
-//       fetchManualFoo: () => Promise.resolve({ manual: 'manualFoo' }),
-//       fetchOptimisticFoo: () => Promise.resolve({ optimistic: 'optimisticFoo' }),
-//       fetchNoCacheFoo: () => Promise.resolve({ noCache: 'noCacheFoo' }),
-//       fetchBar: () => Promise.resolve({})
-//     });
-//     const data = {
-//       immutableQ: { immutable: 'immutableFoo' },
-//       manualQ: { manual: 'manualFoo' },
-//       optimisticQ: { optimistic: 'optimisticFoo' }
-//     };
-//     const av = new Avenger({ immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ }, data, {
-//       queries: { immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ },
-//       state: {}
-//     });
-//     const qsInput = { queries: { cacheDependentQ }, state: {} };
-
-//     it('first change event should contain cached values for the QS', () => {
-//       const qs = av.querySet(qsInput);
-//       const stub = sinon.stub();
-//       qs.on('change', stub);
-
-//       return qs.run().then(() => {
-//         expect(stub.callCount).toBeGreaterThan(1);
-//         expect(_.omit(stub.getCall(0).args[0], '_meta')).toEqual({
-//           immutableQ: { immutable: 'immutableFoo' },
-//           manualQ: { manual: 'manualFoo' },
-//           optimisticQ: { optimistic: 'optimisticFoo' }
-//         });
-//       });
-//     });
-//   });
-
-//   describe('runCommand', () => {
-//     it('should correctly run command and invalidate cache', () => {
-//       const serverState = {
-//         optimistic: 'optimisticFoo'
-//       };
-//       const { optimisticQ } = queries({
-//         fetchOptimisticFoo: () => Promise.resolve({ optimistic: serverState.optimistic })
-//       });
-//       const data = {
-//         optimisticQ: { optimistic: 'optimisticFoo' }
-//       };
-//       const av = new Avenger({ optimisticQ }, data, {
-//         queries: { optimisticQ },
-//         state: {}
-//       });
-//       const qsInput = { queries: { optimisticQ }, state: { state1: 'a' } };
-//       const qs = av.querySet(qsInput);
-
-//       const commandRun = sinon.spy(() => new Promise((resolve) => {
-//         serverState.optimistic = 'optimisticBar';
-//         resolve({result: 'success'});
-//       }));
-//       av.cache.invalidate = sinon.spy(av.cache.invalidate);
-
-//       const onChange = sinon.stub();
-//       qs.on('change', onChange);
-
-//       return qs.run().then(() => {
-//         const command = Command({
-//           invalidates: [optimisticQ],
-//           run: commandRun
-//         });
-//         return qs.runCommand(command);
-//       }).then((commandResult) => {
-//         expect(commandRun.calledOnce).toBe(true);
-//         expect(av.cache.invalidate.calledOnce).toBe(true);
-//         expect(av.cache.invalidate.calledWith(
-//               optimisticQ.id, { optimisticQ: {} })).toBe(true);
-//         expect(commandResult).toEqual({result: 'success'});
-//         expect(onChange.lastCall.args[0].optimisticQ).toEqual({
-//           optimistic: { optimistic: 'optimisticBar' }
-//         });
-//       });
-//     });
-//   });
-
-// });
+          av.runCommand(state, command).then(res => {
+            expect(res).toEqual(cmdRes);
+            setTimeout(() => {
+              // F is manual, and not part of D's downset
+              // (so it should correctly not refresh)
+              // 13 = 6 * 2 + 1 * 1
+              expect(changeSpy.callCount).toBe(13);
+              resolve(res);
+            }, 50);
+          }, reject).catch(reject);
+        }, 50);
+      }, reject).catch(reject);
+    });
+  });
+});

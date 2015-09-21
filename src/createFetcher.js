@@ -24,12 +24,14 @@ export default function createFetcher({ multiDep, ...args }) {
       )
     );
     const fromCache = cacheable && cache.get(id, filteredCacheParams);
-
-    if (fromCache) {
-      emit({ id, cache: true }, fromCache);
-    }
-
     const needsFetch = cacheMode === 'optimistic' || !fromCache;
+
+    emit({
+      id,
+      cache: !!fromCache,
+      loading: needsFetch
+    }, fromCache || null);
+
     if (needsFetch) {
       return fetch(state)(depsParams).then(res => {
         emit({ id }, res);
@@ -65,6 +67,7 @@ export default function createFetcher({ multiDep, ...args }) {
         }
       }))
     ).then(res => {
+      // TODO(gio): should also emit for the aggregated INITIAL value?
       args.emit({
         id: args.id,
         multi: true,

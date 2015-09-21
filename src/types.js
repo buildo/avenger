@@ -25,6 +25,7 @@ const Dependency = t.struct({
 
 const Dependencies = t.maybe(t.subtype(
   t.dict(QueryId, Dependency),
+  // TODO(gio): looks like a dumb/arbitrary limitation?
   // only a single `multi` dependency is allowed
   deps => Object.keys(deps).map(k => deps[k]).filter(({ multi }) => !!multi).length <= 1,
   'Dependencies'
@@ -33,10 +34,12 @@ const Dependencies = t.maybe(t.subtype(
 const CacheMode = t.enums.of([
   // (default): results for this q. are never stored in cache
   'no',
+
   // results are stored and always returned from cache,
   // a re-fetch is always re-issued at every pass
   'optimistic',
-  // results are always stored, never invalidated
+
+  // results are always stored in cache, never invalidated
   // (without manual intervention, never re-fetched)
   'manual'
 ], 'CacheMode');
@@ -63,11 +66,12 @@ export const Query = t.struct({
 
 Dependency.meta.props.query = Query;
 
+export const AvengerInput = t.dict(t.Any, Query, 'AvengerInput');
 
 export const Command = t.struct({
   // an optional list of queries to invalidate
   // entire downset for these will be invalidated as well
-  invalidates: t.maybe(t.list(Query)),
+  invalidates: t.maybe(AvengerInput),
 
   // actual command
   run: t.Func // state: t.Obj -> Promise[Any]
@@ -83,9 +87,6 @@ export const CacheParams = t.dict(
   t.dict(t.Str, CacheParam),
   'CacheParams'
 );
-
-
-export const AvengerInput = t.dict(t.Any, Query, 'AvengerInput');
 
 const QueryNodeEdges = t.dict(t.Str, t.Any, 'QueryNodeEdges'); // circular, fixed below
 
@@ -107,17 +108,27 @@ export const StateKey = t.subtype(
 );
 export const State = t.dict(t.Str, StateKey, 'State');
 
-export const MinimizedCache = t.dict(
-  // dependant qId
-  t.Str,
-  t.dict(
-      // dependency qId
-      t.Str,
-      // mapped (minimized) value
-      t.Any
-  ),
-  'MinimizedCache'
-);
+export const EmitMeta = t.struct({
+  id: QueryId,
+  error: t.maybe(t.Bool),
+  cache: t.maybe(t.Bool),
+  loading: t.maybe(t.Bool),
+  multi: t.maybe(t.Bool),
+  multiIndex: t.maybe(t.Num),
+  multiAll: t.maybe(t.Bool)
+}, 'EmitMeta');
+
+// export const MinimizedCache = t.dict(
+//   // dependant qId
+//   t.Str,
+//   t.dict(
+//     // dependency qId
+//     t.Str,
+//     // mapped (minimized) value
+//     t.Any
+//   ),
+//   'MinimizedCache'
+// );
 
 // export const Value = t.struct({
 //   val: t.Any,

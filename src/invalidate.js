@@ -3,30 +3,39 @@ import { AvengerInput, QueryNodes, State } from './types';
 import { runLocal } from './run';
 import { collect } from './util';
 
-export function invalidateLocal({
-  // queries to be invalidated
-  invalidate,
-  // current QS queries
-  input,
-  // current result
-  result,
-  state, cache,
-  // more params for runLocal?
-  ...more
-}) {
+const InvalidateLocalParams = t.struct({
+  invalidate: AvengerInput,
+  input: QueryNodes,
+  state: State,
+  result: t.Obj,
+  cache: t.Any,
+  emit: t.Func
+}, 'InvalidateLocalParams');
+
+export function invalidateLocal(params) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(invalidate), `Invalid invalidate provided to invaldiateLocal`);
-    t.assert(QueryNodes.is(input), `Invalid input provided to invalidateLocal`);
-    t.assert(State.is(state), `Invalid state provided to invalidateLocal`);
+    InvalidateLocalParams(params);
   }
+
+  const {
+    // queries to be invalidated
+    invalidate,
+    // current QS queries
+    input,
+    // current result
+    result,
+    state, cache, emit
+  } = params;
 
   const oldInput = { ...input };
 
   const _invalidate = ({ query: { id, cacheParams, dependencies }, children }) => {
     const depsParams = Object.keys(dependencies || {})
-      .map(k => ({
-        k, val: dependencies[k].map(result[dependencies[k].query.id])
-      }))
+      .map(k => {
+        return {
+          k, val: dependencies[k].map(result[dependencies[k].query.id])
+        };
+      })
       .reduce((ac, { k, val }) => ({
         ...ac,
         [k]: val
@@ -47,22 +56,29 @@ export function invalidateLocal({
     // in oldInput in order to trick `run`
     delete oldInput[id];
 
+    // console.log('> invalidating children of', id);
+    // console.log(Object.keys(children)
+    //   .map(k => children[k])
+    //   .filter(({ query: { id } }) => !!input[id])
+    //   .map(({ query: { id } }) => id), 'out of all children:', Object.keys(children));
     Object.keys(children)
       .map(k => children[k])
-      // only invalidate active (part of input)
-      // queries from the down set
-      .filter(({ query: { id } }) => !!input[id])
       .forEach(_invalidate);
   };
 
   Object.keys(invalidate).map(k => input[k]).forEach(_invalidate);
 
   return runLocal({
-    ...more,
     state, cache,
     input,
-    oldInput
-  }).then(fresh => ({ ...result, ...fresh }));
+    oldInput,
+    emit
+  }).then(
+    fresh => ({ ...result, ...fresh }),
+    err => {
+      throw err;
+    }
+  );
 }
 
 // export function invalidateRemote() {}

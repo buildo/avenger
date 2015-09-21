@@ -13,7 +13,6 @@ describe('invalidateLocal', () => {
   );
   const all = { A, B, C, D, E, F, G, H };
   const state = { s1: 'foo' };
-  const oldInput = null;
   const input = build({ C, B }, all);
 
   const results1 = {
@@ -43,7 +42,7 @@ describe('invalidateLocal', () => {
   };
 
   it('should work 1', () => {
-    // should re-fetch (wrt input)
+    // should re-fetch (or get cached) wrt input
     // the following UPPERCASE queries:
     //
     //     A   f
@@ -57,7 +56,7 @@ describe('invalidateLocal', () => {
 
     // these (not part of input but cacheable)
     // should be invalidated anyway:
-    const DCacheParams =  {
+    const DCacheParams = {
       ...state,
       foo: JSON.stringify(results1.A),
       bar: JSON.stringify(results1.B)
@@ -90,15 +89,27 @@ describe('invalidateLocal', () => {
       state, emit, cache
     }).then(r => {
       expect(r).toEqual(results1);
-      expect(emit.callCount).toBe(4);
-      ['A', 'F', 'C', 'B'].forEach(k => {
-        expect(emit.getCalls().map(c => c.args).filter(([{ id }, val]) => id === k && val.self === results1[k].self).length).toBe(1);
-      });
-      expect(emit.getCall(0).args).toEqual([{
-        cache: true, id: 'F'
-      }, results1.F]);
-      expect(cache.get('D', DCacheParams)).toBe(null);
-      expect(cache.get('E', ECacheParams)).toBe(null);
+      // A, B, C should emit twice (A is cached but invalidated)
+      // F should emit once (cached and manual)
+      expect(emit.callCount).toBe(7);
+      const callArgs = emit.getCalls().map(c => c.args);
+
+      const ACallArgs = callArgs.filter(([{ id }]) => id === 'A');
+      expect(ACallArgs.length).toBe(2);
+      expect(ACallArgs[0][1]).toBe(null);
+      expect(ACallArgs[0][0].loading).toBe(true);
+      expect(!!ACallArgs[1][0].cache).toBe(false);
+      expect(!!ACallArgs[1][0].loading).toBe(false);
+      expect(ACallArgs[1][1]).toEqual(results1.A);
+
+      const FCallArgs = callArgs.filter(([{ id }]) => id === 'F');
+      expect(FCallArgs.length).toBe(1);
+      expect(FCallArgs[0][1]).toBe(results1.F);
+      expect(!!FCallArgs[0][0].loading).toBe(false);
+      expect(FCallArgs[0][0].cache).toBe(true);
+
+      expect(cache.get('D', DCacheParams)).toNotExist();
+      expect(cache.get('E', ECacheParams)).toNotExist();
     }, err => {
       throw err;
     });
@@ -126,10 +137,51 @@ describe('invalidateLocal', () => {
       state, emit, cache
     }).then(r => {
       expect(r).toEqual(results1);
-      expect(emit.callCount).toBe(4);
+      // each query should emit twice
+      expect(emit.callCount).toBe(8);
       ['A', 'F', 'C', 'B'].forEach(k => {
-        expect(emit.getCalls().map(c => c.args).filter(([{ id }, val]) => id === k && val.self === results1[k].self).length).toBe(1);
+        expect(emit.getCalls().map(c => c.args).filter(([{ id }]) => id === k).length).toBe(2);
       });
+    }, err => {
+      throw err;
+    });
+  });
+
+  it('should work 3', () => {
+    // should re-fetch all queries (or get from cache)
+    // (input includes all, A transitively invalidates all,
+    // including F)
+    //
+    //     A   F
+    //    /|\ /
+    //   C | B
+    //   | |/
+    //   | D
+    //   |/ \
+    //   E   G
+    //
+    const { A, B, C, D, E, F, G } = queries();
+    const all = { A, B, C, D, E, F, G };
+    const input = build({ E, G }, all);
+    const cache = new AvengerCache({});
+    const emit = sinon.spy();
+    const invalidate = { A };
+    const results = Object.keys(all).reduce((ac, k) => ({
+      ...ac,
+      [k]: k
+    }), {});
+
+    return invalidateLocal({
+      result: results,
+      input: input,
+      invalidate,
+      state, emit, cache
+    }).then(r => {
+      expect(r).toEqual(results);
+      // A invalidation should cause
+      // C, B, D, E, G invalidation
+      // in turn causing also F to re-fetch (actually emits from cache)
+      expect(emit.callCount).toBe(14);
     }, err => {
       throw err;
     });
