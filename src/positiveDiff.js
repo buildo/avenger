@@ -1,19 +1,30 @@
 import t from 'tcomb';
-import { QueryNodes } from './types';
+import intersection from 'lodash/array/intersection';
+import { QueryNodes, State } from './types';
 
-export default function positiveDiff(a, b) {
+const PositiveDiffParams = t.struct({
+  a: QueryNodes,
+  b: t.maybe(QueryNodes),
+  aState: t.maybe(State),
+  bState: t.maybe(State)
+}, 'PositiveDiffParams');
+
+export default function positiveDiff(params) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(QueryNodes.is(QueryNodes(a)), `Invalid a provided to diff`);
-    t.assert(t.maybe(QueryNodes).is(t.maybe(QueryNodes)(b)), `Invalid b provided to diff`);
+    PositiveDiffParams(params);
   }
 
-  // degenerate case: first tree is being diffed against nil
-  if (!b) {
-    b = {};
-  }
+  const {
+    a, b, aState, bState
+  } = params;
+
+  const stateDiff = (a, b, query) => {
+    const relevantKeys = query.cacheParams ? Object.keys(query.cacheParams) : Object.keys(a);
+    return relevantKeys.reduce((ac, k) => ac || a[k] !== b[k], false);
+  };
 
   return Object.keys(a).reduce((ac, nk) => ({
     ...ac,
-    [nk]: !b[nk]
+    [nk]: !(b || {})[nk] || stateDiff(aState || {}, bState || {}, a[nk].query)
   }), {});
 }

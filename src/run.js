@@ -9,6 +9,7 @@ const RunLocalParams = t.struct({
   input: QueryNodes,
   oldInput: t.maybe(QueryNodes),
   state: State,
+  oldState: State,
   cache: t.Any,
   emit: t.Func
 }, 'RunLocalParams');
@@ -20,11 +21,26 @@ export function runLocal(params) {
 
   const {
     input, oldInput,
-    state, cache,
+    state, oldState,
+    cache,
     emit
   } = params;
 
-  const diff = positiveDiff(input, oldInput);
+  // typecheck state params
+  if (process.env.NODE_ENV !== 'production') {
+    Object.keys(input).forEach(k => {
+      const { query: { cacheParams, dependencies } } = input[k];
+      Object.keys(cacheParams || {}).filter(k => {
+        return Object.keys(dependencies || {}).indexOf(k) === -1;
+      }).forEach(k => {
+        cacheParams[k](state[k]);
+      });
+    });
+  }
+
+  const diff = positiveDiff({
+    a: input, b: oldInput, aState: state, bState: oldState
+  });
   const toRun = Object.keys(input)
     .filter(k => diff[k])
     .reduce(...collect(input));

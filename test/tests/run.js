@@ -6,7 +6,7 @@ import { runLocal } from '../../src/run';
 import AvengerCache from '../../src/AvengerCache';
 
 describe('runLocal', () => {
-  const { A, B, C, D, E, F, G, H, I, J, K, L } = queries(
+  const { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O } = queries(
     k => state => deps => Promise.resolve({
       self: k, state, deps
     })
@@ -22,19 +22,19 @@ describe('runLocal', () => {
     },
     B: {
       self: 'B', state, deps: {
-        foo: {
+        foo: JSON.stringify({
           self: 'A', state, deps: {}
-        },
-        bar: {
+        }),
+        bar: JSON.stringify({
           self: 'F', state, deps: {}
-        }
+        })
       }
     },
     C: {
       self: 'C', state, deps: {
-        foo: {
+        foo: JSON.stringify({
           self: 'A', state, deps: {}
-        }
+        })
       }
     },
     F: {
@@ -46,7 +46,7 @@ describe('runLocal', () => {
     const cache = new AvengerCache({});
     const emit = sinon.spy();
 
-    return runLocal({ input, oldInput, state, emit, cache }).then(r => {
+    return runLocal({ input, oldInput, state, oldState: state, emit, cache }).then(r => {
       expect(r).toEqual(results1);
       // cache is empty, every query should emit with
       // loading=true first, and then with loading=false when done
@@ -76,7 +76,7 @@ describe('runLocal', () => {
     cache.set('A', state)(results1.A);
     const emit = sinon.spy();
 
-    return runLocal({ input, oldInput, state, emit, cache }).then(r => {
+    return runLocal({ input, oldInput, state, oldState: state, emit, cache }).then(r => {
       expect(r).toEqual(results1);
 
       // cache is empty except for A (optimistic), which
@@ -123,7 +123,7 @@ describe('runLocal', () => {
     cache.set('F', state)(results1.F);
     const emit = sinon.spy();
 
-    return runLocal({ input, oldInput, state, emit, cache }).then(r => {
+    return runLocal({ input, oldInput, state, oldState: state, emit, cache }).then(r => {
       expect(r).toEqual(results1);
 
       // cache is empty except for F (manual), which
@@ -160,6 +160,39 @@ describe('runLocal', () => {
     });
   });
 
+  it('should work with diff in state', () => {
+    const cache = new AvengerCache({});
+    const emit = sinon.spy();
+
+    return new Promise((resolve, reject) => {
+      runLocal({
+        input, oldInput, state, emit, cache,
+        oldState: state
+      }).then(r => {
+        expect(r).toEqual(results1);
+        // Every query should emit twice, with
+        // loading=true first, and then with loading=false when done
+        expect(emit.callCount).toBe(8);
+        runLocal({
+          input, oldInput: input, emit, cache,
+          state: { ...state, more: 'foo' },
+          oldState: state
+        }).then(r => {
+          // A, B should emit twice, with
+          // loading=true first, and then with loading=false when done
+          // (no cached value for new state for F),
+          // except for C, which shouldn't run at all
+          // (no diff in relevant state)
+          expect(emit.callCount).toBe(14);
+          const Fcalls = emit.getCalls().filter(c => c.args[0].id === 'F');
+          expect(Fcalls.length).toBe(2 + 2);
+          const Ccalls = emit.getCalls().filter(c => c.args[0].id === 'C');
+          expect(Ccalls.length).toBe(2 + 0);
+          resolve(r);
+        }, reject).catch(reject);
+      }, reject).catch(reject);
+    });
+  });
 
   const inputMulti = build({ L }, { I, J, K, L });
   const Jres = {
@@ -184,7 +217,7 @@ describe('runLocal', () => {
 
     return runLocal({
       input: inputMulti,
-      oldInput, state, emit, cache
+      oldInput, state, oldState: state, emit, cache
     }).then(r => {
       expect(r).toEqual(resultsMulti);
       // I, J, L: no cache queries (each one should emit twice)

@@ -21,19 +21,19 @@ describe('invalidateLocal', () => {
     },
     B: {
       self: 'B', state, deps: {
-        foo: {
+        foo: JSON.stringify({
           self: 'A', state, deps: {}
-        },
-        bar: {
+        }),
+        bar: JSON.stringify({
           self: 'F', state, deps: {}
-        }
+        })
       }
     },
     C: {
       self: 'C', state, deps: {
-        foo: {
+        foo: JSON.stringify({
           self: 'A', state, deps: {}
-        }
+        })
       }
     },
     F: {

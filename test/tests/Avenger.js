@@ -103,4 +103,102 @@ describe('Avenger', () => {
       }, reject).catch(reject);
     });
   });
+
+  it('multiple run() no changes should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const result = {
+      A: 'A', B: 'B', D: 'D', F: 'F', G: 'G'
+    };
+
+    return new Promise((resolve, reject) => {
+      av.run({ G }, state).then(res => {
+        expect(res).toEqual(result);
+        // empty cache, 5 queries
+        expect(changeSpy.callCount).toBe(10);
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args;
+        expect(value).toEqual(result);
+
+        av.run({ G }, state).then(res => {
+          expect(res).toEqual({});
+          expect(changeSpy.callCount).toBe(10);
+
+          resolve(res);
+        }, reject).catch(reject);
+      }, reject).catch(reject);
+    });
+  });
+
+  it('multiple run() different queries should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const firstResult = {
+      A: 'A', B: 'B', D: 'D', F: 'F', G: 'G'
+    };
+    const secondResult = {
+      A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F'
+    };
+    const diffResult = {
+      C: 'C', E: 'E'
+    };
+
+    return new Promise((resolve, reject) => {
+      av.run({ G }, state).then(res => {
+        expect(res).toEqual(firstResult);
+        // empty cache, 5 queries
+        expect(changeSpy.callCount).toBe(10);
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args;
+        expect(value).toEqual(firstResult);
+
+        av.run({ E }, state).then(res => {
+          expect(res).toEqual(diffResult);
+          // 10 + 4 queries * 2
+          // D and F are cached and manual (-> + 2 * 1)
+          expect(changeSpy.callCount).toBe(20);
+          const [{ __meta, ...value }] = changeSpy.getCall(19).args;
+          expect(value).toEqual(secondResult);
+
+          resolve(res);
+        }, reject).catch(reject);
+      }, reject).catch(reject);
+    });
+  });
+
+  it('multiple run() different state should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const state1 = state;
+    const state2 = { ...state, more: 'this' };
+    const result = {
+      A: 'A', B: 'B', D: 'D', F: 'F', G: 'G'
+    };
+
+    return new Promise((resolve, reject) => {
+      av.run({ G }, state1).then(res => {
+        expect(res).toEqual(result);
+        // empty cache, 5 queries
+        expect(changeSpy.callCount).toBe(10);
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args;
+        expect(value).toEqual(result);
+
+        av.run({ G }, state2).then(res => {
+          // only state-change-affected queries should refetch
+          // 10 (previous call count) +
+          // 1 * 2 (B is affected) +
+          // 1 * 2 (A is affected) +
+          // 1 * 2 (F is affected) +
+          // 1 * 0 (D is not affected and G neither) +
+          // 1 * 0 (G is not affected)
+          expect(changeSpy.callCount).toBe(16);
+          const [{ __meta, ...value }] = changeSpy.getCall(15).args;
+          expect(value).toEqual(result);
+
+          resolve(res);
+        }, reject).catch(reject);
+      }, reject).catch(reject);
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import t from 'tcomb';
 import { AvengerInput } from './types';
+import upset from './upset';
 import find from 'lodash/collection/find';
 import every from 'lodash/collection/every';
 import omit from 'lodash/object/omit';
@@ -11,25 +12,9 @@ export default function build(input, all) {
     t.assert(AvengerInput.is(all), `invalid all provided to build`);
   }
 
-  const _upset = query => {
-    const deps = Object.keys(query.dependencies || {})
-      .reduce((up, k) => ({
-        ...up,
-        ..._upset(query.dependencies[k].query)
-      }), {});
+  const _upset = upset(input);
 
-    return {
-      [query.id]: query,
-      ...deps
-    };
-  };
-
-  const upset = Object.keys(input).reduce((up, qId) => ({
-    ...up,
-    ..._upset(input[qId])
-  }), {});
-
-  const builtUp = Object.keys(upset).reduce(({ from, to }) => {
+  const builtUp = Object.keys(_upset).reduce(({ from, to }) => {
     const fromList = Object.keys(from).map(k => from[k]);
     const firstFree = find(
       fromList,
@@ -57,7 +42,7 @@ export default function build(input, all) {
       }
     };
   }, {
-    from: { ...upset },
+    from: { ..._upset },
     to: {}
   }).to;
 

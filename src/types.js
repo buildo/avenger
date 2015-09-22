@@ -1,4 +1,4 @@
-import t from 'tcomb';
+import t, { isType } from 'tcomb';
 
 // unique string id for the query
 const QueryId = t.Str;
@@ -44,6 +44,10 @@ const CacheMode = t.enums.of([
   'manual'
 ], 'CacheMode');
 
+const TcombType = t.subtype(t.Any, isType, 'TcombType');
+
+const CacheParams = t.dict(t.Str, TcombType, 'CacheParams');
+
 export const Query = t.struct({
   // here for simplicity for now
   id: QueryId,
@@ -55,7 +59,7 @@ export const Query = t.struct({
   // this overrides caching of state params.
   // optionally pass a function to map the cache param value
   // remember that cache params should be primitive
-  cacheParams: t.maybe(t.dict(t.Str, t.union([t.Bool, t.Func]))),
+  cacheParams: t.maybe(CacheParams),
 
   // dictionary of deps. { [queryId]: dep.map(queryRes), ... }
   dependencies: Dependencies,
@@ -76,17 +80,6 @@ export const Command = t.struct({
   // actual command
   run: t.Func // state: t.Obj -> Promise[Any]
 }, 'Command');
-
-
-const CacheParam = t.subtype(t.Any, p => {
-  return t.Str.is(p) || t.Num.is(p) || t.Bool.is(p);
-}, 'CacheParam');
-
-export const CacheParams = t.dict(
-  t.Str,
-  t.dict(t.Str, CacheParam),
-  'CacheParams'
-);
 
 const QueryNodeEdges = t.dict(t.Str, t.Any, 'QueryNodeEdges'); // circular, fixed below
 

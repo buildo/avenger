@@ -43,12 +43,7 @@ export function invalidateLocal(params) {
     const allParams = { ...state, ...depsParams };
     const allKeys = Object.keys(allParams);
     const filteredKeys = allKeys.filter(k => (cacheParams ? Object.keys(cacheParams) : allKeys).indexOf(k) !== -1);
-    const filteredCacheParams = filteredKeys.reduce(
-      ...collect(
-        allParams,
-        (v, k) => cacheParams && t.Func.is(cacheParams[k]) ? cacheParams[k](v) : v
-      )
-    );
+    const filteredCacheParams = filteredKeys.reduce(...collect(allParams));
 
     // invalidate cache for this query
     cache.invalidate(id, filteredCacheParams);
@@ -56,11 +51,6 @@ export function invalidateLocal(params) {
     // in oldInput in order to trick `run`
     delete oldInput[id];
 
-    // console.log('> invalidating children of', id);
-    // console.log(Object.keys(children)
-    //   .map(k => children[k])
-    //   .filter(({ query: { id } }) => !!input[id])
-    //   .map(({ query: { id } }) => id), 'out of all children:', Object.keys(children));
     Object.keys(children)
       .map(k => children[k])
       .forEach(_invalidate);
@@ -69,9 +59,9 @@ export function invalidateLocal(params) {
   Object.keys(invalidate).map(k => input[k]).forEach(_invalidate);
 
   return runLocal({
-    state, cache,
-    input,
-    oldInput,
+    state, oldState: state,
+    input, oldInput,
+    cache,
     emit
   }).then(
     fresh => ({ ...result, ...fresh }),

@@ -14,6 +14,7 @@ export default class Avenger {
 
     this.allQueries = allQueries;
     this.currentInput = null;
+    this.currentState = {};
     this.cache = new AvengerCache(initialCacheState);
     this.emitter = new EventEmitter3();
     this.result = {
@@ -98,10 +99,12 @@ export default class Avenger {
       input: built,
       oldInput: this.currentInput,
       state,
+      oldState: this.currentState,
       cache: this.cache,
       emit: this.emit
     }).then(res => {
       this.currentInput = built;
+      this.currentState = state;
       return res;
     }, err => {
       throw err;

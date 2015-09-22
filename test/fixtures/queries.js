@@ -1,10 +1,11 @@
+import t from 'tcomb';
 import { Query, StateKey } from '../../src/types';
 
 export default function(
   resolve = k => () => () => Promise.resolve(k)
 ) {
-  const map = v => v;
   const safeCacheParamMap = v => StateKey.is(v) ? v : JSON.stringify(v);
+  const map = safeCacheParamMap;
 
   // queries layout, for reference:
   //
@@ -32,8 +33,10 @@ export default function(
     id: 'B',
     cache: 'optimistic',
     cacheParams: {
-      foo: safeCacheParamMap,
-      bar: safeCacheParamMap
+      foo: t.Str,
+      bar: t.Str,
+      s1: t.Str,
+      more: t.Any
     },
     dependencies: {
       foo: {
@@ -51,7 +54,7 @@ export default function(
   const C = Query({
     id: 'C',
     cacheParams: {
-      foo: safeCacheParamMap
+      foo: t.Str
     },
     dependencies: {
       foo: {
@@ -66,8 +69,8 @@ export default function(
     id: 'D',
     cache: 'manual',
     cacheParams: {
-      foo: safeCacheParamMap,
-      bar: safeCacheParamMap
+      foo: t.Str,
+      bar: t.Str
     },
     dependencies: {
       foo: {
@@ -86,8 +89,8 @@ export default function(
     id: 'E',
     cache: 'optimistic',
     cacheParams: {
-      foo: safeCacheParamMap,
-      bar: safeCacheParamMap
+      foo: t.Str,
+      bar: t.Str
     },
     dependencies: {
       foo: {
@@ -104,6 +107,7 @@ export default function(
 
   const G = Query({
     id: 'G',
+    cacheParams: {},
     dependencies: {
       foo: {
         query: D,
@@ -143,15 +147,15 @@ export default function(
     dependencies: {
       i: {
         query: I,
-        map,
-        multi: map
+        map: v => v,
+        multi: v => v
       },
       j: {
         query: J,
         map
       }
     },
-    fetch: () => ({ i, j }) => Promise.resolve(`K ${i} ${JSON.stringify(j)}`)
+    fetch: () => ({ i, j }) => Promise.resolve(`K ${i} ${j}`)
   });
 
   const L = Query({
@@ -162,12 +166,53 @@ export default function(
         map
       }
     },
-    fetch: () => ({ k }) => Promise.resolve(`L ${JSON.stringify(k)}`)
+    fetch: () => ({ k }) => Promise.resolve(`L ${k}`)
+  });
+
+  const M = Query({
+    id: 'M',
+    cache: 'manual',
+    cacheParams: {
+      a: t.Str
+    },
+    fetch: resolve('M')
+  });
+
+  const N = Query({
+    id: 'N',
+    cache: 'manual',
+    cacheParams: {
+      n: t.Str,
+      m: t.Str
+    },
+    dependencies: {
+      m: {
+        query: M,
+        map
+      }
+    },
+    fetch: resolve('N')
+  });
+
+  const O = Query({
+    id: 'O',
+    cache: 'manual',
+    cacheParams: {
+      o: t.Str
+    },
+    dependencies: {
+      m: {
+        query: M,
+        map
+      }
+    },
+    fetch: resolve('O')
   });
 
   return {
     A, B, C, D, E, F, G,
     H,
-    I, J, K, L
+    I, J, K, L,
+    M, N, O
   };
 }

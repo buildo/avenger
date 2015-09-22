@@ -16,13 +16,7 @@ export default function createFetcher({ multiDep, ...args }) {
     const allKeys = Object.keys(allParams);
     const filteredKeys = allKeys.filter(k => (cacheParams ? Object.keys(cacheParams) : allKeys).indexOf(k) !== -1);
 
-    // TODO(gio): should check params are actually there and typecheck
-    const filteredCacheParams = filteredKeys.reduce(
-      ...collect(
-        allParams,
-        (v, k) => cacheParams && t.Func.is(cacheParams[k]) ? cacheParams[k](v) : v
-      )
-    );
+    const filteredCacheParams = filteredKeys.reduce(...collect(allParams));
     const fromCache = cacheable && cache.get(id, filteredCacheParams);
     const needsFetch = cacheMode === 'optimistic' || !fromCache;
 
