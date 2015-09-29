@@ -1,5 +1,4 @@
 import t from 'tcomb';
-import intersection from 'lodash/array/intersection';
 import { QueryNodes, State } from './types';
 
 const PositiveDiffParams = t.struct({

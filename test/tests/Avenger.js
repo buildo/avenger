@@ -117,7 +117,7 @@ describe('Avenger', () => {
         expect(res).toEqual(result);
         // empty cache, 5 queries
         expect(changeSpy.callCount).toBe(10);
-        const [{ __meta, ...value }] = changeSpy.getCall(9).args;
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args; // eslint-disable-line no-unused-vars
         expect(value).toEqual(result);
 
         av.run({ G }, state).then(res => {
@@ -149,7 +149,7 @@ describe('Avenger', () => {
         expect(res).toEqual(firstResult);
         // empty cache, 5 queries
         expect(changeSpy.callCount).toBe(10);
-        const [{ __meta, ...value }] = changeSpy.getCall(9).args;
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args; // eslint-disable-line no-unused-vars
         expect(value).toEqual(firstResult);
 
         av.run({ E }, state).then(res => {
@@ -157,7 +157,7 @@ describe('Avenger', () => {
           // 10 + 4 queries * 2
           // D and F are cached and manual (-> + 2 * 1)
           expect(changeSpy.callCount).toBe(20);
-          const [{ __meta, ...value }] = changeSpy.getCall(19).args;
+          const [{ __meta, ...value }] = changeSpy.getCall(19).args; // eslint-disable-line no-unused-vars
           expect(value).toEqual(secondResult);
 
           resolve(res);
@@ -181,7 +181,7 @@ describe('Avenger', () => {
         expect(res).toEqual(result);
         // empty cache, 5 queries
         expect(changeSpy.callCount).toBe(10);
-        const [{ __meta, ...value }] = changeSpy.getCall(9).args;
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args; // eslint-disable-line no-unused-vars
         expect(value).toEqual(result);
 
         av.run({ G }, state2).then(res => {
@@ -193,7 +193,7 @@ describe('Avenger', () => {
           // 1 * 0 (D is not affected and G neither) +
           // 1 * 0 (G is not affected)
           expect(changeSpy.callCount).toBe(16);
-          const [{ __meta, ...value }] = changeSpy.getCall(15).args;
+          const [{ __meta, ...value }] = changeSpy.getCall(15).args; // eslint-disable-line no-unused-vars
           expect(value).toEqual(result);
 
           resolve(res);
