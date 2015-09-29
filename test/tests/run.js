@@ -194,6 +194,37 @@ describe('runLocal', () => {
     });
   });
 
+  it('should work with diff in state 2', () => {
+    const cache = new AvengerCache({});
+    const emit = sinon.spy();
+    const all = { M, N, O };
+    const input = build({ N, O }, all);
+    const state = { a: 'a', n: 'n', o: 'o' };
+
+    return new Promise((resolve, reject) => {
+      runLocal({
+        input, oldInput: null, state, emit, cache,
+        oldState: state
+      }).then(() => {
+        // every query should have emitted twice
+        expect(emit.callCount).toBe(6);
+        runLocal({
+          input, oldInput: input, emit, cache,
+          state: { ...state, a: 'a1' },
+          oldState: state
+        }).then(() => {
+          // a state has diff, and should in turn cause
+          // deps to refetch, but deps are cached and immutable
+          // and so they should emit only once
+          // console.log(emit.getCalls().slice(6, 10).map(c => c.args[0]));
+          expect(emit.callCount).toBe(10);
+          resolve();
+        }, reject).catch(reject);
+      }, reject).catch(reject);
+    });
+  });
+
+
   const inputMulti = build({ L }, { I, J, K, L });
   const Jres = {
     self: 'J', state, deps: {}
