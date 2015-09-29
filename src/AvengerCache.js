@@ -2,27 +2,19 @@
 // ... assuming for now each param is a primitive with meaningful toString()
 // (i.e.: strings, numbers and bools)
 
-import t from 'tcomb';
 import debug from 'debug';
+import t from 'tcomb';
+import { State } from './types';
 
 const log = debug('AvengerCache');
 
-const AllowedParam = t.subtype(t.Any, p => {
-  return t.Str.is(p) || t.Num.is(p) || t.Bool.is(p);
-}, 'AllowedParam');
-const AllowedParams = t.dict(t.Str, t.dict(t.Str, AllowedParam, 'AllowedParams'));
-
 export function hashedParams(params) {
   if (process.env.NODE_ENV !== 'production') {
-    AllowedParams(params);
+    State(params);
   }
   const keys = Object.keys(params);
   keys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-  const hashed = keys.map((k1) => {
-    const childkeys = Object.keys(params[k1]);
-    childkeys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-    return childkeys.map(k2 => `${k1}.${k2}:${params[k1][k2]}`).join('-');
-  }).join('-');
+  const hashed = keys.map(k1 => `${k1}:${params[k1]}`).join('-');
   return hashed ? hashed : '∅';
 }
 
@@ -37,13 +29,13 @@ export default class AvengerCache {
   }
 
   checkParams(params) {
-    return AllowedParams.is(params);
+    if (process.env.NODE_ENV !== 'production') {
+      t.assert(State.is(params), `Invalid params provided to cache: ${JSON.stringify(params)}`);
+    }
   }
 
   get(id, params) {
-    if (process.env.NODE_ENV !== 'production') {
-      this.checkParams(params);
-    }
+    this.checkParams(params);
 
     if (!this.state[id]) {
       return null;
@@ -53,12 +45,11 @@ export default class AvengerCache {
   }
 
   set = (id, params) => value => {
+    this.checkParams(params);
+
     const hp = hashedParams(params);
     log(`set ${id} ${hp} = %o`, params, value);
     log(`current ${id} %o, ${id}[${hp}] (missing id: ${!this.state[id]})`, this.state[id], this.state[id] ? this.state[id][hp] : undefined);
-    if (process.env.NODE_ENV !== 'production') {
-      this.checkParams(params);
-    }
 
     if (!this.state[id]) {
       this.state[id] = {};
@@ -67,5 +58,12 @@ export default class AvengerCache {
     this.state[id][hp] = value;
   };
 
-  invalidate = (id, params) => this.set(id, params)(null);
+  invalidate = (id, params) => {
+    this.checkParams(params);
+
+    if (this.state[id]) {
+      const hp = hashedParams(params);
+      delete this.state[id][hp];
+    }
+  };
 }

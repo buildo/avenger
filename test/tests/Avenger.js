@@ -1,224 +1,204 @@
 import expect from 'expect';
 import sinon from 'sinon';
-import Avenger, { QuerySet } from '../../src';
-import Command from '../../src/Command';
-import queries from '../../fixtures/queries';
-import _ from 'lodash';
+import queries from '../fixtures/queries';
+import Avenger, { Command } from '../../src/';
 
 describe('Avenger', () => {
-
-  const API = {
-    fetchWorklist: (_id) => Promise.resolve({ worklist: { _id } }),
-    fetchSamples: () => Promise.resolve({ samples: [] })
+  const { A, B, C, D, E, F, G, H, I, J, K, L } = queries();
+  const all = { A, B, C, D, E, F, G, H, I, J, K, L };
+  const state = { s1: 'foo' };
+  const results1 = {
+    A: 'A',
+    B: 'B',
+    C: 'C',
+    D: 'D',
+    E: 'E',
+    F: 'F',
+    G: 'G'
   };
 
-  it('should be instantiable and accept valid queries set', () => {
-    const { worklist } = queries(API);
-    const av = new Avenger({ worklist });
-
-    expect(av).toBeAn(Avenger);
+  it('should be instantiable and have Emitter interface', () => {
+    const av = new Avenger(all);
+    expect(av.on).toBeA(Function);
+    expect(av.off).toBeA(Function);
   });
 
-  describe('QuerySet', () => {
-    const { worklist, worklistSamples } = queries(API);
-    const av = new Avenger({ worklist, worklistSamples });
-    const qsInput = { queries: { worklistSamples }, state: { worklistId: 'foo' } };
+  it('run() should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const start = new Date().getTime() - 1;
 
-    it('should be created given a valid input', () => {
-      const qs = av.querySet(qsInput);
-
-      expect(qs).toBeAn(QuerySet);
+    return av.run({ E, G }, state).then(res => {
+      const end = new Date().getTime() + 1;
+      expect(res).toEqual(results1);
+      expect(changeSpy.callCount).toBe(14);
+      const [{ __meta, ...value }] = changeSpy.getCall(13).args;
+      expect(value).toEqual(results1);
+      Object.keys(__meta).forEach(k => {
+        expect(__meta[k].cache).toBe(false);
+        expect(__meta[k].error).toBe(false);
+        expect(__meta[k].loading).toBe(false);
+        expect(__meta[k].timestamp).toBeMoreThan(start).toBeLessThan(end);
+      });
+    }, err => {
+      throw err;
     });
-
-    it('should be run()able and return a Promise', () => {
-      const qs = av.querySet(qsInput);
-
-      expect(qs.run()).toBeAn(Promise);
-    });
-
-    it('should resolve the run() promise with the entire data set', () => {
-      const qs = av.querySet(qsInput);
-
-      return qs.run().then(data => {
-        expect(data).toEqual({
-          _meta: {
-            worklistSamples: {
-              cached: false,
-              loading: false
-            }
-          },
-          worklistSamples: { samples: { samples: [] } }
-        });
-      });
-    });
-
-    it('should emit change events, at least 2', () => {
-      const qs = av.querySet(qsInput);
-      const spy = sinon.spy();
-      qs.on('change', spy);
-
-      return qs.run().then(() => {
-        expect(spy.callCount).toBeGreaterThan(1);
-      });
-    });
-
-    it('should be run()able from a recipe, skipping minCached queries', () => {
-      const api = _.assign({}, API, {
-        fetchWorklist: sinon.spy()
-      });
-      const { worklist, worklistSamples } = queries(api);
-      const av = new Avenger({ worklist, worklistSamples });
-      const qs = av.querySetFromRecipe({
-        queries: { worklistSamples },
-        state: { worklistId: 'foo' },
-        fetchParams: {
-          worklistSamples: {
-            worklist: 'foo'
-          }
-        },
-        queriesToSkip: ['worklist']
-      });
-
-      return qs.run().then(data => {
-        expect(data).toEqual({ worklistSamples: { samples: { samples: [] } } });
-        expect(api.fetchWorklist.notCalled).toBe(true);
-      });
-    });
-
-    it('should be serializable to a recipe', () => {
-      const qs = av.querySet(qsInput);
-
-      expect(qs.toRecipe()).toEqual({
-        queries: qsInput.queries,
-        state: qsInput.state,
-        fetchParams: { worklistSamples: {} },
-        queriesToSkip: []
-      });
-    });
-
-    it('serialized recipe should include computed fetchParams and queriesToSkip', () => {
-      const { cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ } = queries({
-
-      });
-      const av = new Avenger({ cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ }, {
-        immutableQ: {
-          immutable: 'immutableFoo'
-        }
-      }, {
-        queries: { cacheDependentQ, immutableQ, manualQ, optimisticQ, noCacheQ },
-        state: {}
-      });
-      const qs = av.querySet({ queries: { cacheDependentQ }, state: {} });
-
-      expect(qs.toRecipe()).toEqual({
-        queries: { cacheDependentQ },
-        state: {},
-        fetchParams: { cacheDependentQ: {
-          immutableQ: { immutable: 'immutableFoo' }
-        } },
-        queriesToSkip: ['immutableQ']
-      });
-    });
-
-    it('recipe there and back', () => {
-      const qs = av.querySet(qsInput);
-
-      return Promise.all([
-        qs.run(),
-        av.querySetFromRecipe(qs.toRecipe()).run()
-      ]).then(([a, b]) => {
-        expect(a).toEqual(_.assign({}, b, {
-          _meta: {
-            worklistSamples: {
-              cached: false,
-              loading: false
-            }
-          }
-        }));
-      });
-    });
-
   });
 
-  describe('QuerySet with cache', () => {
-    const { immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ } = queries({
-      fetchImmutableFoo: () => Promise.resolve({ immutable: 'immutableFoo' }),
-      fetchManualFoo: () => Promise.resolve({ manual: 'manualFoo' }),
-      fetchOptimisticFoo: () => Promise.resolve({ optimistic: 'optimisticFoo' }),
-      fetchNoCacheFoo: () => Promise.resolve({ noCache: 'noCacheFoo' }),
-      fetchBar: () => Promise.resolve({})
+  it('invalidate() should work', () => {
+    const av = new Avenger(all);
+
+    return new Promise((resolve, reject) => {
+      av.run({ E, G }, state).then(() => {
+        setTimeout(() => {
+          const changeSpy = sinon.spy();
+          av.on('change', changeSpy);
+          const start = new Date().getTime() - 1;
+
+          av.invalidate(state, { F }).then(res => {
+            const end = new Date().getTime() + 1;
+            expect(res).toEqual(results1);
+            expect(changeSpy.callCount).toBe(14);
+            const [{ __meta, ...value }] = changeSpy.getCall(13).args;
+            Object.keys(__meta).forEach(k => {
+              expect(__meta[k].cache).toBe(false);
+              expect(__meta[k].error).toBe(false);
+              expect(__meta[k].loading).toBe(false);
+              expect(__meta[k].timestamp).toBeMoreThan(start).toBeLessThan(end);
+            });
+
+            resolve(res);
+          }, reject).catch(reject);
+        }, 50);
+      }, reject).catch(reject);
     });
-    const data = {
-      immutableQ: { immutable: 'immutableFoo' },
-      manualQ: { manual: 'manualFoo' },
-      optimisticQ: { optimistic: 'optimisticFoo' }
+  });
+
+  it('runCommand() should work', () => {
+    const av = new Avenger(all);
+
+    return new Promise((resolve, reject) => {
+      av.run({ E, G }, state).then(() => {
+        setTimeout(() => {
+          const changeSpy = sinon.spy();
+          av.on('change', changeSpy);
+          const cmdRes = 'cmdRes';
+          const command = Command({
+            invalidates: { D },
+            run: () => Promise.resolve(cmdRes)
+          });
+
+          av.runCommand(state, command).then(res => {
+            expect(res).toEqual(cmdRes);
+            setTimeout(() => {
+              // F is manual, and not part of D's downset
+              // (so it should correctly not refresh)
+              // 13 = 6 * 2 + 1 * 1
+              expect(changeSpy.callCount).toBe(13);
+              resolve(res);
+            }, 50);
+          }, reject).catch(reject);
+        }, 50);
+      }, reject).catch(reject);
+    });
+  });
+
+  it('multiple run() no changes should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const result = {
+      A: 'A', B: 'B', D: 'D', F: 'F', G: 'G'
     };
-    const av = new Avenger({ immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ }, data, {
-      queries: { immutableQ, manualQ, optimisticQ, noCacheQ, cacheDependentQ },
-      state: {}
-    });
-    const qsInput = { queries: { cacheDependentQ }, state: {} };
 
-    it('first change event should contain cached values for the QS', () => {
-      const qs = av.querySet(qsInput);
-      const stub = sinon.stub();
-      qs.on('change', stub);
+    return new Promise((resolve, reject) => {
+      av.run({ G }, state).then(res => {
+        expect(res).toEqual(result);
+        // empty cache, 5 queries
+        expect(changeSpy.callCount).toBe(10);
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args; // eslint-disable-line no-unused-vars
+        expect(value).toEqual(result);
 
-      return qs.run().then(() => {
-        expect(stub.callCount).toBeGreaterThan(1);
-        expect(_.omit(stub.getCall(0).args[0], '_meta')).toEqual({
-          immutableQ: { immutable: 'immutableFoo' },
-          manualQ: { manual: 'manualFoo' },
-          optimisticQ: { optimistic: 'optimisticFoo' }
-        });
-      });
+        av.run({ G }, state).then(res => {
+          expect(res).toEqual({});
+          expect(changeSpy.callCount).toBe(10);
+
+          resolve(res);
+        }, reject).catch(reject);
+      }, reject).catch(reject);
     });
   });
 
-  describe('runCommand', () => {
-    it('should correctly run command and invalidate cache', () => {
-      const serverState = {
-        optimistic: 'optimisticFoo'
-      };
-      const { optimisticQ } = queries({
-        fetchOptimisticFoo: () => Promise.resolve({ optimistic: serverState.optimistic })
-      });
-      const data = {
-        optimisticQ: { optimistic: 'optimisticFoo' }
-      };
-      const av = new Avenger({ optimisticQ }, data, {
-        queries: { optimisticQ },
-        state: {}
-      });
-      const qsInput = { queries: { optimisticQ }, state: { state1: 'a' } };
-      const qs = av.querySet(qsInput);
+  it('multiple run() different queries should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const firstResult = {
+      A: 'A', B: 'B', D: 'D', F: 'F', G: 'G'
+    };
+    const secondResult = {
+      A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F'
+    };
+    const diffResult = {
+      C: 'C', E: 'E'
+    };
 
-      const commandRun = sinon.spy(() => new Promise((resolve) => {
-        serverState.optimistic = 'optimisticBar';
-        resolve({result: 'success'});
-      }));
-      av.cache.invalidate = sinon.spy(av.cache.invalidate);
+    return new Promise((resolve, reject) => {
+      av.run({ G }, state).then(res => {
+        expect(res).toEqual(firstResult);
+        // empty cache, 5 queries
+        expect(changeSpy.callCount).toBe(10);
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args; // eslint-disable-line no-unused-vars
+        expect(value).toEqual(firstResult);
 
-      const onChange = sinon.stub();
-      qs.on('change', onChange);
+        av.run({ E }, state).then(res => {
+          expect(res).toEqual(diffResult);
+          // 10 + 4 queries * 2
+          // D and F are cached and manual (-> + 2 * 1)
+          expect(changeSpy.callCount).toBe(20);
+          const [{ __meta, ...value }] = changeSpy.getCall(19).args; // eslint-disable-line no-unused-vars
+          expect(value).toEqual(secondResult);
 
-      return qs.run().then(() => {
-        const command = Command({
-          invalidates: [optimisticQ],
-          run: commandRun
-        });
-        return qs.runCommand(command);
-      }).then((commandResult) => {
-        expect(commandRun.calledOnce).toBe(true);
-        expect(av.cache.invalidate.calledOnce).toBe(true);
-        expect(av.cache.invalidate.calledWith(
-              optimisticQ.id, { optimisticQ: {} })).toBe(true);
-        expect(commandResult).toEqual({result: 'success'});
-        expect(onChange.lastCall.args[0].optimisticQ).toEqual({
-          optimistic: { optimistic: 'optimisticBar' }
-        });
-      });
+          resolve(res);
+        }, reject).catch(reject);
+      }, reject).catch(reject);
     });
   });
 
+  it('multiple run() different state should work', () => {
+    const av = new Avenger(all);
+    const changeSpy = sinon.spy();
+    av.on('change', changeSpy);
+    const state1 = state;
+    const state2 = { ...state, more: 'this' };
+    const result = {
+      A: 'A', B: 'B', D: 'D', F: 'F', G: 'G'
+    };
+
+    return new Promise((resolve, reject) => {
+      av.run({ G }, state1).then(res => {
+        expect(res).toEqual(result);
+        // empty cache, 5 queries
+        expect(changeSpy.callCount).toBe(10);
+        const [{ __meta, ...value }] = changeSpy.getCall(9).args; // eslint-disable-line no-unused-vars
+        expect(value).toEqual(result);
+
+        av.run({ G }, state2).then(res => {
+          // only state-change-affected queries should refetch
+          // 10 (previous call count) +
+          // 1 * 2 (B is affected) +
+          // 1 * 2 (A is affected) +
+          // 1 * 2 (F is affected) +
+          // 1 * 0 (D is not affected and G neither) +
+          // 1 * 0 (G is not affected)
+          expect(changeSpy.callCount).toBe(16);
+          const [{ __meta, ...value }] = changeSpy.getCall(15).args; // eslint-disable-line no-unused-vars
+          expect(value).toEqual(result);
+
+          resolve(res);
+        }, reject).catch(reject);
+      }, reject).catch(reject);
+    });
+  });
 });

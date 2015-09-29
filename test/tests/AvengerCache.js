@@ -4,8 +4,8 @@ import { hashedParams } from '../../src/AvengerCache';
 
 const fixtureState = {
   myId: {
-    'foo.eee:bar': 42,
-    'foo.ooo:baz': 101
+    'foo:bar': 42,
+    'foo:baz': 101
   },
   optimisticQ: {
     '∅': { optimistic: 'optimisticFoo' }
@@ -15,25 +15,25 @@ const fixtureState = {
   }
 };
 
-describe('AvengerCache', () => {
+describe('cache', () => {
 
   describe('hashedParams', () => {
 
-    it('should work for AllowedParams', () => {
+    it('should work for allowed param types', () => {
       const hashed = hashedParams({
-        q2: { c: 'foo', b: 42.1 },
-        q1: { a: true }
+        q2: 'foo',
+        q1: true
       });
-      expect(hashed).toBe('q1.a:true-q2.b:42.1-q2.c:foo');
+      expect(hashed).toBe('q1:true-q2:foo');
     });
 
     it('should be sort of deterministic', () => {
       expect(hashedParams({
-        q2: { c: 'foo', b: 42.1 },
-        q1: { a: true }
+        q2: 42.1,
+        q1: false
       })).toBe(hashedParams({
-        q2: { c: 'foo', b: 42.1 },
-        q1: { a: true }
+        q1: false,
+        q2: 42.1
       }));
     });
 
@@ -42,8 +42,8 @@ describe('AvengerCache', () => {
   it('should accept an initial state', () => {
     const cache = new AvengerCache(fixtureState);
 
-    expect(cache.get('myId', { foo: { eee: 'bar' } })).toBe(42);
-    expect(cache.get('myId', { foo: { ooo: 'baz' } })).toBe(101);
+    expect(cache.get('myId', { foo: 'bar' })).toBe(42);
+    expect(cache.get('myId', { foo: 'baz' })).toBe(101);
   });
 
   it('should be serializable', () => {
