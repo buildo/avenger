@@ -60,7 +60,7 @@ export function runLocal(params) {
       depsPrs.then(
         depsResults => {
           return createFetcher({
-            id, fetch, state, cache, cacheMode, cacheParams, emit,
+            id, fetch, state, cache, cacheMode, cacheParams, emit, reject,
             depsParams: minDepsParams(dependencies || {}, depsResults),
             multiDep: (() => {
               const multiKey = Object.keys(dependencies || {}).filter(k => !!dependencies[k].multi)[0];
