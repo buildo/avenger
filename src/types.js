@@ -96,7 +96,7 @@ export const QueryNodes = QueryNodeEdges;
 
 export const StateKey = t.subtype(
   t.Any,
-  v => t.Str.is(v) || t.Num.is(v) || t.Bool.is(v),
+  v => t.Str.is(v) || t.Num.is(v) || t.Bool.is(v) || t.Dat.is(v),
   'StateKey'
 );
 export const State = t.dict(t.Str, StateKey, 'State');
