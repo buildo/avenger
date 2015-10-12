@@ -22,9 +22,16 @@ describe('cache', () => {
     it('should work for allowed param types', () => {
       const hashed = hashedParams({
         q2: 'foo',
-        q1: true
+        q1: true,
+        p1: 10
       });
-      expect(hashed).toBe('q1:true-q2:foo');
+      expect(hashed).toBe('p1:10-q1:true-q2:foo');
+    });
+
+    it('should support dates', () => {
+      expect(() => {
+        hashedParams({ a: new Date() });
+      }).toNotThrow();
     });
 
     it('should be sort of deterministic', () => {
