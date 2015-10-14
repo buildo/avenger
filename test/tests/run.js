@@ -178,16 +178,14 @@ describe('runLocal', () => {
           state: { ...state, more: 'foo' },
           oldState: state
         }).then(r => {
-          // A, B should emit twice, with
+          // A, C, B, F should emit twice, with
           // loading=true first, and then with loading=false when done
-          // (no cached value for new state for F),
-          // except for C, which shouldn't run at all
-          // (no diff in relevant state)
-          expect(emit.callCount).toBe(14);
+          // (no cached value for new state for F)
+          expect(emit.callCount).toBe(16);
           const Fcalls = emit.getCalls().filter(c => c.args[0].id === 'F');
           expect(Fcalls.length).toBe(2 + 2);
           const Ccalls = emit.getCalls().filter(c => c.args[0].id === 'C');
-          expect(Ccalls.length).toBe(2 + 0);
+          expect(Ccalls.length).toBe(2 + 2);
           resolve(r);
         }, reject).catch(reject);
       }, reject).catch(reject);
