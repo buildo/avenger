@@ -2,6 +2,7 @@ import t from 'tcomb';
 import { QueryNodes, State/*, MinimizedCache*/ } from './types';
 import { allValues, collect, error } from './util';
 import positiveDiff from './positiveDiff';
+import downset from './downset';
 import createFetcher from './createFetcher';
 import minDepsParams from './minDepsParams';
 
@@ -41,9 +42,11 @@ export function runLocal(params) {
   const diff = positiveDiff({
     a: input, b: oldInput, aState: state, bState: oldState
   });
-  const toRun = Object.keys(input)
-    .filter(k => diff[k])
-    .reduce(...collect(input));
+  const toRun = downset(
+    Object.keys(input)
+      .filter(k => diff[k])
+      .reduce(...collect(input))
+  );
   const runState = {};
 
   const _run = node => {

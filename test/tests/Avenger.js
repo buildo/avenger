@@ -185,15 +185,15 @@ describe('Avenger', () => {
         expect(value).toEqual(result);
 
         av.run({ G }, state2).then(res => {
-          // only state-change-affected queries should refetch
+          // only state-change-affected queries (and their dependents) should refetch
           // 10 (previous call count) +
           // 1 * 2 (B is affected) +
           // 1 * 2 (A is affected) +
           // 1 * 2 (F is affected) +
-          // 1 * 0 (D is not affected and G neither) +
-          // 1 * 0 (G is not affected)
-          expect(changeSpy.callCount).toBe(16);
-          const [{ __meta, ...value }] = changeSpy.getCall(15).args; // eslint-disable-line no-unused-vars
+          // 1 * 1 (D is not affected but B is, it should refetch, and it is manual) +
+          // 1 * 2 (G is not affected but B and thus D yes, it should be cached and eventually refetch)
+          expect(changeSpy.callCount).toBe(19);
+          const [{ __meta, ...value }] = changeSpy.getCall(18).args; // eslint-disable-line no-unused-vars
           expect(value).toEqual(result);
 
           resolve(res);
