@@ -17,12 +17,13 @@ export default function createFetcher({ multiDep, ...args }) {
     const filteredKeys = allKeys.filter(k => (cacheParams ? Object.keys(cacheParams) : allKeys).indexOf(k) !== -1);
 
     const filteredCacheParams = filteredKeys.reduce(...collect(allParams));
+    const cached = cacheable && cache.has(id, filteredCacheParams);
     const fromCache = cacheable && cache.get(id, filteredCacheParams);
-    const needsFetch = cacheMode === 'optimistic' || !fromCache;
+    const needsFetch = cacheMode === 'optimistic' || !cached;
 
     emit({
       id,
-      cache: !!fromCache,
+      cache: cached,
       loading: needsFetch
     }, fromCache || null);
 
