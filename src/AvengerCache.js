@@ -34,6 +34,16 @@ export default class AvengerCache {
     }
   }
 
+  has(id, params) {
+    this.checkParams(params);
+
+    if (!this.state[id]) {
+      return false;
+    }
+
+    return typeof this.state[id][hashedParams(params)] !== 'undefined';
+  }
+
   get(id, params) {
     this.checkParams(params);
 
