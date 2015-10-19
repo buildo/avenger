@@ -12,7 +12,7 @@ const RunLocalParams = t.struct({
   state: State,
   oldState: State,
   cache: t.Any,
-  emit: t.Func
+  emit: t.Function
 }, 'RunLocalParams');
 
 export function runLocal(params) {
@@ -69,7 +69,7 @@ export function runLocal(params) {
               const multiKey = Object.keys(dependencies || {}).filter(k => !!dependencies[k].multi)[0];
               return multiKey && {
                 key: multiKey,
-                map: t.Func.is(dependencies[multiKey]) ? dependencies[multiKey] : v => v
+                map: t.Function.is(dependencies[multiKey]) ? dependencies[multiKey] : v => v
               };
             }())
           }).then(res => {

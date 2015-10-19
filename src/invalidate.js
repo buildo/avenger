@@ -7,9 +7,9 @@ const InvalidateLocalParams = t.struct({
   invalidate: AvengerInput,
   input: QueryNodes,
   state: State,
-  result: t.Obj,
+  result: t.Object,
   cache: t.Any,
-  emit: t.Func
+  emit: t.Function
 }, 'InvalidateLocalParams');
 
 export function invalidateLocal(params) {
