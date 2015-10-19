@@ -44,7 +44,7 @@ const CacheMode = t.enums.of([
   'manual'
 ], 'CacheMode');
 
-const TcombType = t.subtype(t.Any, isType, 'TcombType');
+const TcombType = t.irreducible('TcombType', isType);
 
 const CacheParams = t.dict(t.Str, TcombType, 'CacheParams');
 
