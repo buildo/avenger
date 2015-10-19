@@ -94,10 +94,9 @@ QueryNodeEdges.meta.codomain = QueryNode;
 
 export const QueryNodes = QueryNodeEdges;
 
-export const StateKey = t.refinement(
-  t.Any,
+export const StateKey = t.irreducible(
+  'StateKey',
   v => t.String.is(v) || t.Number.is(v) || t.Boolean.is(v) || t.Date.is(v),
-  'StateKey'
 );
 export const State = t.dict(t.String, StateKey, 'State');
 
