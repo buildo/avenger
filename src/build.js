@@ -1,5 +1,5 @@
 import t from 'tcomb';
-import { AvengerInput } from './types';
+import { AvengerInput, QueryNodes } from './types';
 import upset from './upset';
 import find from 'lodash/collection/find';
 import every from 'lodash/collection/every';
@@ -8,7 +8,7 @@ import omit from 'lodash/object/omit';
 export default function build(
   input: AvengerInput,
   all: AvengerInput
-) { // : QueryNodes
+): QueryNodes {
   const _upset = upset(input);
 
   const builtUp = Object.keys(_upset).reduce(({ from, to }) => {

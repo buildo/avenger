@@ -2,8 +2,12 @@ import union from 'lodash/array/union';
 import t from 'tcomb';
 import { collect, error } from './util';
 
-export default function createFetcher({ multiDep, ...args }) {
-  function createFetcherInner({ id, fetch, cacheMode, cacheParams, depsParams, state, cache, emit, reject }) {
+export default function createFetcher({
+  multiDep, ...args
+}) {
+  function createFetcherInner({
+    id, fetch, cacheMode, cacheParams, depsParams, state, cache, emit, reject
+  }) {
     if (process.env.NODE_ENV !== 'production') {
       // check for duplicate keys in state and depsParams
       const stateKeys = Object.keys(state);

@@ -1,5 +1,7 @@
 import t, { isType } from 'tcomb';
 
+export const PromiseType = t.irreducible('Promise', v => v instanceof Promise);
+
 // unique string id for the query
 const QueryId = t.String;
 

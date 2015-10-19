@@ -1,5 +1,5 @@
 import t from 'tcomb';
-import { QueryNodes, State/*, MinimizedCache*/ } from './types';
+import { QueryNodes, State/*, MinimizedCache*/, PromiseType } from './types';
 import { allValues, collect, error } from './util';
 import positiveDiff from './positiveDiff';
 import downset from './downset';
@@ -15,7 +15,7 @@ const RunLocalParams = t.struct({
   emit: t.Function
 }, 'RunLocalParams');
 
-export function runLocal(params: RunLocalParams) {
+export function runLocal(params: RunLocalParams): PromiseType {
   const {
     input, oldInput,
     state, oldState,

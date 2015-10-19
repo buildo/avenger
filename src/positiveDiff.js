@@ -8,7 +8,9 @@ const PositiveDiffParams = t.struct({
   bState: t.maybe(State)
 }, 'PositiveDiffParams');
 
-export default function positiveDiff(params: PositiveDiffParams) {
+const PositiveDiffOutput = t.dict(t.String, t.Boolean, 'PositiveDiffOutput');
+
+export default function positiveDiff(params: PositiveDiffParams): PositiveDiffOutput {
   const {
     a, b, aState, bState
   } = params;

@@ -13,7 +13,7 @@ const _upset = query => {
   };
 };
 
-export default function upset(input: QueryNodes) {
+export default function upset(input: QueryNodes): QueryNodes {
   return Object.keys(input).reduce((up, qId) => ({
     ...up,
     ..._upset(input[qId])

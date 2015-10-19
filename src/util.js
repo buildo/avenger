@@ -1,6 +1,10 @@
+import { PromiseType } from './types';
+import t from 'tcomb';
 import zipObject from 'lodash/array/zipObject';
 
-export const allValues = prs => {
+const DictOfPromises = t.dict(t.String, PromiseType, 'DictOfPromises');
+
+export const allValues = (prs: DictOfPromises): PromiseType => {
   const keys = Object.keys(prs);
   const promises = keys.map((k) => prs[k]);
   return Promise.all(promises).then(
@@ -13,7 +17,7 @@ export const allValues = prs => {
   });
 };
 
-export const collect = (o, map = v => v) => [
+export const collect = (o: t.Object, map = v => v) => [
   (ac, k) => ({
     ...(ac || {}),
     [k]: map(o[k], k)
@@ -21,7 +25,9 @@ export const collect = (o, map = v => v) => [
   {}
 ];
 
-export const error = (emit, id, reject) => err => {
+export const error = (
+  emit: t.Function, id: t.String, reject: t.Function
+) => (err: t.Any) => {
   reject(err);
   emit({ id, error: true }, err);
 };
