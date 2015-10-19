@@ -42,7 +42,7 @@ export default function createFetcher({ multiDep, ...args }) {
 
   if (multiDep && multiDep.key) {
     const multiParams = args.depsParams[multiDep.key];
-    t.assert(t.Arr.is(multiParams), `Invalid (non-Array) result for dependency param ${multiDep.key} (among ${args.id} params)`);
+    t.assert(t.Array.is(multiParams), `Invalid (non-Array) result for dependency param ${multiDep.key} (among ${args.id} params)`);
 
     const emit = index => (meta, value) => {
       args.emit({
