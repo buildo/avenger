@@ -7,11 +7,7 @@ import { runLocal } from './run';
 import { invalidateLocal } from './invalidate';
 
 export default class Avenger {
-  constructor(allQueries, initialCacheState = {}) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(AvengerInput.is(allQueries), `Invalid allQueries`);
-    }
-
+  constructor(allQueries: AvengerInput, initialCacheState = {}) {
     this.allQueries = allQueries;
     this.currentInput = null;
     this.currentState = {};
@@ -30,18 +26,14 @@ export default class Avenger {
     return this.emitter.off(...args);
   }
 
-  emit = (meta, value) => {
-    if (process.env.NODE_ENV !== 'production') {
-      EmitMeta(meta);
-    }
-
+  emit = (meta: EmitMeta, value) => {
     const {
       id,
+      loading = false,
       cache = false,
       error = false,
       multi = false,
-      multiAll = false,
-      loading = false
+      multiAll = false
     } = meta;
     const now = new Date().getTime();
     const { cache: currentCache } = this.result.__meta[id] || {};
@@ -129,12 +121,8 @@ export default class Avenger {
   // there should also be a way to track subsequent invalidation
   // e.g. `runCommandAndThenWaitForSubsequentInvalidation`
   // or this could be built on top of emit if we add a `stable` event
-  runCommand(state, command) {
+  runCommand(state, command: Command) {
     // TODO(gio): not handling remote version for now
-
-    if (process.env.NODE_ENV !== 'production') {
-      Command(command);
-    }
 
     return command.run(state).then(res => {
       this.invalidate(

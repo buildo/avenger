@@ -8,10 +8,7 @@ import { State } from './types';
 
 const log = debug('AvengerCache');
 
-export function hashedParams(params) {
-  if (process.env.NODE_ENV !== 'production') {
-    State(params);
-  }
+export function hashedParams(params: State): t.Str {
   const keys = Object.keys(params);
   keys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
   const hashed = keys.map(k1 => `${k1}:${params[k1]}`).join('-');
@@ -20,7 +17,9 @@ export function hashedParams(params) {
 
 export default class AvengerCache {
 
-  constructor(initialState = {}) {
+  constructor(initialState: {
+    [key: t.String]: {[key: t.String]: t.Object}
+  } = {}) {
     this.state = initialState;
   }
 
@@ -28,15 +27,7 @@ export default class AvengerCache {
     return this.state;
   }
 
-  checkParams(params) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(State.is(params), `Invalid params provided to cache: ${JSON.stringify(params)}`);
-    }
-  }
-
-  has(id, params) {
-    this.checkParams(params);
-
+  has(id: t.String, params: State) { // : t.Boolean
     if (!this.state[id]) {
       return false;
     }
@@ -44,9 +35,7 @@ export default class AvengerCache {
     return typeof this.state[id][hashedParams(params)] !== 'undefined';
   }
 
-  get(id, params) {
-    this.checkParams(params);
-
+  get(id: t.String, params: State) { // : t.Any
     if (!this.state[id]) {
       return null;
     }
@@ -54,9 +43,7 @@ export default class AvengerCache {
     return this.state[id][hashedParams(params)] || null;
   }
 
-  set = (id, params) => value => {
-    this.checkParams(params);
-
+  set = (id: t.String, params: State) => (value: t.Any) => {
     const hp = hashedParams(params);
     log(`set ${id} ${hp} = %o`, params, value);
     log(`current ${id} %o, ${id}[${hp}] (missing id: ${!this.state[id]})`, this.state[id], this.state[id] ? this.state[id][hp] : undefined);
@@ -68,9 +55,7 @@ export default class AvengerCache {
     this.state[id][hp] = value;
   };
 
-  invalidate = (id, params) => {
-    this.checkParams(params);
-
+  invalidate = (id: t.String, params: State) => {
     if (this.state[id]) {
       const hp = hashedParams(params);
       delete this.state[id][hp];

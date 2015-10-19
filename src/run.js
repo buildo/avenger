@@ -15,11 +15,7 @@ const RunLocalParams = t.struct({
   emit: t.Function
 }, 'RunLocalParams');
 
-export function runLocal(params) {
-  if (process.env.NODE_ENV !== 'production') {
-    RunLocalParams(params);
-  }
-
+export function runLocal(params: RunLocalParams) {
   const {
     input, oldInput,
     state, oldState,

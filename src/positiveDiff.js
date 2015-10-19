@@ -8,11 +8,7 @@ const PositiveDiffParams = t.struct({
   bState: t.maybe(State)
 }, 'PositiveDiffParams');
 
-export default function positiveDiff(params) {
-  if (process.env.NODE_ENV !== 'production') {
-    PositiveDiffParams(params);
-  }
-
+export default function positiveDiff(params: PositiveDiffParams) {
   const {
     a, b, aState, bState
   } = params;

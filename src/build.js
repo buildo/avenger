@@ -5,13 +5,10 @@ import find from 'lodash/collection/find';
 import every from 'lodash/collection/every';
 import omit from 'lodash/object/omit';
 
-// (AvengerInput, AvengerInput) -> QueryNodes
-export default function build(input, all) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(AvengerInput.is(input), `invalid input provided to build`);
-    t.assert(AvengerInput.is(all), `invalid all provided to build`);
-  }
-
+export default function build(
+  input: AvengerInput,
+  all: AvengerInput
+) { // : QueryNodes
   const _upset = upset(input);
 
   const builtUp = Object.keys(_upset).reduce(({ from, to }) => {
