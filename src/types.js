@@ -102,6 +102,9 @@ export const StateKey = t.irreducible(
 );
 export const State = t.dict(t.String, StateKey, 'State');
 
+// cache internal state representation
+export const CacheState = t.dict(t.String, t.dict(t.String, t.Any));
+
 export const EmitMeta = t.struct({
   id: QueryId,
   error: t.maybe(t.Boolean),

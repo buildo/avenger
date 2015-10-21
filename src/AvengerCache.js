@@ -4,7 +4,7 @@
 
 import debug from 'debug';
 import t from 'tcomb';
-import { State } from './types';
+import { State, CacheState } from './types';
 
 const log = debug('AvengerCache');
 
@@ -14,8 +14,6 @@ export function hashedParams(params: State): t.Str {
   const hashed = keys.map(k1 => `${k1}:${params[k1]}`).join('-');
   return hashed ? hashed : '∅';
 }
-
-const CacheState = t.dict(t.String, t.dict(t.String, t.Any));
 
 export default class AvengerCache {
 

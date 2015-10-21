@@ -1,13 +1,13 @@
 import t from 'tcomb';
 import EventEmitter3 from 'eventemitter3';
-import { AvengerInput, State, Command, EmitMeta, PromiseType } from './types';
+import { AvengerInput, State, CacheState, Command, EmitMeta, PromiseType } from './types';
 import AvengerCache from './AvengerCache';
 import build from './build';
 import { runLocal } from './run';
 import { invalidateLocal } from './invalidate';
 
 export default class Avenger {
-  constructor(allQueries: AvengerInput, initialCacheState = {}) {
+  constructor(allQueries: AvengerInput, initialCacheState: CacheState = {}) {
     this.allQueries = allQueries;
     this.currentInput = null;
     this.currentState = {};
