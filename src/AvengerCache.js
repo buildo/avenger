@@ -15,19 +15,19 @@ export function hashedParams(params: State): t.Str {
   return hashed ? hashed : '∅';
 }
 
+const CacheState = t.dict(t.String, t.dict(t.String, t.Any));
+
 export default class AvengerCache {
 
-  constructor(initialState: {
-    [key: t.String]: {[key: t.String]: t.Object}
-  } = {}) {
+  constructor(initialState: CacheState = {}) {
     this.state = initialState;
   }
 
-  toJSON() {
+  toJSON(): CacheState {
     return this.state;
   }
 
-  has(id: t.String, params: State) { // : t.Boolean
+  has(id: t.String, params: State): t.Boolean {
     if (!this.state[id]) {
       return false;
     }
@@ -35,7 +35,7 @@ export default class AvengerCache {
     return typeof this.state[id][hashedParams(params)] !== 'undefined';
   }
 
-  get(id: t.String, params: State) { // : t.Any
+  get(id: t.String, params: State): t.Any {
     if (!this.state[id]) {
       return null;
     }

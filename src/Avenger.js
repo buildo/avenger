@@ -1,6 +1,6 @@
 import t from 'tcomb';
 import EventEmitter3 from 'eventemitter3';
-import { AvengerInput, State, Command, EmitMeta } from './types';
+import { AvengerInput, State, Command, EmitMeta, PromiseType } from './types';
 import AvengerCache from './AvengerCache';
 import build from './build';
 import { runLocal } from './run';
@@ -70,9 +70,8 @@ export default class Avenger {
     });
   };
 
-  run(input: AvengerInput, state: State) {
+  run(input: AvengerInput, state: State): PromiseType {
     // TODO(gio): not handling remote version for now
-
     const built = build(input, this.allQueries);
 
     // cleanup current result..
@@ -103,13 +102,13 @@ export default class Avenger {
     });
   }
 
-  invalidate(state: State, invalidate: AvengerInput) {
+  invalidate(state: State, _inv: AvengerInput): PromiseType {
     // TODO(gio): not handling remote version for now
 
     const { __meta, ...result } = this.result;
 
     return invalidateLocal({
-      invalidate,
+      invalidate: _inv,
       input: this.currentInput,
       result,
       state,
@@ -118,10 +117,10 @@ export default class Avenger {
     });
   }
 
-  // there should also be a way to track subsequent invalidation
+  // TODO(gio): there should also be a way to track subsequent invalidation
   // e.g. `runCommandAndThenWaitForSubsequentInvalidation`
   // or this could be built on top of emit if we add a `stable` event
-  runCommand(state: State, command: Command) {
+  runCommand(state: State, command: Command): PromiseType {
     // TODO(gio): not handling remote version for now
 
     return command.run(state).then(res => {
