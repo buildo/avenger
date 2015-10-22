@@ -1,5 +1,5 @@
 import t from 'tcomb';
-import { AvengerInput, QueryNodes, State } from './types';
+import { AvengerInput, QueryNodes, State, PromiseType } from './types';
 import { runLocal } from './run';
 import { collect } from './util';
 
@@ -12,11 +12,7 @@ const InvalidateLocalParams = t.struct({
   emit: t.Function
 }, 'InvalidateLocalParams');
 
-export function invalidateLocal(params) {
-  if (process.env.NODE_ENV !== 'production') {
-    InvalidateLocalParams(params);
-  }
-
+export function invalidateLocal(params: InvalidateLocalParams): PromiseType {
   const {
     // queries to be invalidated
     invalidate,

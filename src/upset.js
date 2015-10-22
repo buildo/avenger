@@ -1,3 +1,5 @@
+import { QueryNodes } from './types';
+
 const _upset = query => {
   const deps = Object.keys(query.dependencies || {})
     .reduce((up, k) => ({
@@ -11,7 +13,7 @@ const _upset = query => {
   };
 };
 
-export default function upset(input) {
+export default function upset(input: QueryNodes): QueryNodes {
   return Object.keys(input).reduce((up, qId) => ({
     ...up,
     ..._upset(input[qId])

@@ -36,9 +36,9 @@ describe('Avenger', () => {
       const [{ __meta, ...value }] = changeSpy.getCall(13).args;
       expect(value).toEqual(results1);
       Object.keys(__meta).forEach(k => {
-        expect(__meta[k].cache).toBe(false);
-        expect(__meta[k].error).toBe(false);
-        expect(__meta[k].loading).toBe(false);
+        expect(__meta[k].cache).toNotBe(true);
+        expect(__meta[k].error).toNotBe(true);
+        expect(__meta[k].loading).toNotBe(true);
         expect(__meta[k].timestamp).toBeMoreThan(start).toBeLessThan(end);
       });
     }, err => {
@@ -62,9 +62,9 @@ describe('Avenger', () => {
             expect(changeSpy.callCount).toBe(14);
             const [{ __meta, ...value }] = changeSpy.getCall(13).args;
             Object.keys(__meta).forEach(k => {
-              expect(__meta[k].cache).toBe(false);
-              expect(__meta[k].error).toBe(false);
-              expect(__meta[k].loading).toBe(false);
+              expect(__meta[k].cache).toNotBe(true);
+              expect(__meta[k].error).toNotBe(true);
+              expect(__meta[k].loading).toNotBe(true);
               expect(__meta[k].timestamp).toBeMoreThan(start).toBeLessThan(end);
             });
 

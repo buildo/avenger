@@ -1,5 +1,7 @@
 import t, { isType } from 'tcomb';
 
+export const PromiseType = t.irreducible('Promise', v => v instanceof Promise);
+
 // unique string id for the query
 const QueryId = t.String;
 
@@ -99,6 +101,9 @@ export const StateKey = t.irreducible(
   v => t.String.is(v) || t.Number.is(v) || t.Boolean.is(v) || t.Date.is(v),
 );
 export const State = t.dict(t.String, StateKey, 'State');
+
+// cache internal state representation
+export const CacheState = t.dict(t.String, t.dict(t.String, t.Any));
 
 export const EmitMeta = t.struct({
   id: QueryId,
