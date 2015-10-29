@@ -16,6 +16,11 @@ export default class Avenger {
     this.result = {
       __meta: {}
     };
+    if (process.env.NODE_ENV === 'development') {
+      if (typeof window !== 'undefined') {
+        window.$av = this;
+      }
+    }
   }
 
   on(...args) {
