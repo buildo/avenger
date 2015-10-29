@@ -34,11 +34,11 @@ export default class Avenger {
   emit = (meta: EmitMeta, value: t.Any) => {
     const {
       id,
-      loading = false,
-      cache = false,
-      error = false,
-      multi = false,
-      multiAll = false
+      loading,
+      cache,
+      error,
+      multi,
+      multiAll
     } = meta;
     const now = new Date().getTime();
 
@@ -61,8 +61,8 @@ export default class Avenger {
 
     this.result.__meta[id] = {
       timestamp: now,
-      cache,
-      loading,
+      cache: !!cache,
+      loading: !!loading,
       error: !!error
     };
 
