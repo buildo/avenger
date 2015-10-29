@@ -36,25 +36,21 @@ export default class Avenger {
       multiAll = false
     } = meta;
     const now = new Date().getTime();
-    const { cache: currentCache } = this.result.__meta[id] || {};
 
-    if (error) {
-      // TODO(gio): should also update __meta
-      // and emit a `change`
-      this.emitter.emit('error', value);
-      return;
-    }
-
-    if (multi && !multiAll) {
+    if (multi && !multiAll) { // swallow up!
       // not sure about this,
       // but seems easier to just emit once
       // with entire result change for multi queries
       return;
     }
 
-    // TODO(gio): we should make sure not to
-    // throw away valid refs here...
-    if (value) {
+    // TODO(gio): should value be the last valid value even if
+    // last fetch caused an error?
+    // error meta is anyway updated accordingly below
+    if (!error) {
+      // TODO(gio): we should make sure not to throw away
+      // valid refs here... but as long as potentially reusable
+      // values are from cache (memory), we should be safe
       this.result[id] = value;
     }
 
@@ -62,8 +58,12 @@ export default class Avenger {
       timestamp: now,
       cache,
       loading,
-      error: false
+      error: !!error
     };
+
+    if (error) {
+      this.emitter.emit('error', value);
+    }
 
     this.emitter.emit('change', {
       ...this.result
