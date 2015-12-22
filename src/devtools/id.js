@@ -1,0 +1,1 @@
+export default '__AV_DEVTOOLS__';
