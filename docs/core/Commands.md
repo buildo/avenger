@@ -20,6 +20,6 @@ export const Command = t.struct({
 }, 'Command');
 ```
 
-A `Command` can be easily mapped to a `POST` or `PUT` method in a REST api, as well as to a synchronous action, e.g. in `localStorage.set(key, value)`.
+A `Command` can be easily mapped to a `POST` or `PUT` method in a REST api, as well as to a synchronous action, as e.g. in `localStorage.setItem(key, value)`.
 
-In any case, they shouldn't return any meaningful value, except for a way to track (successful) completion: this is why the `run` function should return a `Promise`.
+In any case, they shouldn't return any meaningful value, except for a way to track completion: this is why the `run` function should return a `Promise`.
