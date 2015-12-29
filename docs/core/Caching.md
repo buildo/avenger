@@ -1,6 +1,6 @@
 # Caching
 
-Queries can be cached, using various strategies. Here's the list of possible values:
+Queries can be cached, using different strategies. Here's the list of possible values:
 
 ```js
 const CacheMode = t.enums.of(['no', 'optimistic', 'manual'], 'CacheMode');
