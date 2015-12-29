@@ -1,0 +1,12 @@
+{
+  "gitbook": "2.4.3",
+  "structure": {
+    "summary": "docs/README.md"
+  },
+  "plugins": ["github"],
+  "pluginsConfig": {
+    "github": {
+      "url": "https://github.com/buildo/avenger/"
+    }
+  }
+}
