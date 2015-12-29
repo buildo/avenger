@@ -1,15 +1,15 @@
 # Caching
 
-Queries can be cached, using various strategies. Here’s the list of possible values:
+Queries can be cached, using various strategies. Here's the list of possible values:
 
 ```js
 const CacheMode = t.enums.of(['no', 'optimistic', 'manual'], 'CacheMode');
 ```
 
-Let’s take a closer look:
+Let's take a closer look:
 
 - `no`
-  - the default cache strategy. Results for this query won’t be stored in cache.
+  - the default cache strategy. Results for this query won't be stored in cache.
 - `optimistic`
   - results are stored and always returned from cache
   - every time the query is executed, the `fetch` is performed again
@@ -19,7 +19,7 @@ Let’s take a closer look:
   - `fetch` is re-performed only upon manual invalidation
 
 
-Avenger doesn’t make any assumption about cache serialization. It is totally up to you if you want to serialize your cache e.g. to `localStorage` when running in a browser. It is also up to you to make sure your cached data is serializable, avenger won’t complain to store non-serializable data in memory.
+Avenger doesn't make any assumption about cache serialization. It is totally up to you if you want to serialize your cache e.g. to `localStorage` when running in a browser. It is also up to you to make sure your cached data is serializable, avenger won't complain to store non-serializable data in memory.
 
 Accessing and serializing the current cache state is as simple as:
 
