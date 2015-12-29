@@ -3,7 +3,7 @@
   "structure": {
     "summary": "/docs/README.md"
   },
-  "plugins": ["autocover", "github"],
+  "plugins": ["autocover", "github", "prism", "-highlight"],
   "pluginsConfig": {
     "github": {
       "url": "https://github.com/buildo/avenger/"
