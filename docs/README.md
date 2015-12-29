@@ -12,4 +12,4 @@
     * [Caching](/docs/core/Caching.md)
     * [Commands](/docs/core/Commands.md)
     * [Meta](/docs/core/Meta.md)
-* [API Reference](/docs/basics/README.md)
+* [API Reference](/docs/api/README.md)
