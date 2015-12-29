@@ -5,7 +5,7 @@
     * [Overview](/docs/introduction/Overview.md)
     * [Motivation](/docs/introduction/Motivation.md)
     * [Example](/docs/introduction/Example.md)
-* [Core](/docs/basics/README.md)
+* [Core](/docs/core/README.md)
     * [Avenger](/docs/core/Avenger.md)
     * [Queries](/docs/core/Queries.md)
     * [Dependencies](/docs/core/Dependencies.md)
