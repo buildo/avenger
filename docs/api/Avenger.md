@@ -12,7 +12,23 @@ TBD
 ## Avenger Methods
 ### <a id='on'></a>[`on(event, listener)`](#on)
 
+### Arguments
+**event** (*Function*)
+
+**listener** (*Function*) 
+
+#### Returns
+(*EventEmitter*): An EventEmitter
+
 ### <a id='off'></a>[`off(event, listener)`](#off)
+
+### Arguments
+**event** (*Function*)
+
+**listener** (*Function*) 
+
+#### Returns
+(*EventEmitter*): An EventEmitter
 
 ### <a id='emit'></a>[`emit(meta, value)`](#emit)
 
