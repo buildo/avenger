@@ -3,10 +3,14 @@
   "structure": {
     "summary": "/docs/README.md"
   },
-  "plugins": ["autocover", "github", "prism", "-highlight"],
+  "plugins": ["autocover", "github", "prism", "-highlight", "edit-link"],
   "pluginsConfig": {
     "github": {
       "url": "https://github.com/buildo/avenger/"
-    }
+    },
+    "edit-link": {
+      "base": "https://github.com/buildo/avenger/tree/master",
+      "label": "Edit This Page"
+    },
   }
 }
