@@ -1,2 +1,2 @@
 # avenger
-when frontends finally avenge themselves
+When front-ends finally avenge themselves
