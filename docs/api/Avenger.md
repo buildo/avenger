@@ -13,9 +13,9 @@ TBD
 ### <a id='on'></a>[`on(event, listener)`](#on)
 
 ### Arguments
-**event** (*Function*)
+`event` (*String*): 
 
-**listener** (*Function*) 
+`listener` (*Function*):
 
 #### Returns
 (*EventEmitter*): An EventEmitter
@@ -23,9 +23,9 @@ TBD
 ### <a id='off'></a>[`off(event, listener)`](#off)
 
 ### Arguments
-**event** (*Function*)
+`event` (*String*):
 
-**listener** (*Function*) 
+`listener` (*Function*):
 
 #### Returns
 (*EventEmitter*): An EventEmitter
