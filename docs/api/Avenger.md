@@ -11,7 +11,7 @@ TBD
 
 ## Avenger Methods
 ### <a id='on'></a>[`on(event, listener)`](#on)
-
+TBD
 ### Arguments
 `event` (*String*): 
 
