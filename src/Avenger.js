@@ -27,8 +27,8 @@ export default class Avenger {
     return this.emitter.on(...args);
   }
 
-  off(...args) {
-    return this.emitter.off(...args);
+  removeListener(...args) {
+    return this.emitter.removeListener(...args);
   }
 
   emit = (meta: EmitMeta, value: t.Any) => {
