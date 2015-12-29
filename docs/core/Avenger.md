@@ -30,7 +30,7 @@ avenger.on('change', data => { /* do stuff with data, e.g: re-render */ });
 From this point on, you should notify avenger when your data needs change, and wait for updates. The main method is `run` that should be invoked passing the query declaration and the current query-relevant state:
 
 ```js
-av.run(querySet, state);
+avenger.run(querySet, state);
 ```
 
 The `querySet` should be a subset of the query universe.
