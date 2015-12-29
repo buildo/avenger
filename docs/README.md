@@ -1,3 +1,14 @@
 ## Table of Contents
 
-* [Readme](/README.md)
+* [Introduction](/docs/introduction/README.md)
+    * [Overview](/docs/introduction/Overview.md)
+    * [Motivation](/docs/introduction/Motivation.md)
+    * [Example](/docs/introduction/Example.md)
+* [Core](/docs/basics/README.md)
+    * [Avenger](/docs/core/Avenger.md)
+    * [Queries](/docs/core/Queries.md)
+    * [Dependencies](/docs/core/Dependencies.md)
+    * [Caching](/docs/core/Caching.md)
+    * [Commands](/docs/core/Commands.md)
+    * [Meta](/docs/core/Meta.md)
+* [API Reference](/docs/basics/README.md)
