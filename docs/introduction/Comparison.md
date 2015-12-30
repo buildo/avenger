@@ -24,7 +24,7 @@ Similarities:
 
 Differences:
 - Avenger it's not react-specific (although we use react as well)
-- Avenger makes no assumption on the origin of the data. It's easy to go to HTTP same as it is to go to localStorage.
+- We make no assumption on the origin of the data. It's easy to go to HTTP same as it is to go to localStorage.
 - Avenger offers smart reuse of the data your UI needs, and also manages a cache to reuse results later in time. At current status, React Refetch doesn't seem to offer neither of the two.
 
 ### [React Transmit](https://github.com/RickWong/react-transmit)
