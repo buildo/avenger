@@ -5,8 +5,8 @@ Title: Avenger workflow
 App->Avenger: userQuery + { userId: 42 }
 Avenger->userQuery: fetch({ userId: 42 })
 userQuery->API: GET /users/42
-API->user query: { user: { _id: 42, name: John } }
-user query->Avenger: { user: { _id: 42, name: John } }
+API->userQuery: { user: { _id: 42, name: John } }
+userQuery->Avenger: { user: { _id: 42, name: John } }
 Avenger->App: { userQuery: { user: { _id: 42, name: John } } }
 ```
 
