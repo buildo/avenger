@@ -16,7 +16,7 @@ Similarities:
 - It is declarative
 - Let's you co-locate queries with your UI components when paired with [revenge](https://github.com/buildo/revenge)
 - Separates in two different categories Queries and Commands (Mutations)
-- Supports 
+- Supports serialization and remote execution[^1], similarly to how Relay compacts different query into a single GraphQL endpoint query.
 
 Differences:
 - Avenger maps easily 1:1 to a "standard" REST and/or json api
@@ -34,3 +34,5 @@ Differences:
 - Avenger speaks and resolves dependencies. It can reuse results in different points of the dependency chain. Much more powerful than simple `Promise` composition.
 
 ### [React Transmit](https://github.com/RickWong/react-transmit)
+
+[^1] Work in progress, discussed in [Recipe](../wip/Recipe.md)
