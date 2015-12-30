@@ -20,7 +20,7 @@ describe('Avenger', () => {
   it('should be instantiable and have Emitter interface', () => {
     const av = new Avenger(all);
     expect(av.on).toBeA(Function);
-    expect(av.off).toBeA(Function);
+    expect(av.removeListener).toBeA(Function);
   });
 
   it('run() should work', () => {
@@ -201,4 +201,11 @@ describe('Avenger', () => {
       }, reject).catch(reject);
     });
   });
+
+  it('should return itself when calling on/removeListener', () => {
+    const av = new Avenger(all);
+    expect(av.on('change', () => {})).toBe(av);
+    expect(av.removeListener('change', () => {})).toBe(av);
+  });
+
 });

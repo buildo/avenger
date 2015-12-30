@@ -24,11 +24,13 @@ export default class Avenger {
   }
 
   on(...args) {
-    return this.emitter.on(...args);
+    this.emitter.on(...args);
+    return this;
   }
 
   removeListener(...args) {
-    return this.emitter.removeListener(...args);
+    this.emitter.removeListener(...args);
+    return this;
   }
 
   emit = (meta: EmitMeta, value: t.Any) => {
