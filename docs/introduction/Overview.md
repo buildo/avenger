@@ -20,6 +20,8 @@ Spoiler: it doesn't.
 Similarities:
 - It makes use of `Promise` to represent asynchronicity in queries
 
+##### Redux
+
 ##### [Relay](https://github.com/facebook/relay)
 
 Similarities:
