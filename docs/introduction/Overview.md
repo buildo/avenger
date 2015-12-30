@@ -1,7 +1,7 @@
 # Overview
 
 ```sequence
-Title: Avenger workflow
+Title: Avenger Workflow
 App->Avenger: userQuery + { userId: 42 }
 Avenger->userQuery: fetch({ userId: 42 })
 userQuery->API: GET /users/42
