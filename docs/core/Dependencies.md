@@ -40,7 +40,9 @@ const Dependency = t.struct({
 
 The most important part of a `Dependency` is the `query`. As you have guessed, this is the query to depend on.
 
-`map` allows you to manipulate the result of `query` before this is fed passed along as parameter. For example, you may have a query `B` that needs the user name of the current user. If you have the query `A` that returns the user, you can "extract" the user name from `A` in the dependency definition. Here's the complete example:
+`map` allows you to manipulate the result of `query` before this is passed along as parameter.
+
+For example, you may have a query `B` that needs the user name of the current user. If you have the query `A` that returns the user, you can "extract" the user name from `A` using `map`. Here's the complete example:
 
 ```js
 const A = Query({
