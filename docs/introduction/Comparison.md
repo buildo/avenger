@@ -5,7 +5,10 @@
 Similarities:
 - It makes use of `Promise` to represent asynchronicity in queries
 
-### Redux
+Differences:
+- `Promise`s per se have no shared state, cache, results reuse, serializabilty and remote execution support
+
+### [Redux](https://github.com/rackt/redux)
 
 ### [Relay](https://github.com/facebook/relay)
 
