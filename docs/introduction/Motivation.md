@@ -7,5 +7,5 @@ At a very high level, the api is based on promises and the concepts of `Query` (
 Users who decide to offload a big chunk of state management to avenger should benefit in:
 * reducing complexity of their data-fetching layer
 * reduce the need for any other cache on their clients
-* have a conceptually clear declarative api for retrieving data (possibly asynchronously)
+* have a conceptually clear declarative api for retrieving data, possibly in an asynchronous way
 
