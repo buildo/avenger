@@ -32,10 +32,10 @@ Let's define a simple `Query` to fetch the current user blog ids:
 
 ```js
 const blogIds = Query({
-    fetch: ({ userId }) => () => fetch(`/users/${userId}/following`)
+    fetch: ({ userId }) => () => fetch(`/users/${userId}/following`).then(r => r.json())
 });
 ```
-[Read more about Queries](../core/Queries)
+[Read more about Queries](../core/Queries.html)
 
 And then one for a single blog details:
 
@@ -44,7 +44,7 @@ const blog = Query({
     dependencies: {
         blogId: { query: blogIds, multi: true }
     },
-    fetch: () => ({ blogId }) => fetch(`blogs/${blogId}`)
+    fetch: () => ({ blogId }) => fetch(`blogs/${blogId}`).then(r => r.json())
 });
 ```
 
@@ -55,7 +55,19 @@ const lastPost = Query({
     dependencies: {
         blogId: { query: blogIds, multi: true }
     },
-    fetch: () => ({ blogId }) => fetch(`/blogs/${blogId}/posts?lastN=1`)
+    fetch: () => ({ blogId }) => fetch(`/blogs/${blogId}/posts?lastN=1`).then(r => r.json()[0])
+});
+```
+
+And the last one for retrieving each post's comments:
+
+```js
+const postComments = Query({
+    dependencies: {
+        postId: {
+            query: lastPost, multi: true, map: ({ _id }) => _id
+        }
+    }
 });
 ```
 
