@@ -150,6 +150,29 @@ That's it, the `loading` property for each declared query is updated coherently 
 
 Now suppose we need to keep track of the `read: Bool` state for each of the comment. We want to mark comment as `read` when the user clicks it, and display it differently based on the `read` state. Our api doesn't know anything about our users read state, so we'll keep track of it client side in browser local storage.
 
+Let's add a `Query` to augment our comments with the read state:
+
+```js
+const lastCommentWithReadState = Query({
+    dependencies: {
+        lastComment: { query: lastComment }
+    },
+    fetch: () => ({ lastComment }) => {
+        const readState = localStorage.getItem('commentsReadState') || {};
+        const read = readState[lastComment._id] || false;
+        return Promise.resolve({
+            ...lastComment,
+            read
+        });
+    }
+});
+```
+
 To spice things up even more, suppose we can change the current user, and show a personalized summary of comments.
+
+TODO
+
+### Mutations
+
 
 ### Caching
