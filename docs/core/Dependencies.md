@@ -7,7 +7,6 @@ For example, consider the set of queries `{ A, B, C, D }`.
 Here's a diagram describing the dependencies among them:
 
 ```
-
     A      D
   /   \    |
  B     C   E
