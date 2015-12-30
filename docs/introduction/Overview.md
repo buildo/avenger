@@ -1,5 +1,45 @@
 # Overview
 
+**Avenger** centralizes the data needs of your app.
+
+You declare:
+
+- what data can be retrieved
+- how to retrieve it
+
+and then ask avenger to retrieve it for you.
+
+In avenger jargon, the declaration of what data and how to retrieve it is called [**`Query`**](../core/Query.html).
+
+Your job is to define all the possible queries and inform avenger about their existence.
+
+For instance, suppose we have a way to retrieve a user by its id. Let's define a `Query` for it:
+
+```js
+const userQuery = Query({
+  id: 'userQuery',
+  fetch: ({ userId }) => () => {
+    return window.fetch(`https://example.com/api/users/${userId}`).then(r => r.json());
+  }
+});
+```
+
+Now let's inform avenger about it.
+
+```js
+const avenger = new Avenger({ userQuery });
+```
+
+Avenger will emit whenever the app state changes, so let's listen to it and print the user whenever it changes (in a real world app this is where you'd probably change the UI):
+
+```js
+avenger.on('change', ({ userQuery } => {
+  console.log(userQuery.user);
+});
+```
+
+
+
 ```sequence
 Title: Avenger Workflow
 App->Avenger: userQuery + { userId: 42 }
