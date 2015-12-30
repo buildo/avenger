@@ -14,6 +14,6 @@
     * [Commands](/docs/core/Commands.md)
     * [Meta](/docs/core/Meta.md)
 * [In the Making](/docs/wip/README.md)
-    * [Remote Execution](/docs/wip/recipe.md)
+    * [Remote Execution](/docs/wip/Recipe.md)
 * [API Reference](/docs/api/README.md)
     * [Avenger](/docs/api/Avenger.md)
