@@ -1,5 +1,7 @@
 # Example
 
+### [this section is highly work in progress]
+
 Suppose you have a third party json api with the following endpoints
 - `GET /users/:userId/following`: returns the list of blog ids the user is following
 - `GET /blogs/:blogId`: returns info for the given blog
@@ -170,7 +172,7 @@ const lastCommentWithReadState = Query({
 
 To spice things up even more, suppose we can change the current user, and show a personalized summary of comments.
 
-TODO
+TO BE CONTINUED
 
 ### Mutations
 
