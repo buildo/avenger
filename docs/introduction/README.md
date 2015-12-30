@@ -4,4 +4,4 @@
 * [Motivation](Motivation.md)
 * [Example](Example.md)
 * [How We Use It](HowWeUseIt.md)
-* [Comparison](Comaprison.md)
+* [Comparison](Comparison.md)
