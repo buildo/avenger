@@ -10,7 +10,7 @@ Differences:
 
 ### [Redux](https://github.com/rackt/redux)
 
-We're listing Redux because it's THE solution for react apps. In fact, there are not many similarities: Redux is great for managing state locally. In real life, the great majority of apps are api-driven, and avenger is born for this: projecting local minimal state to api-derived state, and managing it.
+We're listing Redux because it's THE solution for react apps. In fact, there are not many similarities: Redux is great for managing state locally. In real life, the great majority of apps are api-driven, and avenger is born for this: projecting local minimal state to api-generated state, and managing it.
 You can do the same with Redux, but we feel you're loosing many of its benefits if your state manipulations need to go through a remote api.
 
 ### [Relay](https://github.com/facebook/relay)
