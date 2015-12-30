@@ -119,9 +119,14 @@ avenger.run({ blog, lastComment }, state);
 
 Avenger will now update it's current query graph, resolve dependencies, and give us back the data when it is ready.
 
+### Ready State
+
 Pretty bare bone.. what if we want to show a loader while data is still fetching?
 
-### Ready State
+Turns out it is simple using the special `__meta` property
+
+
+### Caching
 
 ### More Client State
 
