@@ -1,13 +1,13 @@
-### How it compares to...
+# How it compares to...
 
-##### the fetch() api, or $.ajax
+### the fetch() api, or $.ajax
 
 Similarities:
 - It makes use of `Promise` to represent asynchronicity in queries
 
-##### Redux
+### Redux
 
-##### [Relay](https://github.com/facebook/relay)
+### [Relay](https://github.com/facebook/relay)
 
 Similarities:
 - It is declarative
@@ -17,6 +17,6 @@ Similarities:
 Differences:
 - Everything else Relay+GraphQL have
 
-##### [React Refetch](https://github.com/heroku/react-refetch)
+### [React Refetch](https://github.com/heroku/react-refetch)
 
-##### [React Transmit](https://github.com/RickWong/react-transmit)
+### [React Transmit](https://github.com/RickWong/react-transmit)
