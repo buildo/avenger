@@ -6,6 +6,7 @@
     * [Motivation](/docs/introduction/Motivation.md)
     * [Example](/docs/introduction/Example.md)
     * [How We Use It](/docs/introduction/HowWeUseIt.md)
+    * [Comparison](/docs/introduction/Comparison.md)
 * [Core](/docs/core/README.md)
     * [Avenger](/docs/core/Avenger.md)
     * [Queries](/docs/core/Queries.md)
