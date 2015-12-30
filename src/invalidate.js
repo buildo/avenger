@@ -28,8 +28,9 @@ export function invalidateLocal(params: InvalidateLocalParams): PromiseType {
   const _invalidate = ({ query: { id, cacheParams, dependencies }, children }) => {
     const depsParams = Object.keys(dependencies || {})
       .map(k => {
+        const map = dependencies[k].map || (x => x);
         return {
-          k, val: dependencies[k].map(result[dependencies[k].query.id])
+          k, val: map(result[dependencies[k].query.id])
         };
       })
       .reduce((ac, { k, val }) => ({
