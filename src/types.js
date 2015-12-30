@@ -98,7 +98,7 @@ export const QueryNodes = QueryNodeEdges;
 
 export const StateKey = t.irreducible(
   'StateKey',
-  v => t.String.is(v) || t.Number.is(v) || t.Boolean.is(v) || t.Date.is(v),
+  v => t.Nil.is(v) || t.String.is(v) || t.Number.is(v) || t.Boolean.is(v) || t.Date.is(v),
 );
 export const State = t.dict(t.String, StateKey, 'State');
 
