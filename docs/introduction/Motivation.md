@@ -12,7 +12,8 @@ Users who decide to offload a big chunk of state management to avenger should be
 
 ### Y U NO Relay+GraphQL?
 
-First, we have a lot of tested and production ready apis. Although there's a clear path to simply wrap those behind a GraphQL endpoint, it can be a lot of additional effort to swap it in. Also, GraphQL and Relay are authentication and authorization agnostic... 
+First, we have a lot of tested and production ready apis. Although there's a clear path to simply wrap those behind a GraphQL endpoint, it can be a lot of additional effort to swap it in. Also, GraphQL and Relay are authentication and authorization agnostic...
+
 **TODO**
 
 
