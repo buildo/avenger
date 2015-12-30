@@ -8,4 +8,7 @@ Users who decide to offload a big chunk of state management to avenger should be
 * reducing complexity of their data-fetching layer
 * reduce the need for any other cache on their clients
 * have a conceptually clear declarative api for retrieving data, possibly in an asynchronous way
+ 
+
+TODO references to why we want to use our HTTP api and not GraphQl
 
