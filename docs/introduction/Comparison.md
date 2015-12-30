@@ -10,6 +10,8 @@ Differences:
 
 ### [Redux](https://github.com/rackt/redux)
 
+TODO
+
 ### [Relay](https://github.com/facebook/relay)
 
 Similarities:
