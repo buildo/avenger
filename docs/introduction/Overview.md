@@ -1,5 +1,15 @@
 # Overview
 
+```sequence
+Title: Avenger workflow
+App->Avenger: userQuery + { userId: 42 }
+Avenger->userQuery: fetch({ userId: 42 })
+userQuery->API: GET /users/42
+API->user query: { user: { _id: 42, name: John } }
+user query->Avenger: { user: { _id: 42, name: John } }
+Avenger->App: { userQuery: { user: { _id: 42, name: John } } }
+```
+
 At a quick glance, this is the proposed workflow:
 
 1. declare how to retrieve data using Queries
