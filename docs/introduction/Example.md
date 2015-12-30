@@ -123,7 +123,26 @@ Avenger will now update it's current query graph, resolve dependencies, and give
 
 Pretty bare bone.. what if we want to show a loader while data is still fetching?
 
-Turns out it is simple using the special `__meta` property
+Turns out it is simple using the special `__meta` property:
+
+```js
+avenger.on('change', ({
+    blog, lastComment,
+    __meta: {
+        blog: { loading: loadingBlog },
+        lastComment: { loading: loadingLastComment },
+    }
+}) => {
+    if (loadingBlog || loadingLastComment) {
+        render(blog.map(({ title }, i) => {
+            const commentContent = lastComment[i].content;
+            return `${title}<br/>${commentContent}`;
+        }));
+    } else {
+        renderLoader();
+    }
+});
+```
 
 
 ### Caching
