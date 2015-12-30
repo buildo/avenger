@@ -61,6 +61,9 @@ const B = Query({
     }
   },
   fetch: () => ({ name }) => { ... };
+    //    ^        ^
+    //    |        |______ dep parameters
+    // direct parameters
 });
 ```
 
