@@ -4,23 +4,20 @@ Suppose you have a third party json api with the following endpoints
 - `GET /users/:userId/following`: returns the list of blog ids the user is following
 - `GET /blogs/:blogId`: returns info for the given blog
 - `GET /blogs/:blogId/posts?lastN=`: returns last n posts for the given blog
-- `GET /posts/:postId/comments`: returns all comments for a given blog post
+- `GET /posts/:postId/lastComment`: returns the last comment for a given blog post
 
 **NOTE**
 > Yes I know, shitty API.. but you don't always control it :P
 
 ### Your first task
 
-Display in a summary all the comments for the last post on all the blogs the current user is following. Something like:
+Display all the comments for the last post, for all the blogs the current user is following. Something like:
 
 ```
 blog A (post 1)
 - comment: foo
-- comment: bar
 blog B (post 2)
-- comment: foo bar
-- comment: baz
-- comment: foo bar baz
+- comment: bar
 ...
 ```
 Where each line displays the trimmed comment content, and a user can click on a comment line to read the whole content.
@@ -62,27 +59,72 @@ const lastPost = Query({
 And the last one for retrieving each post's comments:
 
 ```js
-const postComments = Query({
+const lastComment = Query({
     dependencies: {
         postId: {
-            query: lastPost, multi: true, map: ({ _id }) => _id
+            query: lastPost, map: ({ _id }) => _id
         }
-    }
+    },
+    fetch: () => ({ postId }) => fetch(`/posts/${postId}/lastComment`).then(r => r.json())
 });
 ```
 
-We have set up the following graph of dependencies:
+We just set up the following graph of dependencies:
 
 ```
       blogIds
       /     \
     blog    lastPost
               |
-         postComments
+          lastComment
    
 ```
 
+We can wrap all our queries in a simple object and obtain the "universe" of queries avenger is interested in:
 
-### More state
+```js
+const universe = { blogIds, blog, lastPost, lastComment };
+const avenger = new Avenger(universe);
+```
+
+Now that we have obtained an avenger instance, we are ready to use it. Supposing the `userId` param is fixed, we have a single state in our application:
+
+```js
+const state = { userId: localStorage.getItem('userId') };
+```
+
+and thus we probably need to render just once, but let's re-render anyway for every state change so that we are ready for later when our application will transition through different states.
+
+**NOTE**
+> re-rendering at every state change can be really bad, depending on how your rendering works.
+
+```js
+avenger.on('change', ({ blog, lastComment }) => {
+    // check if data is already available
+    // (read on for a better way of doing this)
+    if (blog && lastComment) {
+        render(blog.map(({ title }, i) => {
+            const commentContent = lastComment[i].content;
+            return `${title}<br/>${commentContent}`;
+        }));
+    }
+});
+```
+
+Let's tell our avenger instance what data we are interested into, and what's the current state:
+
+```js
+avenger.run({ blog, lastComment }, state);
+```
+
+Avenger will now update it's current query graph, resolve dependencies, and give us back the data when ready.
+
+Pretty bare bone.. what if we want to show a loader while data is still fetching?
+
+### Ready State
+
+### More Client State
 
 Now suppose we need to keep track of the `read: Bool` state for each of the comment. We want to mark comment as `read` when the user clicks it, and display it differently based on the `read` state. Our api doesn't know anything about our users read state, so we'll keep track of it client side in browser local storage.
+
+To spice things up even more, suppose we can change the current user, and show a personalized summary of comments.
