@@ -28,7 +28,7 @@ Differences:
 ### [React Refetch](https://github.com/heroku/react-refetch)
 
 Similarities:
-- Avenger let's you co-locate queries with your UI components when paired with [revenge](https://github.com/buildo/revenge)
+- Let's you co-locate queries with your UI components when paired with [revenge](https://github.com/buildo/revenge)
 
 Differences:
 - Avenger it's not react-specific (although we use react as well)
@@ -37,5 +37,7 @@ Differences:
 - Avenger speaks and resolves dependencies. It can reuse results in different points of the dependency chain. Much more powerful than simple `Promise` composition.
 
 ### [React Transmit](https://github.com/RickWong/react-transmit)
+
+TODO (react-specific, no cache, no sharing of results among sub trees)
 
 [^1] Work in progress, discussed in [Recipe](../wip/Recipe.md)
