@@ -117,7 +117,7 @@ Let's tell our avenger instance what data we are interested into, and what's the
 avenger.run({ blog, lastComment }, state);
 ```
 
-Avenger will now update it's current query graph, resolve dependencies, and give us back the data when ready.
+Avenger will now update it's current query graph, resolve dependencies, and give us back the data when it is ready.
 
 Pretty bare bone.. what if we want to show a loader while data is still fetching?
 
