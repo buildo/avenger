@@ -1,6 +1,6 @@
 # Overview
 
-```sequence-hand
+```sequence
 Title: Avenger Workflow
 App->Avenger: userQuery + { userId: 42 }
 Avenger->userQuery: fetch({ userId: 42 })
