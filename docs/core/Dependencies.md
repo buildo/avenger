@@ -18,6 +18,7 @@ In plain English:
 - both `B` and `C` depend on `A`  
 - `E` depends on `D`
 
+
 Given this query set, `A` and `D` can execute right away, in parallel; once `A` is done, `B` and `C` can then start in parallel; in the same way `E` can execute once `D` has completed.
 
 This example is trivial, but in real life reasoning about the correct (and most efficient) execution order can quickly become daunting.
