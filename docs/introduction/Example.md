@@ -71,6 +71,17 @@ const postComments = Query({
 });
 ```
 
+We have set up the following graph of dependencies:
+
+```
+      blogIds
+      /     \
+    blog    lastPost
+              |
+         postComments
+   
+```
+
 
 ### More state
 
