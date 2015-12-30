@@ -144,11 +144,12 @@ avenger.on('change', ({
 });
 ```
 
-
-### Caching
+That's it, the `loading` property for each declared query is updated coherently with the current state of the query in the graph. We'll see more useful `__meta` props in the following.
 
 ### More Client State
 
 Now suppose we need to keep track of the `read: Bool` state for each of the comment. We want to mark comment as `read` when the user clicks it, and display it differently based on the `read` state. Our api doesn't know anything about our users read state, so we'll keep track of it client side in browser local storage.
 
 To spice things up even more, suppose we can change the current user, and show a personalized summary of comments.
+
+### Caching
