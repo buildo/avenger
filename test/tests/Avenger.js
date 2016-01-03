@@ -26,6 +26,11 @@ describe('Avenger', () => {
   it('run() should work', () => {
     const av = new Avenger(all);
     const changeSpy = sinon.spy();
+    av.on('change', ({ __meta, ...values }) => {
+      console.log(Object.keys(__meta).map(
+        k => `${k}:${__meta[k] && __meta[k].waiting ? 'w' : ' '}${__meta[k] && __meta[k].fetching ? 'f' : ' '}${values[k] ? 'v' : ' '}`
+      ).join(' '));
+    });
     av.on('change', changeSpy);
     const start = new Date().getTime() - 1;
 
