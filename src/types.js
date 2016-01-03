@@ -109,7 +109,8 @@ export const EmitMeta = t.struct({
   id: QueryId,
   error: t.maybe(t.Boolean),
   cache: t.maybe(t.Boolean),
-  loading: t.maybe(t.Boolean),
+  waiting: t.maybe(t.Boolean),
+  fetching: t.maybe(t.Boolean),
   multi: t.maybe(t.Boolean),
   multiIndex: t.maybe(t.Number),
   multiAll: t.maybe(t.Boolean)

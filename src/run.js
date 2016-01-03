@@ -52,6 +52,8 @@ export function runLocal(params: RunLocalParams): PromiseType {
       return runState[id];
     }
 
+    emit({ id, waiting: true });
+
     const depsPrsObj = Object.keys(parents).reduce(...collect(parents, _run));
     const depsPrs = allValues(depsPrsObj);
 
