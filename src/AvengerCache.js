@@ -1,7 +1,3 @@
-// a cache implementation able to produce an ActualizedCache
-// ... assuming for now each param is a primitive with meaningful toString()
-// (i.e.: strings, numbers and bools)
-
 import debug from 'debug';
 import t from 'tcomb';
 import { State, CacheState } from './types';
@@ -17,8 +13,8 @@ export function hashedParams(params: State): t.Str {
 
 export default class AvengerCache {
 
-  constructor(initialState: CacheState = {}) {
-    this.state = initialState;
+  constructor(initialState: ?CacheState) {
+    this.state = initialState || {};
   }
 
   toJSON(): CacheState {
@@ -53,7 +49,7 @@ export default class AvengerCache {
     this.state[id][hp] = value;
   };
 
-  invalidate = (id: t.String, params: State) => {
+  unset = (id: t.String, params: State) => {
     if (this.state[id]) {
       const hp = hashedParams(params);
       delete this.state[id][hp];
