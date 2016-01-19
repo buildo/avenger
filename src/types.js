@@ -11,29 +11,12 @@ const Dependency = t.struct({
 
   // mapping its result as
   // (this should minimize size of dep. results):
-  map: t.maybe(t.Function),
-
-  // TODO(gio): unused. use Query.cacheParams instead
-  // override cache params from this dep
-  // cacheParams: t.maybe(t.list(t.String)),
-
-  // run dependent query (this query) once for
-  // each value returned by dependency query.
-  // make sure the query (or this dep. `map` fn) returns an array.
-  // optionally provide a function here to map multi-results.
-  // defaults to an array, same size as input array
-  multi: t.maybe(t.union([t.Boolean, t.Function]))
+  map: t.maybe(t.Function)
 }, 'Dependency');
 
-const Dependencies = t.maybe(t.refinement(
-  t.dict(QueryId, Dependency),
-  // TODO(gio): looks like a dumb/arbitrary limitation?
-  // only a single `multi` dependency is allowed
-  deps => Object.keys(deps).map(k => deps[k]).filter(({ multi }) => !!multi).length <= 1,
-  'Dependencies'
-));
+const Dependencies = t.dict(QueryId, Dependency);
 
-const CacheMode = t.enums.of([
+const CacheStrategy = t.enums.of([
   // (default): results for this q. are never stored in cache
   'no',
 
@@ -44,57 +27,73 @@ const CacheMode = t.enums.of([
   // results are always stored in cache, never invalidated
   // (without manual intervention, never re-fetched)
   'manual'
-], 'CacheMode');
+], 'CacheStrategy');
 
 const TcombType = t.irreducible('TcombType', isType);
 
-const CacheParams = t.dict(t.String, TcombType, 'CacheParams');
+const QueryParams = t.dict(t.String, TcombType, 'QueryParams');
 
 export const Query = t.struct({
-  // here for simplicity for now
   id: QueryId,
 
-  // define caching policy for this query
-  cache: t.maybe(CacheMode),
+  // define caching strategy for this query
+  cacheStrategy: t.maybe(CacheStrategy),
 
-  // cache params should default to all params + all deps params
-  // this overrides caching of state params.
-  // optionally pass a function to map the cache param value
-  // remember that cache params should be primitive
-  cacheParams: t.maybe(CacheParams),
+  // typing for params passed to fetch()
+  // params default to all params + all deps params
+  // these are the same key:values used to store
+  // each fetch() result in cache
+  params: t.maybe(QueryParams),
 
-  // dictionary of deps. { [queryId]: dep.map(queryRes), ... }
-  dependencies: Dependencies,
+  // dictionary of deps. { [paramName]: { query: queryReference } }
+  dependencies: t.maybe(Dependencies),
 
-  // state: t.Object -> depFetchParams: t.Object -> Promise[t.Object]
+  // state: query.params -> Promise[t.Any]
   fetch: t.Function
 }, 'Query');
 
 Dependency.meta.props.query = Query;
 
-export const AvengerInput = t.dict(t.Any, Query, 'AvengerInput');
+export const Queries = t.dict(t.Any, Query, 'Queries');
 
 export const Command = t.struct({
-  // an optional list of queries to invalidate
-  // entire downset for these will be invalidated as well
-  invalidates: t.maybe(AvengerInput),
+  // an optional set of queries to invalidate
+  invalidates: t.maybe(Queries),
 
   // actual command
-  run: t.Function // state: t.Object -> Promise[t.Any]
+  run: t.Function // ...t.Any -> Promise[t.Any]
 }, 'Command');
 
-const QueryNodeEdges = t.dict(t.String, t.Any, 'QueryNodeEdges'); // circular, fixed below
 
-// a single DAG node
-export const QueryNode = t.struct({
-  query: Query, // the query
-  parents: QueryNodeEdges, // dependencies
-  children: QueryNodeEdges // dependants
-}, 'QueryNode');
+// internal types
 
-QueryNodeEdges.meta.codomain = QueryNode;
+const ActionType = t.enums.of([
+  'addQueries', 'removeQueries', 'setState',
+  'setWaitingQueries', 'setFetchingQueriesAndLastState', 'setInvalidQueries', 'setInvalidFetchingQueries',
+  'setValue', 'setError'
+], 'ActionType');
 
-export const QueryNodes = QueryNodeEdges;
+export const Action = t.struct({
+  type: ActionType,
+  data: t.Any
+}, 'Action');
+
+export const GraphNode = t.struct({
+  query: Query,
+  active: t.maybe(t.Boolean),
+  waiting: t.maybe(t.Boolean),
+  // TODO: make this a cancelablePromise instead?
+  fetching: t.maybe(t.Boolean),
+  invalid: t.maybe(t.Boolean),
+  invalidFetching: t.maybe(t.Boolean),
+  error: t.Any,
+  value: t.Any,
+  lastState: t.maybe(t.Object),
+  fromCache: t.maybe(t.Boolean),
+  timestamp: t.Number
+}, 'GraphNode');
+
+export const Graph = t.dict(t.String, GraphNode, 'GraphNode');
 
 export const StateKey = t.irreducible(
   'StateKey',
@@ -104,34 +103,3 @@ export const State = t.dict(t.String, StateKey, 'State');
 
 // cache internal state representation
 export const CacheState = t.dict(t.String, t.dict(t.String, t.Any));
-
-export const EmitMeta = t.struct({
-  id: QueryId,
-  error: t.maybe(t.Boolean),
-  cache: t.maybe(t.Boolean),
-  loading: t.maybe(t.Boolean),
-  multi: t.maybe(t.Boolean),
-  multiIndex: t.maybe(t.Number),
-  multiAll: t.maybe(t.Boolean)
-}, 'EmitMeta');
-
-// export const MinimizedCache = t.dict(
-//   // dependant qId
-//   t.String,
-//   t.dict(
-//     // dependency qId
-//     t.String,
-//     // mapped (minimized) value
-//     t.Any
-//   ),
-//   'MinimizedCache'
-// );
-
-// export const Value = t.struct({
-//   val: t.Any,
-//   meta: t.struct({
-//     cached: t.Boolean,
-//     error: t.Boolean,
-//     loading: t.Boolean
-//   })
-// }, 'Value');
