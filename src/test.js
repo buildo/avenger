@@ -2,6 +2,11 @@ import t from 'tcomb';
 import identity from 'lodash/utility/identity';
 import mkAvenger from './index';
 
+const log0 = l => v => {
+  console.log(`> ${l}:`);
+  console.log(v);
+};
+
 const log1 = l => o => {
   console.log(`> ${l}:`);
   console.log(Object.keys(o).map(k => `${k}:: ${o[k]}`).join('\n') + '\n');
@@ -47,13 +52,13 @@ const av = mkAvenger(universe);
 
 // av.$graph.subscribe(log2('$graph'), ::console.error);
 // av.$value.subscribe(log1('$value'), ::console.error);
-av.$stableValue.subscribe(log1('$stableValue'), ::console.error);
+// av.$stableValue.subscribe(log1('$stableValue'), ::console.error);
 // av.$readyState.subscribe(log2('$readyState'), ::console.error);
 // av.$readyState.map(rs => rs.a || {}).subscribe(log1('a $readyState'), ::console.error);
 
 av.setState({ token: 'lol', foo: 'bar' });
-av.addQuery('b');
-av.addQuery('c');
+av.addQuery('b');//.subscribe(log0('b $distinctValue'));
+av.addQuery('c').subscribe(log1('c $distinct'));
 av.addQuery('c');
 av.setState({ token: 'lol', foo: 'baz' });
 av.removeQuery('b');

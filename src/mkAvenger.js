@@ -310,10 +310,13 @@ export default function mkAvenger(universe: t.Object) {
     };
   }, {});
 
+  const $value = $activeGraph.map(extractValue);
+  const $readyState = $activeGraph.map(extractReadyState);
+
   return {
     $graph: sink,
-    $value: $activeGraph.map(extractValue),
-    $readyState: $activeGraph.map(extractReadyState),
+    $value,
+    $readyState,
     $stableValue: $activeGraph.filter(g => {
       const readyState = extractReadyState(g);
       return Object.keys(readyState)
@@ -321,9 +324,15 @@ export default function mkAvenger(universe: t.Object) {
         .reduce((ac, loading) => ac && !loading, true);
     }).map(extractValue),
     addQuery(id: t.String) {
+      const $distinctValue = $value.map(v => v[id]).distinctUntilChanged();
+      const $distinctReadyState = $readyState.map(v => v[id])
+        .distinctUntilChanged((a, b) => (a.loading === b.loading) && (a.error === b.error));
       dispatch({
         type: 'addQueries', data: [id]
       });
+      return $distinctValue.combineLatest($distinctReadyState, (value, rs) => ({
+        value, ...rs
+      }));
     },
     removeQuery(id: t.String) {
       dispatch({
