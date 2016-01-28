@@ -10,7 +10,7 @@ const log = debug('Avenger');
 
 const buildInitialGraph = (universe: t.Object): Graph => Object.keys(universe).reduce((ac, k) => Graph({
   ...ac,
-  [k]: { query: universe[k], timestamp: Date.now() }
+  [k]: { query: universe[k], timestamp: Date.now(), activeCount: 0 }
 }), Graph({}));
 
 const patchNodes = (graph: Graph, ks: Array<t.String>, patch: t.Object|Array<t.Object>) => { //: Graph
@@ -27,13 +27,15 @@ const patchNode = (graph: Graph, k: t.String, patch: t.Object) /*: Graph*/ => pa
 
 const reducers = {
 
-  removeQueries: (graph, ids) => patchNodes(graph, ids, {
-    active: false, waiting: false
-  }),
+  removeQueries: (graph, ids) => patchNodes(graph, ids, ids.map(id => ({
+    activeCount: Math.max(0, graph[id].activeCount - 1),
+    waiting: false
+  }))),
 
-  addQueries: (graph, ids) => patchNodes(graph, ids, {
-    active: true, invalid: true // TODO(gio): `null` (and `undefined`?) are valid values. Should add `.hasValue` or similar to invalidate conditionally?
-  }),
+  addQueries: (graph, ids) => patchNodes(graph, ids, ids.map(id => ({
+    activeCount: graph[id].activeCount + 1,
+    invalid: true // TODO(gio): `null` (and `undefined`?) are valid values. Should add `.hasValue` or similar to invalidate conditionally?
+  }))),
 
   setWaitingQueries: (graph, ids) => patchNodes(graph, ids, {
     waiting: true
@@ -79,7 +81,7 @@ const nodeIsMissingDependencies = (graph: Graph) => (node: GraphNode): t.Boolean
   const deps = node.query.dependencies || {};
   const keys = Object.keys(deps);
   for (let i = 0; i < keys.length; i++) {
-    if (!graph[deps[keys[i]].query.id].active) {
+    if (graph[deps[keys[i]].query.id].activeCount === 0) {
       return true;
     }
   }
@@ -167,8 +169,8 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
   // mark all active and not yet fetching queries as 'waiting'
   const nodesThatShouldBeWaiting = Object.keys(graph)
     .filter(k => {
-      const { active, waiting, fetching, value, invalid } = graph[k];
-      return !!(active && !waiting && (typeof value === 'undefined' || invalid) && !fetching);
+      const { activeCount, waiting, fetching, value, invalid } = graph[k];
+      return !!(activeCount > 0 && !waiting && (typeof value === 'undefined' || invalid) && !fetching);
     });
   if (nodesThatShouldBeWaiting.length > 0) {
     return {
@@ -179,7 +181,7 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
 
   const markAsFetched = (dispatch: t.Function, queryId: t.String, fromCache: t.Boolean) /*: t.Function */ => (result: t.Any) => {
     const optimisticFromCache = fromCache && graph[queryId].query.cacheStrategy === 'optimistic';
-    const invalid = graph[queryId].invalidFetching || !graph[queryId].active || optimisticFromCache;
+    const invalid = graph[queryId].invalidFetching || graph[queryId].activeCount === 0 || optimisticFromCache;
     dispatch({
       type: 'setValue', data: {
         id: queryId, value: result, fromCache, invalid
@@ -200,7 +202,7 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
 
   // fetch() and mark as fetching free nodes that should be fetched
   const nodesThatShouldBeFetching = Object.keys(graph)
-    .filter(k => graph[k].active && graph[k].waiting)
+    .filter(k => graph[k].activeCount > 0 && graph[k].waiting)
     .filter(k => nodeIsFree(graph)(graph[k]))
     .filter(k => !nodeIsFetching(graph[k]));
   const states = nodesThatShouldBeFetching.map(k => filterState(graph[k], depsStateAndState(graph, graph[k], state)));
@@ -241,7 +243,7 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
 
   // bring in missing dependencies for non-free queries
   const nonFreeNodes = Object.keys(graph)
-    .filter(k => graph[k].active && graph[k].waiting)
+    .filter(k => graph[k].activeCount > 0 && graph[k].waiting)
     .filter(k => nodeIsMissingDependencies(graph)(graph[k]));
 
   const queriesToAdd = uniq(nonFreeNodes
@@ -292,7 +294,7 @@ export default function mkAvenger(universe: t.Object) {
     }
   });
 
-  const $activeGraph = sink.map(g => Object.keys(g).filter(k => g[k].active).reduce((ac, k) => ({
+  const $activeGraph = sink.map(g => Object.keys(g).filter(k => g[k].activeCount > 0).reduce((ac, k) => ({
     ...ac, [k]: g[k]
   }), {}));
 
@@ -326,7 +328,7 @@ export default function mkAvenger(universe: t.Object) {
     addQuery(id: t.String) {
       const $distinctValue = $value.map(v => v[id]).distinctUntilChanged();
       const $distinctReadyState = $readyState.map(v => v[id])
-        .distinctUntilChanged((a, b) => (a.loading === b.loading) && (a.error === b.error));
+        .distinctUntilChanged((a, b) => !!a && !!b && (a.loading === b.loading) && (a.error === b.error));
       dispatch({
         type: 'addQueries', data: [id]
       });
