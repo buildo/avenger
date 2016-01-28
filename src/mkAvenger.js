@@ -3,6 +3,8 @@ import Rx from 'rxjs/Rx';
 import debug from 'debug';
 import uniq from 'lodash/array/uniq';
 import intersection from 'lodash/array/intersection';
+import pick from 'lodash/object/pick';
+import identity from 'lodash/utility/identity';
 import { Action, Graph, GraphNode } from './types';
 import AvengerCache from './AvengerCache';
 
@@ -315,6 +317,48 @@ export default function mkAvenger(universe: t.Object) {
   const $value = $activeGraph.map(extractValue);
   const $readyState = $activeGraph.map(extractReadyState);
 
+  const addQueries = (ids: Array<t.String>) => {
+    const $distinctValue = $value.map(v => pick(v, ids)).distinctUntilChanged((a, b) => {
+      if (!a || !b) {
+        return false;
+      }
+      for (let i = 0; i < ids.length; i++) {
+        if (a[ids[i]] !== b[ids[i]]) {
+          return false;
+        }
+      }
+      return true;
+    });
+    const $distinctReadyState = $readyState.map(v => pick(v, ids)).distinctUntilChanged((a, b) => {
+      if (!a || !b) {
+        return false;
+      }
+      for (let i = 0; i < ids.length; i++) {
+        if (!a[ids[i]] || !b[ids[i]]) {
+          return false;
+        }
+        if (a[ids[i]].loading !== b[ids[i]].loading || a[ids[i]].error !== b[ids[i]].error) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    dispatch({
+      type: 'addQueries', data: ids
+    });
+
+    return $distinctValue.filter(identity).combineLatest($distinctReadyState.filter(identity), (value, rs) => ({
+      ...value, readyState: { ...rs }
+    }));
+  };
+
+  const removeQueries = (ids: Array<t.String>) => {
+    dispatch({
+      type: 'removeQueries', data: ids
+    });
+  }
+
   return {
     $graph: sink,
     $value,
@@ -326,21 +370,13 @@ export default function mkAvenger(universe: t.Object) {
         .reduce((ac, loading) => ac && !loading, true);
     }).map(extractValue),
     addQuery(id: t.String) {
-      const $distinctValue = $value.map(v => v[id]).distinctUntilChanged();
-      const $distinctReadyState = $readyState.map(v => v[id])
-        .distinctUntilChanged((a, b) => !!a && !!b && (a.loading === b.loading) && (a.error === b.error));
-      dispatch({
-        type: 'addQueries', data: [id]
-      });
-      return $distinctValue.combineLatest($distinctReadyState, (value, rs) => ({
-        value, ...rs
-      }));
+      return addQueries([id]);
     },
+    addQueries,
     removeQuery(id: t.String) {
-      dispatch({
-        type: 'removeQueries', data: [id]
-      });
+      return removeQueries([id])
     },
+    removeQueries,
     invalidateQuery(id: t.String) {
       dispatch({
         type: 'setInvalidQueries', data: [id]
