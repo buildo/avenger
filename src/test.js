@@ -58,10 +58,13 @@ const av = mkAvenger(universe);
 
 av.setState({ token: 'lol', foo: 'bar' });
 av.addQuery('b');//.subscribe(log0('b $distinctValue'));
-av.addQuery('c').subscribe(log1('c $distinct'));
+av.addQueries(['b', 'c']).subscribe(({ readyState, ...vals }) => {
+  log1('b,c $distinct value')(vals);
+  log2('b,c $distinct rs')(readyState);
+});
 av.addQuery('c');
 av.setState({ token: 'lol', foo: 'baz' });
-av.removeQuery('b');
+av.removeQueries(['a', 'b']);
 av.addQuery('b');
 setTimeout(() => {
   av.setState({ token: 'lo', foo: 'bar' });
