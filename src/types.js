@@ -80,7 +80,7 @@ export const Action = t.struct({
 
 export const GraphNode = t.struct({
   query: Query,
-  active: t.maybe(t.Boolean),
+  activeCount: t.Number,
   waiting: t.maybe(t.Boolean),
   // TODO: make this a cancelablePromise instead?
   fetching: t.maybe(t.Boolean),
