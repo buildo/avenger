@@ -141,6 +141,7 @@ const stateEqual = (a: ?t.Object, b: ?t.Object) => { // t.Boolean
 const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, dispatch: t.Function) => { // : t.maybe(~Action)
   // set as invalid all free nodes with value but with lastState different from current one
   const nodesToStateInvalidate = Object.keys(graph)
+    .filter(k => graph[k].activeCount > 0)
     .filter(k => nodeIsFree(graph)(graph[k]))
     .filter(k => !graph[k].invalid)
     .filter(k => {
@@ -155,6 +156,7 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
 
   // set as invalid all non fetching queries with value and invalid queries as deps
   const nodesToInvalidate = Object.keys(graph)
+    .filter(k => graph[k].activeCount > 0)
     .filter(k => !graph[k].invalid)
     .filter(k => !nodeIsFree(graph)(graph[k]));
   if (nodesToInvalidate.length > 0) {
