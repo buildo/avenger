@@ -1,0 +1,21 @@
+       inactive
+          |      addQ()/removeQ()
+        active
+      /   |
+> waiting |
+|     \   V
+|     fetching <____
+|       /   \       |
+|   value   error   |
+|       \   /       |
+|_________V_________|
+    invalidate()
+
+
+  i a w f v e
+i   +
+a +   + +
+w +     +
+f +       + +
+v +   + +
+e +   + +
