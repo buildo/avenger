@@ -4,8 +4,8 @@ import { hashedParams } from '../../src/AvengerCache';
 
 const fixtureState = {
   myId: {
-    'foo:bar': 42,
-    'foo:baz': 101
+    'foo:"bar"': 42,
+    'foo:"baz"': 101
   },
   optimisticQ: {
     '∅': { optimistic: 'optimisticFoo' }
@@ -25,7 +25,7 @@ describe('cache', () => {
         q1: true,
         p1: 10
       });
-      expect(hashed).toBe('p1:10-q1:true-q2:foo');
+      expect(hashed).toBe('p1:10-q1:true-q2:"foo"');
     });
 
     it('should support dates', () => {

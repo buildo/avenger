@@ -7,7 +7,7 @@ const log = debug('AvengerCache');
 export function hashedParams(params: State): t.Str {
   const keys = Object.keys(params);
   keys.sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
-  const hashed = keys.map(k1 => `${k1}:${params[k1]}`).join('-');
+  const hashed = keys.map(k1 => `${k1}:${JSON.stringify(params[k1])}`).join('-');
   return hashed ? hashed : '∅';
 }
 

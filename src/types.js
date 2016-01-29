@@ -95,10 +95,11 @@ export const GraphNode = t.struct({
 
 export const Graph = t.dict(t.String, GraphNode, 'GraphNode');
 
-export const StateKey = t.irreducible(
-  'StateKey',
-  v => t.Nil.is(v) || t.String.is(v) || t.Number.is(v) || t.Boolean.is(v) || t.Date.is(v),
-);
+// export const StateKey = t.irreducible(
+//   'StateKey',
+//   v => t.Nil.is(v) || t.String.is(v) || t.Number.is(v) || t.Boolean.is(v) || t.Date.is(v),
+// );
+export const StateKey = t.Any; // TODO(gio): we are JSON.stringifying the world in cache keys instead
 export const State = t.dict(t.String, StateKey, 'State');
 
 // cache internal state representation
