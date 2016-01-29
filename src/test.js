@@ -45,6 +45,11 @@ const universe = {
     id: 'c',
     params: { a: t.String },
     fetch: resolveLater('fetched c')
+  },
+  d: {
+    id: 'd',
+    params: { foo: t.String },
+    fetch: () => Promise.reject('d error')
   }
 };
 universe.c.dependencies = { a: { query: universe.a } };
@@ -53,23 +58,24 @@ const av = mkAvenger(universe);
 // av.$graph.subscribe(log2('$graph'), ::console.error);
 // av.$value.subscribe(log1('$value'), ::console.error);
 // av.$stableValue.subscribe(log1('$stableValue'), ::console.error);
-// av.$readyState.subscribe(log2('$readyState'), ::console.error);
+av.$readyState.subscribe(log2('$readyState'), ::console.error);
 // av.$readyState.map(rs => rs.a || {}).subscribe(log1('a $readyState'), ::console.error);
 
-av.setState({ token: 'lol', foo: 'bar' });
-av.addQuery('b');//.subscribe(log0('b $distinctValue'));
-av.addQueries(['b', 'c']).subscribe(({ readyState, ...vals }) => {
-  log1('b,c $distinct value')(vals);
-  log2('b,c $distinct rs')(readyState);
-});
-av.addQuery('c');
 av.setState({ token: 'lol', foo: 'baz' });
-av.removeQueries(['a', 'b']);
-av.addQuery('b');
+av.addQuery('d');
+// av.addQuery('b');//.subscribe(log0('b $distinctValue'));
+// av.addQueries(['b', 'c', 'd']).subscribe(({ readyState, ...vals }) => {
+//   log1('b,c,d $distinct value')(vals);
+//   log2('b,c,d $distinct rs')(readyState);
+// });
+// av.addQuery('c');
+// av.setState({ token: 'lol', foo: 'baz' });
+// av.removeQueries(['a', 'b']);
+// av.addQuery('b');
 setTimeout(() => {
   av.setState({ token: 'lo', foo: 'bar' });
   // av.invalidateQuery('a');
   setTimeout(() => {
-    av.setState({ token: 'lol', foo: 'bar' });
+    av.setState({ token: 'lol', foo: 'baz' });
   }, 500);
 }, 500);

@@ -48,7 +48,7 @@ const reducers = {
   }))),
 
   setInvalidQueries: (graph, ids) => patchNodes(graph, ids, {
-    invalid: true
+    invalid: true, error: null
   }),
 
   setInvalidFetchingQueries: (graph, ids) => patchNodes(graph, ids, {
@@ -143,7 +143,7 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
   const nodesToStateInvalidate = Object.keys(graph)
     .filter(k => graph[k].activeCount > 0)
     .filter(k => nodeIsFree(graph)(graph[k]))
-    .filter(k => !graph[k].invalid)
+    .filter(k => !graph[k].invalid || graph[k].error)
     .filter(k => {
       const allState = depsStateAndState(graph, graph[k], state);
       return !stateEqual(graph[k].lastState, filterState(graph[k], allState))
@@ -178,8 +178,12 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
   // mark all active and not yet fetching queries as 'waiting'
   const nodesThatShouldBeWaiting = Object.keys(graph)
     .filter(k => {
-      const { activeCount, waiting, fetching, value, invalid } = graph[k];
-      return !!(activeCount > 0 && !waiting && (typeof value === 'undefined' || invalid) && !fetching);
+      const { activeCount, waiting, fetching, value, invalid, error } = graph[k];
+      return !!(
+        activeCount > 0 && !waiting &&
+        (typeof value === 'undefined' || invalid) &&
+        !fetching && !error // TODO(gio): temp. failed qs will never retry this way
+      );
     });
   if (nodesThatShouldBeWaiting.length > 0) {
     return {
