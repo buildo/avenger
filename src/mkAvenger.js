@@ -112,8 +112,12 @@ const depsStateAndState = (graph: Graph, node: GraphNode, state: ?t.Object) => {
 
 const filterState = (node: GraphNode, state: ?t.Object) => { // : t.Object
   const params = node.query.params;
-  const paramsFilter = !params ? t.Object : t.struct(params);
-  return paramsFilter(state);
+  if (params) {
+    t.struct(params)(state); // assert
+    return pick(state, Object.keys(params));
+  } else {
+    return t.Object(state);
+  }
 };
 
 const stateEqual = (a: ?t.Object, b: ?t.Object) => { // t.Boolean
