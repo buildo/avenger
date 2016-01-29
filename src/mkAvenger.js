@@ -101,7 +101,8 @@ const depsStateAndState = (graph: Graph, node: GraphNode, state: ?t.Object) => {
     if (typeof value === 'undefined' || (invalid && !fromCache)) {
       throw new Error('trolo');
     }
-    return { ...ac, [k]: value };
+    const map = deps[k].map || identity;
+    return { ...ac, [k]: map(value) };
   }, {});
   if (intersection(Object.keys(depsState), Object.keys(state)).length > 0) {
     throw new Error('trolo');
