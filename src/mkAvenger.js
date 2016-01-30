@@ -5,7 +5,7 @@ import uniq from 'lodash/array/uniq';
 import intersection from 'lodash/array/intersection';
 import pick from 'lodash/object/pick';
 import identity from 'lodash/utility/identity';
-import { Action, Graph, GraphNode } from './types';
+import { Action, Graph, GraphNode, Command } from './types';
 import AvengerCache from './AvengerCache';
 
 const log = debug('Avenger');
@@ -370,6 +370,12 @@ export default function mkAvenger(universe: t.Object) {
     });
   }
 
+  const invalidateQueries = (ids: Array<t.String>) => {
+    dispatch({
+      type: 'setInvalidQueries', data: ids
+    });
+  };
+
   return {
     $graph: sink,
     $value,
@@ -389,13 +395,16 @@ export default function mkAvenger(universe: t.Object) {
     },
     removeQueries,
     invalidateQuery(id: t.String) {
-      dispatch({
-        type: 'setInvalidQueries', data: [id]
-      });
+      return invalidateQueries([id]);
     },
+    invalidateQueries,
     setState(s: t.Object) {
       log(`setState  ${JSON.stringify(s)}`);
       state.next(s);
+    },
+    runCommand(cmd: Command) {
+      const { run, invalidates } = cmd;
+      return run().then(() => invalidateQueries(Object.keys(invalidates || {})));
     }
   }
 }
