@@ -274,8 +274,8 @@ const loop = (graph: Graph, state: t.Object, cache: t.Any /* AvengerCache */, di
   }
 };
 
-export default function mkAvenger(universe: t.Object) {
-  const state = new Rx.BehaviorSubject({});
+export default function mkAvenger(universe: t.Object, initialState: ?t.Object) {
+  const state = new Rx.BehaviorSubject(initialState || {});
   const source = new Rx.Subject();
   const sink = new Rx.Subject();
   const cache = new AvengerCache();
