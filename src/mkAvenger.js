@@ -12,16 +12,6 @@ import { Query, Queries, State } from './types';
 
 const log = debug('Avenger');
 
-// const filterState = (node: GraphNode, state: ?t.Object) => { // : t.Object
-//   const params = node.query.params;
-//   if (params) {
-//     t.struct(params)(state); // assert
-//     return pick(state, Object.keys(params));
-//   } else {
-//     return t.Object(state);
-//   }
-// };
-
 // const stateEqual = (a: ?t.Object, b: ?t.Object) => { // t.Boolean
 //   if (!a && !b) { return true; }
 //   if ((!a || !b) && a !== b) { return false; }
@@ -93,7 +83,13 @@ function getSource(sources, query, params) {
 
 
 function createValue(sources: Sources, query: Query, params: State) {
-  const fetcher = getSource(sources, query, params).flatMap(fetch);
+  const fetcher = getSource(sources, query, params).flatMap(v => {
+    const readyState = getReadyState(sources, query, params);
+    readyState.next({ ...readyState.value, waiting: false, fetching: true });
+    return fetch(v).do(() => {
+      readyState.next({ ...readyState.value, fetching: false });
+    });
+  });
   const isCacheable = ['optimistic', 'manual'].indexOf(query.cacheStrategy) !== -1;
   if (isCacheable) {
     const value = new Rx.BehaviorSubject(undefined);
@@ -114,42 +110,75 @@ function getValue(sources, query, params) {
 
 
 
-function getValueAndMaybeInvalidate(sources, query, params) {
-  const value = getValue(sources, query, params);
-  // TODO(gio):
-  // should invalidate the dependency leaves here
-  // in fact, non-leaves are just observables not subjects - cannot .next() (and it makes sense)
-  // if (query.cacheStrategy === 'optimistic' && typeof value.getValue() !== 'undefined') {
-    // setTimeout(() => {
-    //   console.log('-- invalidate', query.id);
-    //   // invalidate
-    //   const source = getSource(sources, query, params);
-    //   source.next(source.value);
-    // });
-  // }
-  return value;
+function createReadyState(sources: Sources, query: Query, params: State) {
+  return new Rx.BehaviorSubject({ waiting: true, fetching: false });
+}
+
+function getReadyState(sources, query, params) {
+  return _getSource('readyState', createReadyState, sources, query, params);
+}
+
+
+
+function invalidateUpset(sources, query, params, force = false) {
+  const deps = query.dependencies;
+  // should invalidate only the leaves here. in fact, non-leaves are
+  // just observables not subjects -> cannot .next() (and it makes sense)
+  if (deps && Object.keys(deps).length > 0) {
+    // sync-wait a possibly non-free query
+    const rs = getReadyState(sources, query, params);
+    if (!rs.value.waiting) {
+      rs.next({ ...rs.value, waiting: true });
+    }
+
+    map(deps, ({ query }) => invalidateUpset(sources, query, params));
+  } else if (force || query.cacheStrategy !== 'manual') {
+    const value = getValue(sources, query, params);
+    if (typeof value.value !== 'undefined') {
+      // be sure to allow for a sync value if there's one
+      setTimeout(() => {
+        const source = getSource(sources, query, params);
+        // invalidate
+        source.next(source.value);
+      });
+    }
+  }
+}
+
+function getValueAndMaybeInvalidateUpset(sources, query, params) {
+  invalidateUpset(sources, query, params, false);
+  return getValue(sources, query, params);
 }
 
 
 export default function mkAvenger(universe: Queries) {
   const sources = {
-    source: {}, value: {}
+    source: {}, value: {}, readyState: {}
   };
 
   const QueriesDict = t.dict(t.String, State);
 
   const addQueries = (queries: QueriesDict) => {
     const qs = map(queries, (params, id) => ({ id, params }));
-    return Rx.Observable.combineLatest(
-      qs.map(({ params, id }) => getValueAndMaybeInvalidate(sources, universe[id], params))
+    const value = Rx.Observable.combineLatest(
+      qs.map(({ params, id }) => getValueAndMaybeInvalidateUpset(sources, universe[id], params))
     ).map(values => values.reduce((ac, v, i) => ({
       ...ac, [qs[i].id]: v
     }), {}));
+    const readyState = Rx.Observable.combineLatest(
+      qs.map(({ params, id }) => getReadyState(sources, universe[id], params))
+    ).map(rses => rses.reduce((ac, rs, i) => ({
+      ...ac, [qs[i].id]: rs
+    }), {}));
+    return Rx.Observable.combineLatest([value, readyState]).debounceTime(0).map(([val, rs]) => ({
+      ...val,
+      readyState: rs
+    }));
   };
 
   return {
     addQueries,
-    addQuery(id: t.String, params: State) {
+    addQuery(id: t.String, params: ?State) {
       return addQueries({ [id]: params });
     }
   };

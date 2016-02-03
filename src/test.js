@@ -31,7 +31,6 @@ const resolveLater = v => () => {
 };
 const a = Query({ // no dep
   id: 'a',
-  // cacheStrategy: 'optimistic',
   params: { token: t.String },
   fetch: s => resolveLater(`fetched a+${JSON.stringify(s)}`)()
 });
@@ -70,7 +69,6 @@ const d = Query({ // multi dep
 const universe = { a, b, c, d };
 const av = mkAvenger(universe);
 
-// console.log(av.addQuery('a', { token: 'baz' }) === av.addQuery('a', { token: 'baz' }));
 // av.addQuery('a', { token: 'foo' }).subscribe(log0('addQuery a { token: "foo" }'));
 // av.addQuery('a', { token: 'bar' }).subscribe(log0('addQuery a { token: "bar" }'));
 // av.addQuery('c', { token: 'bar' }).subscribe(log0('addQuery c { token: "bar" }'));
@@ -82,11 +80,26 @@ const av = mkAvenger(universe);
 // setTimeout(() => {
 //   av.addQuery('a', { token: 'bar' }).subscribe(log0('addQuery a { token: "bar" }'));
 // }, 2000);
-av.addQueries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('addQueries'));
+// av.addQueries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('addQueries'));
 // av.addQuery('a', { token: 'bar' }).subscribe(log1('addQuery'));
+// setTimeout(() => {
+//   av.addQueries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('addQueries'));
+// }, 4000);
+// av.addQuery('b', {}).subscribe(({ readyState, ...value }) => {
+//   log2('b readyState')(readyState);
+//   log1('b value')(value);
+// });
+av.addQuery('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
+  log2('1 d readyState')(readyState);
+  log1('1 d value')(value);
+});
 setTimeout(() => {
-  av.addQueries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('addQueries'));
-}, 4000);
+  console.log('---------------');
+  av.addQuery('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
+    log2('2 d readyState')(readyState);
+    log1('2 d value')(value);
+  });
+}, 5000);
 
 // av.$graph.subscribe(log2('$graph'), ::console.error);
 // av.$value.subscribe(log1('$value'), ::console.error);
