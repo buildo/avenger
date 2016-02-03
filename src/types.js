@@ -65,42 +65,9 @@ export const Command = t.struct({
 }, 'Command');
 
 
-// internal types
-
-const ActionType = t.enums.of([
-  'addQueries', 'removeQueries', 'setState',
-  'setWaitingQueries', 'setFetchingQueriesAndLastState', 'setInvalidQueries', 'setInvalidFetchingQueries',
-  'setValue', 'setError'
-], 'ActionType');
-
-export const Action = t.struct({
-  type: ActionType,
-  data: t.Any
-}, 'Action');
-
-export const GraphNode = t.struct({
-  query: Query,
-  activeCount: t.Number,
-  waiting: t.maybe(t.Boolean),
-  // TODO: make this a cancelablePromise instead?
-  fetching: t.maybe(t.Boolean),
-  invalid: t.maybe(t.Boolean),
-  invalidFetching: t.maybe(t.Boolean),
-  error: t.Any,
-  value: t.Any,
-  lastState: t.maybe(t.Object),
-  fromCache: t.maybe(t.Boolean),
-  timestamp: t.Number
-}, 'GraphNode');
-
-export const Graph = t.dict(t.String, GraphNode, 'GraphNode');
-
 // export const StateKey = t.irreducible(
 //   'StateKey',
 //   v => t.Nil.is(v) || t.String.is(v) || t.Number.is(v) || t.Boolean.is(v) || t.Date.is(v),
 // );
 export const StateKey = t.Any; // TODO(gio): we are JSON.stringifying the world in cache keys instead
 export const State = t.dict(t.String, StateKey, 'State');
-
-// cache internal state representation
-export const CacheState = t.dict(t.String, t.dict(t.String, t.Any));
