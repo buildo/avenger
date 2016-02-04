@@ -8,6 +8,8 @@ import every from 'lodash/collection/every';
 // import intersection from 'lodash/array/intersection';
 // import pick from 'lodash/object/pick';
 import identity from 'lodash/utility/identity';
+import _memoize from 'lodash/function/memoize';
+import partialRight from 'lodash/function/partialRight';
 import { Query, Queries, State } from './types';
 
 const log = debug('Avenger');
@@ -25,32 +27,16 @@ const log = debug('Avenger');
 // };
 
 const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
+const memoize = partialRight(_memoize, (query, params) => instanceId(query.id, params));
 
-function fetch({ query, params }) { // Observable<queryFetchReturnType>
+function fetch({ query, params }) {
   if (query.params) {
     t.struct(query.params, `${query.id}:FetchParams`)(params); // assert
   }
   return Rx.Observable.fromPromise(query.fetch(params));
 }
 
-const Sources = t.dict(t.String, t.Any, 'Sources');
-
-
-
-function _getSource(source: t.String, mkSource: t.Function, sources: Sources, query: Query, params/*: ?State*/ = {}) { // Observable<queryState>
-  const k = instanceId(query.id, params);
-  if (sources[source][k]) {
-    return sources[source][k];
-  } else {
-    const s = mkSource(sources, query, params); // eslint-disable-line no-use-before-define
-    sources[source][k] = s;
-    return s;
-  }
-}
-
-
-
-function createSource(sources: Sources, query: Query, params: State) { // Observable<queryState>
+const getSource = memoize((query: Query, params: State) => {
   if (!query.dependencies || Object.keys(query.dependencies).length === 0) {
     // query with no deps
     return new Rx.BehaviorSubject({ query, params });
@@ -58,7 +44,7 @@ function createSource(sources: Sources, query: Query, params: State) { // Observ
 
   // query with deps
   const observableDeps = map(query.dependencies, ({ query, map }, key) => {
-    return getValue(sources, query, params).map(value => ({
+    return getValue(query, params).map(value => ({
       value, key, map: map || identity
     }));
   });
@@ -74,17 +60,11 @@ function createSource(sources: Sources, query: Query, params: State) { // Observ
         }), {})
       }
     }));
-}
+});
 
-function getSource(sources, query, params) {
-  return _getSource('source', createSource, sources, query, params);
-}
-
-
-
-function createValue(sources: Sources, query: Query, params: State) {
-  const fetcher = getSource(sources, query, params).flatMap(v => {
-    const readyState = getReadyState(sources, query, params);
+const getValue = memoize((query: Query, params: State) => {
+  const fetcher = getSource(query, params).flatMap(v => {
+    const readyState = getReadyState(query, params);
     readyState.next({ ...readyState.value, waiting: false, fetching: true });
     return fetch(v).do(() => {
       readyState.next({ ...readyState.value, fetching: false });
@@ -99,45 +79,34 @@ function createValue(sources: Sources, query: Query, params: State) {
     // TODO(gio):
     // should instead have a subject, but valid in a window/buffer.
     // this way (current) every requester even in same frame or close frames
-    // will throw away previous values
+    // will throw away previous values ?
     return fetcher;
   }
-}
+});
 
-function getValue(sources, query, params) {
-  return _getSource('value', createValue, sources, query, params);
-}
-
-
-
-function createReadyState(sources: Sources, query: Query, params: State) {
+const getReadyState = memoize((query: Query, params: State) => {
   return new Rx.BehaviorSubject({ waiting: true, fetching: false });
-}
-
-function getReadyState(sources, query, params) {
-  return _getSource('readyState', createReadyState, sources, query, params);
-}
+});
 
 
-
-function invalidateUpset(sources, query, params, force = false) {
+function invalidateUpset(query, params, force = false) {
   const deps = query.dependencies;
   // should invalidate only the leaves here. in fact, non-leaves are
   // just observables not subjects -> cannot .next() (and it makes sense)
   if (deps && Object.keys(deps).length > 0) {
     // sync-wait a possibly non-free query
-    const rs = getReadyState(sources, query, params);
+    const rs = getReadyState(query, params);
     if (!rs.value.waiting) {
       rs.next({ ...rs.value, waiting: true });
     }
 
-    map(deps, ({ query }) => invalidateUpset(sources, query, params));
+    map(deps, ({ query }) => invalidateUpset(query, params));
   } else if (force || query.cacheStrategy !== 'manual') {
-    const value = getValue(sources, query, params);
+    const value = getValue(query, params);
     if (typeof value.value !== 'undefined') {
       // be sure to allow for a sync value if there's one
       setTimeout(() => {
-        const source = getSource(sources, query, params);
+        const source = getSource(query, params);
         // invalidate
         source.next(source.value);
       });
@@ -145,28 +114,24 @@ function invalidateUpset(sources, query, params, force = false) {
   }
 }
 
-function getValueAndMaybeInvalidateUpset(sources, query, params) {
-  invalidateUpset(sources, query, params, false);
-  return getValue(sources, query, params);
+function getValueAndMaybeInvalidateUpset(query, params) {
+  invalidateUpset(query, params, false);
+  return getValue(query, params);
 }
 
 
 export default function mkAvenger(universe: Queries) {
-  const sources = {
-    source: {}, value: {}, readyState: {}
-  };
-
   const QueriesDict = t.dict(t.String, State);
 
   const addQueries = (queries: QueriesDict) => {
     const qs = map(queries, (params, id) => ({ id, params }));
     const value = Rx.Observable.combineLatest(
-      qs.map(({ params, id }) => getValueAndMaybeInvalidateUpset(sources, universe[id], params))
+      qs.map(({ params, id }) => getValueAndMaybeInvalidateUpset(universe[id], params))
     ).map(values => values.reduce((ac, v, i) => ({
       ...ac, [qs[i].id]: v
     }), {}));
     const readyState = Rx.Observable.combineLatest(
-      qs.map(({ params, id }) => getReadyState(sources, universe[id], params))
+      qs.map(({ params, id }) => getReadyState(universe[id], params))
     ).map(rses => rses.reduce((ac, rs, i) => ({
       ...ac, [qs[i].id]: rs
     }), {}));
