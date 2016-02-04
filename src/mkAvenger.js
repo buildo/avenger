@@ -6,7 +6,7 @@ import map from 'lodash/collection/map';
 import every from 'lodash/collection/every';
 // import uniq from 'lodash/array/uniq';
 // import intersection from 'lodash/array/intersection';
-// import pick from 'lodash/object/pick';
+import pick from 'lodash/object/pick';
 import identity from 'lodash/utility/identity';
 import _memoize from 'lodash/function/memoize';
 import partialRight from 'lodash/function/partialRight';
@@ -17,7 +17,10 @@ const log = debug('Avenger');
 const debounceMSec = new Rx.BehaviorSubject(1);
 
 const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
-const memoize = partialRight(_memoize, (query, params) => instanceId(query.id, params));
+const memoize = partialRight(_memoize, (query, _params) => {
+  const params = pick(_params, !query.params ? () => true : Object.keys(query.params));
+  return instanceId(query.id, params);
+});
 
 function fetch({ query, params }) {
   if (query.params) {
@@ -158,17 +161,17 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
   return {
     queries,
     query(id: t.String, params: ?State) {
-      return queries({ [id]: params });
+      return queries({ [id]: params || {} });
     },
     invalidateQueries,
     invalidateQuery(id: t.String, params: ?State) {
-      return invalidateQueries({ [id]: params });
+      return invalidateQueries({ [id]: params || {} });
     },
     runCommand(cmd: Command, params: ?State) {
       const { run, invalidates } = cmd;
       return run().then(() => {
         invalidateQueries(Object.keys(invalidates).reduce((ac, k) => ({
-          ...ac, [k]: params
+          ...ac, [k]: params || {}
         })));
       });
     },
