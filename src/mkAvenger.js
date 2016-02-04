@@ -14,17 +14,7 @@ import { Query, Queries, State } from './types';
 
 const log = debug('Avenger');
 
-// const stateEqual = (a: ?t.Object, b: ?t.Object) => { // t.Boolean
-//   if (!a && !b) { return true; }
-//   if ((!a || !b) && a !== b) { return false; }
-//   const aKeys = Object.keys(a);
-//   const bKeys = Object.keys(b);
-//   if (aKeys.length !== bKeys.length) { return false; }
-//   for (let i = 0; i < aKeys.length; i++) {
-//     if (a[aKeys[i]] !== b[aKeys[i]]) { return false; }
-//   }
-//   return true;
-// };
+const debounceMSec = new Rx.BehaviorSubject(1);
 
 const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
 const memoize = partialRight(_memoize, (query, params) => instanceId(query.id, params));
@@ -50,6 +40,7 @@ const getSource = memoize((query: Query, params: State) => {
   });
   return Rx.Observable.combineLatest(...observableDeps)
     .filter(deps => every(deps, d => typeof d.value !== 'undefined'))
+    .debounceTime(debounceMSec.value)
     .map(deps => deps.map(({ value, key, map }) => ({ value: map(value), key })))
     .map(deps => ({
       query,
@@ -70,18 +61,18 @@ const getValue = memoize((query: Query, params: State) => {
       readyState.next({ ...readyState.value, fetching: false });
     });
   });
-  const isCacheable = ['optimistic', 'manual'].indexOf(query.cacheStrategy) !== -1;
-  if (isCacheable) {
+  // const isCacheable = ['optimistic', 'manual'].indexOf(query.cacheStrategy) !== -1;
+  // if (isCacheable) {
     const value = new Rx.BehaviorSubject(undefined);
     fetcher.subscribe(::value.next);
     return value;
-  } else {
-    // TODO(gio):
-    // should instead have a subject, but valid in a window/buffer.
-    // this way (current) every requester even in same frame or close frames
-    // will throw away previous values ?
-    return fetcher;
-  }
+  // } else {
+  //   // TODO(gio):
+  //   // should instead have a subject, but valid in a window/buffer.
+  //   // this way (current) every requester even in same frame or close frames
+  //   // will throw away previous values ?
+  //   return fetcher;
+  // }
 });
 
 const getReadyState = memoize((query: Query, params: State) => {
@@ -120,62 +111,69 @@ function getValueAndMaybeInvalidateUpset(query, params) {
 }
 
 
-export default function mkAvenger(universe: Queries) {
+export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number) {
+  if (setDebounceMSec) {
+    debounceMSec.next(setDebounceMSec);
+  }
+
   const QueriesDict = t.dict(t.String, State);
 
-  const addQueries = (queries: QueriesDict) => {
+  const arrayEqual = eq => (vsa, vsb) => {
+    return every(vsa, (a, i) => eq(a, vsb[i]));
+  };
+  const notValueEqual = (a, b) => a !== b;
+  const notReadyStateEqual = (a, b) => a.waiting !== b.waiting || a.fetching !== b.fetching;
+
+  const queries = (queries: QueriesDict) => {
     const qs = map(queries, (params, id) => ({ id, params }));
     const value = Rx.Observable.combineLatest(
       qs.map(({ params, id }) => getValueAndMaybeInvalidateUpset(universe[id], params))
-    ).map(values => values.reduce((ac, v, i) => ({
-      ...ac, [qs[i].id]: v
-    }), {}));
+    )
+      .distinctUntilChanged(arrayEqual(notValueEqual))
+      .map(values => values.reduce((ac, v, i) => ({
+        ...ac, [qs[i].id]: v
+      }), {}));
     const readyState = Rx.Observable.combineLatest(
       qs.map(({ params, id }) => getReadyState(universe[id], params))
-    ).map(rses => rses.reduce((ac, rs, i) => ({
-      ...ac, [qs[i].id]: rs
-    }), {}));
-    return Rx.Observable.combineLatest([value, readyState]).debounceTime(0).map(([val, rs]) => ({
-      ...val,
-      readyState: rs
-    }));
+    )
+      .distinctUntilChanged(arrayEqual(notReadyStateEqual))
+      .map(rses => rses.reduce((ac, rs, i) => ({
+        ...ac, [qs[i].id]: rs
+      }), {}));
+    return Rx.Observable.combineLatest([value, readyState])
+      .debounceTime(debounceMSec.value)
+      .map(([val, rs]) => ({
+        ...val,
+        readyState: rs
+      }));
+  };
+
+  const invalidateQueries = (queries: QueriesDict) => {
+    const qs = map(queries, (params, id) => ({ id, params }));
+    qs.forEach(({ id, params }) => {
+      invalidateUpset(universe[id], params);
+    });
   };
 
   return {
-    addQueries,
-    addQuery(id: t.String, params: ?State) {
-      return addQueries({ [id]: params });
+    queries,
+    query(id: t.String, params: ?State) {
+      return queries({ [id]: params });
+    },
+    invalidateQueries,
+    invalidateQuery(id: t.String, params: ?State) {
+      return invalidateQueries({ [id]: params });
+    },
+    runCommand(cmd: Command, params: ?State) {
+      const { run, invalidates } = cmd;
+      return run().then(() => {
+        invalidateQueries(Object.keys(invalidates).reduce((ac, k) => ({
+          ...ac, [k]: params
+        })));
+      });
+    },
+    setDebounceMSec(ms: t.Number) {
+      debounceMSec.next(ms);
     }
   };
-  // return {
-    // $graph: sink,
-    // $value,
-    // $readyState,
-    // $stableValue: $activeGraph.filter(g => {
-    //   const readyState = extractReadyState(g);
-    //   return Object.keys(readyState)
-    //     .map(k => readyState[k].loading)
-    //     .reduce((ac, loading) => ac && !loading, true);
-    // }).map(extractValue),
-    // addQuery(id: t.String) {
-    //   return addQueries([id]);
-    // },
-    // addQueries,
-    // removeQuery(id: t.String) {
-    //   return removeQueries([id])
-    // },
-    // removeQueries,
-    // invalidateQuery(id: t.String) {
-    //   return invalidateQueries([id]);
-    // },
-    // invalidateQueries,
-    // setState(s: t.Object) {
-    //   log(`setState  ${JSON.stringify(s)}`);
-    //   state.next(s);
-    // },
-    // runCommand(cmd: Command) {
-    //   const { run, invalidates } = cmd;
-    //   return run().then(() => invalidateQueries(Object.keys(invalidates || {})));
-    // }
-  // }
 }

@@ -69,37 +69,41 @@ const d = Query({ // multi dep
 const universe = { a, b, c, d };
 const av = mkAvenger(universe);
 
-// av.addQuery('a', { token: 'foo' }).subscribe(log0('addQuery a { token: "foo" }'));
-// av.addQuery('a', { token: 'bar' }).subscribe(log0('addQuery a { token: "bar" }'));
-// av.addQuery('c', { token: 'bar' }).subscribe(log0('addQuery c { token: "bar" }'));
-// av.addQuery('d', { token: 'bar' }).subscribe(log0('1 addQuery d { token: "bar" }'));
+// av.query('a', { token: 'foo' }).subscribe(log0('query a { token: "foo" }'));
+// av.query('a', { token: 'bar' }).subscribe(log0('query a { token: "bar" }'));
+// av.query('c', { token: 'bar' }).subscribe(log0('query c { token: "bar" }'));
+// av.query('d', { token: 'bar' }).subscribe(log0('1 query d { token: "bar" }'));
 // setTimeout(() => {
-//   av.addQuery('d', { token: 'bar' }).subscribe(log0('2 addQuery d { token: "bar" }'));
+//   av.query('d', { token: 'bar' }).subscribe(log0('2 query d { token: "bar" }'));
 // }, 2000);
-// av.addQuery('a', { token: 'bar' }).subscribe(log0('addQuery a { token: "bar" }'));
+// av.query('a', { token: 'bar' }).subscribe(log0('query a { token: "bar" }'));
 // setTimeout(() => {
-//   av.addQuery('a', { token: 'bar' }).subscribe(log0('addQuery a { token: "bar" }'));
+//   av.query('a', { token: 'bar' }).subscribe(log0('query a { token: "bar" }'));
 // }, 2000);
-// av.addQueries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('addQueries'));
-// av.addQuery('a', { token: 'bar' }).subscribe(log1('addQuery'));
+// av.queries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('queries'));
+// av.query('a', { token: 'bar' }).subscribe(log1('query'));
 // setTimeout(() => {
-//   av.addQueries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('addQueries'));
+//   av.queries({ a: { token: 'bar' }, d: { token: 'baz' } }).subscribe(log1('queries'));
 // }, 4000);
-// av.addQuery('b', {}).subscribe(({ readyState, ...value }) => {
+// av.query('b', {}).subscribe(({ readyState, ...value }) => {
 //   log2('b readyState')(readyState);
 //   log1('b value')(value);
 // });
-av.addQuery('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
+av.query('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
   log2('1 d readyState')(readyState);
   log1('1 d value')(value);
 });
 setTimeout(() => {
-  console.log('---------------');
-  av.addQuery('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
-    log2('2 d readyState')(readyState);
-    log1('2 d value')(value);
-  });
-}, 5000);
+  console.log('-------------------------');
+  av.invalidateQuery('d', { token: 'foo' });
+}, 3000);
+// setTimeout(() => {
+//   console.log('---------------');
+//   av.query('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
+//     log2('2 d readyState')(readyState);
+//     log1('2 d value')(value);
+//   });
+// }, 5000);
 
 // av.$graph.subscribe(log2('$graph'), ::console.error);
 // av.$value.subscribe(log1('$value'), ::console.error);
@@ -108,16 +112,16 @@ setTimeout(() => {
 // av.$readyState.map(rs => rs.a || {}).subscribe(log1('a $readyState'), ::console.error);
 
 // av.setState({ token: 'lol', foo: 'baz' });
-// av.addQuery('d');
-// av.addQuery('b');//.subscribe(log0('b $distinctValue'));
-// av.addQueries(['b', 'c', 'd']).subscribe(({ readyState, ...vals }) => {
+// av.query('d');
+// av.query('b');//.subscribe(log0('b $distinctValue'));
+// av.queries(['b', 'c', 'd']).subscribe(({ readyState, ...vals }) => {
 //   log1('b,c,d $distinct value')(vals);
 //   log2('b,c,d $distinct rs')(readyState);
 // });
-// av.addQuery('c');
+// av.query('c');
 // av.setState({ token: 'lol', foo: 'baz' });
 // av.removeQueries(['a', 'b']);
-// av.addQuery('b');
+// av.query('b');
 // setTimeout(() => {
 //   av.setState({ token: 'lo', foo: 'bar' });
 //   // av.invalidateQuery('a');
