@@ -69,6 +69,10 @@ const d = Query({ // multi dep
 const universe = { a, b, c, d };
 const av = mkAvenger(universe);
 
+// console.log(d.upsetParams);
+// console.log(d.upsetLeavesParams);
+console.log(d.upsetActualParams);
+
 // av.query('a', { token: 'foo' }).subscribe(log0('query a { token: "foo" }'));
 // av.query('a', { token: 'bar' }).subscribe(log0('query a { token: "bar" }'));
 // av.query('c', { token: 'bar' }).subscribe(log0('query c { token: "bar" }'));

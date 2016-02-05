@@ -54,6 +54,48 @@ export const Query = t.struct({
   returnType: t.maybe(TcombType)
 }, 'Query');
 
+// first attempt (dumb)
+Object.defineProperty(Query.prototype, 'upsetParams', {
+  get() {
+    return {
+      ...this.params,
+      ...Object.keys((this.dependencies || {})).reduce((ac, k) => ({
+        ...ac, ...this.dependencies[k].query.upsetParams
+      }), {})
+    };
+  }
+});
+
+// second attempt (almost there?)
+Object.defineProperty(Query.prototype, 'upsetLeavesParams', {
+  get() {
+    if (!this.dependencies || Object.keys(this.dependencies).length === 0) {
+      return this.params;
+    } else {
+      return {
+        ...Object.keys((this.dependencies)).reduce((ac, k) => ({
+          ...ac, ...this.dependencies[k].query.upsetLeavesParams
+        }), {})
+      };
+    }
+  }
+});
+
+// third attempt
+Object.defineProperty(Query.prototype, 'upsetActualParams', {
+  get() {
+    const deps = this.dependencies || {};
+    return {
+      ...Object.keys(this.params || {}).filter(k => !deps[k]).reduce((ac, k) => ({
+        ...ac, [k]: this.params[k]
+      }), {}),
+      ...Object.keys(deps).reduce((ac, k) => ({
+        ...ac, ...this.dependencies[k].query.upsetParams
+      }), {})
+    };
+  }
+});
+
 Dependency.meta.props.query = Query;
 
 export const Queries = t.dict(t.Any, Query, 'Queries');
