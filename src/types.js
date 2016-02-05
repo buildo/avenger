@@ -48,8 +48,10 @@ export const Query = t.struct({
   // dictionary of deps. { [paramName]: { query: queryReference } }
   dependencies: t.maybe(Dependencies),
 
-  // state: query.params -> Promise[t.Any]
-  fetch: t.Function
+  // state: query.params -> Promise[returnType]
+  fetch: t.Function,
+
+  returnType: t.maybe(TcombType)
 }, 'Query');
 
 Dependency.meta.props.query = Query;
