@@ -3,7 +3,7 @@ import t, { isType } from 'tcomb';
 export const PromiseType = t.irreducible('Promise', v => v instanceof Promise);
 
 // unique string id for the query
-const QueryId = t.String;
+export const QueryId = t.String;
 
 const Dependency = t.struct({
   // dep on this query

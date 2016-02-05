@@ -82,7 +82,6 @@ const getReadyState = memoize((query: Query, params: State) => {
   return new Rx.BehaviorSubject({ waiting: true, fetching: false });
 });
 
-
 function invalidateUpset(query, params, force = false) {
   const deps = query.dependencies;
   // should invalidate only the leaves here. in fact, non-leaves are
@@ -113,7 +112,6 @@ function getValueAndMaybeInvalidateUpset(query, params) {
   return getValue(query, params);
 }
 
-
 export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number) {
   if (setDebounceMSec) {
     debounceMSec.next(setDebounceMSec);
@@ -141,7 +139,9 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
     )
       .distinctUntilChanged(arrayEqual(notReadyStateEqual))
       .map(rses => rses.reduce((ac, rs, i) => ({
-        ...ac, [qs[i].id]: rs
+        ...ac, [qs[i].id]: {
+          ...rs, loading: !!(rs.waiting || rs.fetching)
+        }
       }), {}));
     return Rx.Observable.combineLatest([value, readyState])
       .debounceTime(debounceMSec.value)
