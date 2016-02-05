@@ -1,2 +1,2 @@
-export { Query, Command } from './types';
+export { Query, QueryId, Command } from './types';
 export default from './mkAvenger';
