@@ -10,7 +10,7 @@ import pick from 'lodash/object/pick';
 import identity from 'lodash/utility/identity';
 import _memoize from 'lodash/function/memoize';
 import partialRight from 'lodash/function/partialRight';
-import { Query, Queries, State } from './types';
+import { Query, Queries, Command, State } from './types';
 
 const log = debug('Avenger');
 
@@ -26,6 +26,7 @@ function fetch({ query, params }) {
   if (query.params) {
     t.struct(query.params, `${query.id}:FetchParams`)(params); // assert
   }
+  log('fetch', query.id, JSON.stringify(params));
   return Rx.Observable.fromPromise(query.fetch(params));
 }
 
@@ -57,7 +58,7 @@ const getSource = memoize((query: Query, params: State) => {
 });
 
 const getValue = memoize((query: Query, params: State) => {
-  const fetcher = getSource(query, params).flatMap(v => {
+  const fetcher = getSource(query, params).debounceTime(debounceMSec.value).flatMap(v => {
     const readyState = getReadyState(query, params);
     readyState.next({ ...readyState.value, waiting: false, fetching: true });
     return fetch(v).do(() => {
@@ -101,6 +102,7 @@ function invalidateUpset(query, params, force = false) {
       setTimeout(() => {
         const source = getSource(query, params);
         // invalidate
+        log('invalidateUpset:invalidate', query.id, JSON.stringify(params));
         source.next(source.value);
       });
     }
@@ -108,12 +110,15 @@ function invalidateUpset(query, params, force = false) {
 }
 
 function getValueAndMaybeInvalidateUpset(query, params) {
+  log('getValueAndMaybeInvalidateUpset', query.id, JSON.stringify(params));
   invalidateUpset(query, params, false);
   return getValue(query, params);
 }
 
 export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number) {
   if (setDebounceMSec) {
+    // TODO(gio): every other setDebounceMSec after this one are useless
+    // it should be combineLatest'd where it's needed, not used statically
     debounceMSec.next(setDebounceMSec);
   }
 
@@ -154,7 +159,7 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
   const invalidateQueries = (queries: QueriesDict) => {
     const qs = map(queries, (params, id) => ({ id, params }));
     qs.forEach(({ id, params }) => {
-      invalidateUpset(universe[id], params);
+      invalidateUpset(universe[id], params, true);
     });
   };
 
@@ -167,16 +172,20 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
     invalidateQuery(id: t.String, params: ?State) {
       return invalidateQueries({ [id]: params || {} });
     },
-    runCommand(cmd: Command, params: ?State) {
+    runCommand(cmd: Command) {
       const { run, invalidates } = cmd;
       return run().then(() => {
-        invalidateQueries(Object.keys(invalidates).reduce((ac, k) => ({
-          ...ac, [k]: params || {}
-        })));
+        invalidateQueries(invalidates);
       });
     },
     setDebounceMSec(ms: t.Number) {
       debounceMSec.next(ms);
+    },
+    get cache() {
+      const cache = getValue.cache.__data__;
+      return Object.keys(cache).reduce((ac, k) => ({
+        ...ac, [k]: cache[k].value
+      }), {});
     }
   };
 }
