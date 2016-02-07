@@ -54,45 +54,23 @@ export const Query = t.struct({
   returnType: t.maybe(TcombType)
 }, 'Query');
 
-// first attempt (dumb)
-Object.defineProperty(Query.prototype, 'upsetParams', {
-  get() {
-    return {
-      ...this.params,
-      ...Object.keys((this.dependencies || {})).reduce((ac, k) => ({
-        ...ac, ...this.dependencies[k].query.upsetParams
-      }), {})
-    };
-  }
-});
-
-// second attempt (almost there?)
-Object.defineProperty(Query.prototype, 'upsetLeavesParams', {
-  get() {
-    if (!this.dependencies || Object.keys(this.dependencies).length === 0) {
-      return this.params;
-    } else {
-      return {
-        ...Object.keys((this.dependencies)).reduce((ac, k) => ({
-          ...ac, ...this.dependencies[k].query.upsetLeavesParams
-        }), {})
-      };
-    }
-  }
-});
-
-// third attempt
+const _upsetActualParams = {};
 Object.defineProperty(Query.prototype, 'upsetActualParams', {
   get() {
-    const deps = this.dependencies || {};
-    return {
-      ...Object.keys(this.params || {}).filter(k => !deps[k]).reduce((ac, k) => ({
-        ...ac, [k]: this.params[k]
-      }), {}),
-      ...Object.keys(deps).reduce((ac, k) => ({
-        ...ac, ...this.dependencies[k].query.upsetParams
-      }), {})
-    };
+    if (_upsetActualParams[this.id]) {
+      return _upsetActualParams[this.id];
+    } else {
+      const deps = this.dependencies || {};
+      _upsetActualParams[this.id] = {
+        ...Object.keys(this.params || {}).filter(k => !deps[k]).reduce((ac, k) => ({
+          ...ac, [k]: this.params[k]
+        }), {}),
+        ...Object.keys(deps).reduce((ac, k) => ({
+          ...ac, ...this.dependencies[k].query.upsetActualParams
+        }), {})
+      };
+      return _upsetActualParams[this.id];
+    }
   }
 });
 
@@ -100,13 +78,36 @@ Dependency.meta.props.query = Query;
 
 export const Queries = t.dict(t.Any, Query, 'Queries');
 
+export const CommandId = QueryId;
+
+const CommandParams = QueryParams;
+
 export const Command = t.struct({
+  id: CommandId,
+
   // an optional set of queries to invalidate
   invalidates: t.maybe(Queries),
+
+  params: t.maybe(CommandParams),
 
   // actual command
   run: t.Function // ...t.Any -> Promise[t.Any]
 }, 'Command');
+
+const _invalidateParams = {};
+Object.defineProperty(Command.prototype, 'invalidateParams', {
+  get() {
+    if (_invalidateParams[this.id]) {
+      return _invalidateParams[this.id];
+    } else {
+      const inv = this.invalidates || {};
+      _invalidateParams[this.id] = Object.keys(inv).reduce((ac, k) => ({
+        ...ac, ...inv[k].upsetActualParams
+      }), {});
+      return _invalidateParams[this.id];
+    }
+  }
+});
 
 
 // internal types

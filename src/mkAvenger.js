@@ -1,11 +1,8 @@
 import t from 'tcomb';
 import Rx from 'rxjs/Rx';
 import debug from 'debug';
-// import mapValues from 'lodash/object/mapValues';
 import map from 'lodash/collection/map';
 import every from 'lodash/collection/every';
-// import uniq from 'lodash/array/uniq';
-// import intersection from 'lodash/array/intersection';
 import pick from 'lodash/object/pick';
 import identity from 'lodash/utility/identity';
 import _memoize from 'lodash/function/memoize';
@@ -18,7 +15,7 @@ const debounceMSec = new Rx.BehaviorSubject(1);
 
 const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
 const memoize = partialRight(_memoize, (query, _params) => {
-  const params = pick(_params, !query.params ? () => true : Object.keys(query.params));
+  const params = pick(_params, Object.keys(query.upsetActualParams));
   return instanceId(query.id, params);
 });
 
@@ -172,15 +169,24 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
     invalidateQuery(id: t.String, params: ?State) {
       return invalidateQueries({ [id]: params || {} });
     },
-    runCommand(cmd: Command) {
-      const { run, invalidates } = cmd;
-      return run().then(() => {
-        invalidateQueries(invalidates);
+    runCommand(cmd: Command, params: ?State) {
+      const { run, invalidates = {} } = cmd;
+      const allParams = params || {};
+      if (cmd.params) {
+        // assert: all run() params must be there
+        t.struct(cmd.params, `${cmd.id}:RunParams`)(allParams);
+      }
+      // assert: all invalidate query params must be there
+      t.struct(cmd.invalidateParams, `${cmd.id}:InvalidateParams`)(allParams)
+      return run(allParams).then(() => {
+        invalidateQueries(Object.keys(invalidates).reduce((ac, k) => ({
+          ...ac, [k]: allParams
+        }), {}));
       });
     },
-    setDebounceMSec(ms: t.Number) {
-      debounceMSec.next(ms);
-    },
+    // setDebounceMSec(ms: t.Number) {
+    //   debounceMSec.next(ms);
+    // },
     get cache() {
       const cache = getValue.cache.__data__;
       return Object.keys(cache).reduce((ac, k) => ({

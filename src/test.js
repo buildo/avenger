@@ -1,7 +1,7 @@
 import t from 'tcomb';
 import identity from 'lodash/utility/identity';
 import mkAvenger from './index';
-import { Query } from './types';
+import { Query, Command } from './types';
 
 const log0 = l => v => {
   console.log(`> ${l}:`);
@@ -66,8 +66,33 @@ const d = Query({ // multi dep
   params: { aaa: t.String, b: t.String },
   fetch: ({ aaa, b }) => resolveLater(`from d ${aaa} ${b}`)()
 });
-const universe = { a, b, c, d };
+const sample = Query({
+  id: 'sample',
+  cacheStrategy: 'optimistic',
+  params: { sampleId: t.String },
+  fetch: ({ sampleId }) => resolveLater({ _requestId: `request-${sampleId}` })()
+});
+const sampleRequest = Query({
+  id: 'sampleRequest',
+  cacheStrategy: 'optimistic',
+  dependencies: {
+    requestId: {
+      query: sample,
+      map: ({ _requestId }) => _requestId
+    }
+  },
+  params: {},
+  fetch: ({ requestId }) => resolveLater({ requestId })()
+});
+const universe = { a, b, c, d, sample, sampleRequest };
 const av = mkAvenger(universe);
+
+const cmd1 = Command({
+  id: 'cmd1',
+  invalidates: { sampleRequest },
+  params: { howMuch: t.String },
+  run: resolveLater('cmd1')
+});
 
 // console.log(d.upsetParams);
 // console.log(d.upsetLeavesParams);
@@ -93,14 +118,14 @@ const av = mkAvenger(universe);
 //   log2('b readyState')(readyState);
 //   log1('b value')(value);
 // });
-av.query('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
-  log2('1 d readyState')(readyState);
-  log1('1 d value')(value);
-});
-setTimeout(() => {
-  console.log('-------------------------');
-  av.invalidateQuery('d', { token: 'foo' });
-}, 3000);
+// av.query('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
+//   log2('1 d readyState')(readyState);
+//   log1('1 d value')(value);
+// });
+// setTimeout(() => {
+//   console.log('-------------------------');
+//   av.invalidateQuery('d', { token: 'foo' });
+// }, 3000);
 // setTimeout(() => {
 //   console.log('---------------');
 //   av.query('d', { token: 'foo' }).subscribe(({ readyState, ...value }) => {
@@ -108,6 +133,18 @@ setTimeout(() => {
 //     log1('2 d value')(value);
 //   });
 // }, 5000);
+av.queries({ sample: { sampleId: 'one' }, sampleRequest: { sampleId: 'one' } }).subscribe(({ readyState, ...value }) => {
+  log2('readyState')(readyState);
+  // log1('value')(value);
+});
+setTimeout(() => {
+  console.log('-----------------');
+  // av.queries({ sample: { sampleId: 'one' }, sampleRequest: { sampleId: 'one' } }).subscribe(({ readyState, ...value }) => {
+  //   log2('readyState')(readyState);
+  //   // log1('value')(value);
+  // });
+  av.runCommand(cmd1, { howMuch: 'much', sampleId: 'one' });
+}, 3000);
 
 // av.$graph.subscribe(log2('$graph'), ::console.error);
 // av.$value.subscribe(log1('$value'), ::console.error);
