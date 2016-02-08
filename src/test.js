@@ -91,8 +91,10 @@ const cmd1 = Command({
   id: 'cmd1',
   invalidates: { sampleRequest },
   params: { howMuch: t.String },
-  run: resolveLater('cmd1')
+  run: resolveLater({})
 });
+
+av.error.subscribe(log1('error'));
 
 // console.log(d.upsetParams);
 // console.log(d.upsetLeavesParams);
