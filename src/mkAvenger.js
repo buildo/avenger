@@ -13,6 +13,8 @@ const log = debug('Avenger');
 
 const debounceMSec = new Rx.BehaviorSubject(1);
 
+const _error = new Rx.Subject();
+
 const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
 const memoize = partialRight(_memoize, (query, _params) => {
   const params = pick(_params, Object.keys(query.upsetActualParams));
@@ -59,7 +61,11 @@ const getValue = memoize((query: Query, params: State) => {
     const readyState = getReadyState(query, params);
     readyState.next({ ...readyState.value, waiting: false, fetching: true });
     return fetch(v).do(() => {
-      readyState.next({ ...readyState.value, fetching: false });
+      readyState.next({ ...readyState.value, fetching: false, error: undefined });
+    }).catch(error => {
+      _error.next({ error, source: 'fetch' });
+      readyState.next({ ...readyState.value, fetching: false, error });
+      return Rx.Observable.empty();
     });
   });
   // const isCacheable = ['optimistic', 'manual'].indexOf(query.cacheStrategy) !== -1;
@@ -170,18 +176,23 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
       return invalidateQueries({ [id]: params || {} });
     },
     runCommand(cmd: Command, params: ?State) {
-      const { run, invalidates = {} } = cmd;
-      const allParams = params || {};
+      const { run } = cmd;
+      const invalidates = cmd.invalidates || {};
       if (cmd.params) {
         // assert: all run() params must be there
-        t.struct(cmd.params, `${cmd.id}:RunParams`)(allParams);
+        t.struct(cmd.params, `${cmd.id}:RunParams`)(params || {});
       }
-      // assert: all invalidate query params must be there
-      t.struct(cmd.invalidateParams, `${cmd.id}:InvalidateParams`)(allParams)
-      return run(allParams).then(() => {
+      return run(params || {}).then((moreParams = {}) => {
+        const allParams = { ...params, ...moreParams };
+        // assert: all invalidate query params must be there
+        t.struct(cmd.invalidateParams, `${cmd.id}:InvalidateParams`)(allParams)
         invalidateQueries(Object.keys(invalidates).reduce((ac, k) => ({
           ...ac, [k]: allParams
         }), {}));
+        return moreParams;
+      }).catch(error => {
+        _error.next({ error, source: 'runCommand' });
+        throw error;
       });
     },
     // setDebounceMSec(ms: t.Number) {
@@ -192,6 +203,8 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
       return Object.keys(cache).reduce((ac, k) => ({
         ...ac, [k]: cache[k].value
       }), {});
-    }
+    },
+    error: _error.map(identity),
+    errors: _error.scan((ac, e) => ac.concat(e), [])
   };
 }
