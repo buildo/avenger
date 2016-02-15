@@ -21,19 +21,19 @@ describe('invalidateLocal', () => {
     },
     B: {
       self: 'B', state, deps: {
-        foo: JSON.stringify({
+        foo: {
           self: 'A', state, deps: {}
-        }),
-        bar: JSON.stringify({
+        },
+        bar: {
           self: 'F', state, deps: {}
-        })
+        }
       }
     },
     C: {
       self: 'C', state, deps: {
-        foo: JSON.stringify({
+        foo: {
           self: 'A', state, deps: {}
-        })
+        }
       }
     },
     F: {
@@ -58,8 +58,8 @@ describe('invalidateLocal', () => {
     // should be invalidated anyway:
     const DCacheParams = {
       ...state,
-      foo: JSON.stringify(results1.A),
-      bar: JSON.stringify(results1.B)
+      foo: results1.A,
+      bar: results1.B
     };
     cache.set('D', DCacheParams)(results1.D);
     const Dresults = {
@@ -74,8 +74,8 @@ describe('invalidateLocal', () => {
     };
     const ECacheParams = {
       ...state,
-      foo: JSON.stringify(results1.C),
-      bar: JSON.stringify(Dresults)
+      foo: results1.C,
+      bar: Dresults
     };
     cache.set('E', ECacheParams)(results1.E);
 

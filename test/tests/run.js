@@ -22,19 +22,19 @@ describe('runLocal', () => {
     },
     B: {
       self: 'B', state, deps: {
-        foo: JSON.stringify({
+        foo: {
           self: 'A', state, deps: {}
-        }),
-        bar: JSON.stringify({
+        },
+        bar: {
           self: 'F', state, deps: {}
-        })
+        }
       }
     },
     C: {
       self: 'C', state, deps: {
-        foo: JSON.stringify({
+        foo: {
           self: 'A', state, deps: {}
-        })
+        }
       }
     },
     F: {
@@ -196,7 +196,7 @@ describe('runLocal', () => {
   const Jres = {
     self: 'J', state, deps: {}
   };
-  const StringJres = JSON.stringify(Jres);
+  const StringJres = Jres;
   const Kres = [
     'K I1 ' + StringJres,
     'K I2 ' + StringJres,
@@ -206,7 +206,7 @@ describe('runLocal', () => {
     I: ['I1', 'I2', 'I3'],
     J: Jres,
     K: Kres,
-    L: 'L ' + JSON.stringify(Kres)
+    L: 'L ' + Kres
   };
 
   it('should support multi', () => {
