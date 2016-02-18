@@ -1,5 +1,18 @@
 import t from 'tcomb';
-import Rx from 'rxjs/Rx';
+import { BehaviorSubject } from 'rxjs/subject/BehaviorSubject';
+import { Subject } from 'rxjs/Subject';
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/scan';
+import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/debounceTime';
+import 'rxjs/add/operator/distinctUntilChanged';
+import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/operator/do';
+import 'rxjs/add/operator/catch';
+import 'rxjs/add/observable/combineLatest';
+import 'rxjs/add/observable/fromPromise';
+import 'rxjs/add/observable/empty';
 import debug from 'debug';
 import map from 'lodash/collection/map';
 import every from 'lodash/collection/every';
@@ -11,9 +24,9 @@ import { Query, Queries, Command, State } from './types';
 
 const log = debug('Avenger');
 
-const debounceMSec = new Rx.BehaviorSubject(1);
+const debounceMSec = new BehaviorSubject(1);
 
-const _error = new Rx.Subject();
+const _error = new Subject();
 
 const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
 const memoize = partialRight(_memoize, (query, _params) => {
@@ -26,13 +39,13 @@ function fetch({ query, params }) {
     t.struct(query.params, `${query.id}:FetchParams`)(params); // assert
   }
   log('fetch', query.id, JSON.stringify(params));
-  return Rx.Observable.fromPromise(query.fetch(params));
+  return Observable.fromPromise(query.fetch(params));
 }
 
 const getSource = memoize((query: Query, params: State) => {
   if (!query.dependencies || Object.keys(query.dependencies).length === 0) {
     // query with no deps
-    return new Rx.BehaviorSubject({ query, params });
+    return new BehaviorSubject({ query, params });
   }
 
   // query with deps
@@ -41,7 +54,7 @@ const getSource = memoize((query: Query, params: State) => {
       value, key, map: map || identity
     }));
   });
-  return Rx.Observable.combineLatest(...observableDeps)
+  return Observable.combineLatest(...observableDeps)
     .filter(deps => every(deps, d => typeof d.value !== 'undefined'))
     .debounceTime(debounceMSec.value)
     .map(deps => deps.map(({ value, key, map }) => ({ value: map(value), key })))
@@ -65,14 +78,14 @@ const getValue = memoize((query: Query, params: State) => {
     }).catch(error => {
       _error.next({ error, source: 'fetch' });
       readyState.next({ ...readyState.value, fetching: false, error });
-      return Rx.Observable.empty();
+      return Observable.empty();
     });
   });
   // const isCacheable = ['optimistic', 'manual'].indexOf(query.cacheStrategy) !== -1;
   // if (isCacheable) {
-    const value = new Rx.BehaviorSubject(undefined);
-    fetcher.subscribe(::value.next);
-    return value;
+  const value = new BehaviorSubject(undefined);
+  fetcher.subscribe(::value.next);
+  return value;
   // } else {
   //   // TODO(gio):
   //   // should instead have a subject, but valid in a window/buffer.
@@ -82,8 +95,8 @@ const getValue = memoize((query: Query, params: State) => {
   // }
 });
 
-const getReadyState = memoize((query: Query, params: State) => {
-  return new Rx.BehaviorSubject({ waiting: true, fetching: false });
+const getReadyState = memoize((query: Query, params: State) => { //eslint-disable-line no-unused-vars
+  return new BehaviorSubject({ waiting: true, fetching: false });
 });
 
 function invalidateUpset(query, params, force = false) {
@@ -135,14 +148,14 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
 
   const queries = (queries: QueriesDict) => {
     const qs = map(queries, (params, id) => ({ id, params }));
-    const value = Rx.Observable.combineLatest(
+    const value = Observable.combineLatest(
       qs.map(({ params, id }) => getValueAndMaybeInvalidateUpset(universe[id], params))
     )
       .distinctUntilChanged(arrayEqual(notValueEqual))
       .map(values => values.reduce((ac, v, i) => ({
         ...ac, [qs[i].id]: v
       }), {}));
-    const readyState = Rx.Observable.combineLatest(
+    const readyState = Observable.combineLatest(
       qs.map(({ params, id }) => getReadyState(universe[id], params))
     )
       .distinctUntilChanged(arrayEqual(notReadyStateEqual))
@@ -151,7 +164,7 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
           ...rs, loading: !!(rs.waiting || rs.fetching)
         }
       }), {}));
-    return Rx.Observable.combineLatest([value, readyState])
+    return Observable.combineLatest([value, readyState])
       .debounceTime(debounceMSec.value)
       .map(([val, rs]) => ({
         ...val,
@@ -185,7 +198,7 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
       return run(params || {}).then((moreParams = {}) => {
         const allParams = { ...params, ...moreParams };
         // assert: all invalidate query params must be there
-        t.struct(cmd.invalidateParams, `${cmd.id}:InvalidateParams`)(allParams)
+        t.struct(cmd.invalidateParams, `${cmd.id}:InvalidateParams`)(allParams);
         invalidateQueries(Object.keys(invalidates).reduce((ac, k) => ({
           ...ac, [k]: allParams
         }), {}));

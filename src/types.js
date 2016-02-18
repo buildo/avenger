@@ -17,11 +17,11 @@ const Dependency = t.struct({
 const Dependencies = t.dict(QueryId, Dependency);
 
 const CacheStrategy = t.enums.of([
-  // (default): results for this q. are never stored in cache
+  // (default): results for this query are never stored in cache
   'no',
 
   // results are stored and always returned from cache,
-  // a re-fetch is always re-issued at every pass
+  // a fetch is always re-issued at every pass
   'optimistic',
 
   // results are always stored in cache, never invalidated
@@ -36,21 +36,22 @@ const QueryParams = t.dict(t.String, TcombType, 'QueryParams');
 export const Query = t.struct({
   id: QueryId,
 
-  // define caching strategy for this query
+  // caching strategy for this query
   cacheStrategy: t.maybe(CacheStrategy),
 
-  // typing for params passed to fetch()
+  // typing for params passed to `fetch()`
   // params default to all params + all deps params
   // these are the same key:values used to store
-  // each fetch() result in cache
+  // each `fetch()` result in cache
   params: t.maybe(QueryParams),
 
-  // dictionary of deps. { [paramName]: { query: queryReference } }
+  // dictionary of deps. { [paramName]: { query: queryRef } }
   dependencies: t.maybe(Dependencies),
 
-  // state: query.params -> Promise[returnType]
+  // state: query.params -> Promise<returnType>
   fetch: t.Function,
 
+  // return type of this query `fetch()`
   returnType: t.maybe(TcombType)
 }, 'Query');
 

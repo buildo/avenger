@@ -1,5 +1,4 @@
 import t from 'tcomb';
-import identity from 'lodash/utility/identity';
 import mkAvenger from './index';
 import { Query, Command } from './types';
 
