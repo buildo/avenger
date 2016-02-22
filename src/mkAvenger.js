@@ -190,11 +190,11 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
     },
     runCommand(cmd: Command, params: ?State) {
       const { run } = cmd;
-      const invalidates = cmd.invalidates || {};
       if (cmd.params) {
         // assert: all run() params must be there
         t.struct(cmd.params, `${cmd.id}:RunParams`)(params || {});
       }
+      const invalidates = (t.Function.is(cmd.invalidates) ? cmd.invalidates(params) : cmd.invalidates) || {};
       return run(params || {}).then((moreParams = {}) => {
         const allParams = { ...params, ...moreParams };
         // assert: all invalidate query params must be there

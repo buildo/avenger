@@ -87,7 +87,8 @@ export const Command = t.struct({
   id: CommandId,
 
   // an optional set of queries to invalidate
-  invalidates: t.maybe(Queries),
+  // if it is a function, commands params are passed as only argument
+  invalidates: t.maybe(t.union([Queries, t.Function])),
 
   params: t.maybe(CommandParams),
 
