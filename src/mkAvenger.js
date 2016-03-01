@@ -50,7 +50,7 @@ const getSource = memoize((query: Query, params: State) => {
 
   // query with deps
   const observableDeps = map(query.dependencies, ({ query, map }, key) => {
-    return getValue(query, params).map(value => ({
+    return getValue(query, params).map(value => ({ // eslint-disable-line no-use-before-define
       value, key, map: map || identity
     }));
   });
@@ -71,7 +71,7 @@ const getSource = memoize((query: Query, params: State) => {
 
 const getValue = memoize((query: Query, params: State) => {
   const fetcher = getSource(query, params).debounceTime(debounceMSec.value).flatMap(v => {
-    const readyState = getReadyState(query, params);
+    const readyState = getReadyState(query, params); // eslint-disable-line no-use-before-define
     readyState.next({ ...readyState.value, waiting: false, fetching: true });
     return fetch(v).do(() => {
       readyState.next({ ...readyState.value, fetching: false, error: undefined });
