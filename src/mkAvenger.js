@@ -5,11 +5,11 @@ import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/scan';
 import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/debounceTime';
 import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
+import 'rxjs/add/operator/throttleTIme';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/observable/fromPromise';
 import 'rxjs/add/observable/empty';
@@ -22,11 +22,10 @@ import _memoize from 'lodash/function/memoize';
 import partialRight from 'lodash/function/partialRight';
 import { Query, Queries, Command, State } from './types';
 
-const log = debug('Avenger');
-
-const debounceMSec = new BehaviorSubject(1);
+const log = debug('avenger');
 
 const _error = new Subject();
+const throttleWindowMsec = new BehaviorSubject(10);
 
 const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
 const memoize = partialRight(_memoize, (query, _params) => {
@@ -56,7 +55,6 @@ const getSource = memoize((query: Query, params: State) => {
   });
   return Observable.combineLatest(...observableDeps)
     .filter(deps => every(deps, d => typeof d.value !== 'undefined'))
-    .debounceTime(debounceMSec.value)
     .map(deps => deps.map(({ value, key, map }) => ({ value: map(value), key })))
     .map(deps => ({
       query,
@@ -70,7 +68,7 @@ const getSource = memoize((query: Query, params: State) => {
 });
 
 const getValue = memoize((query: Query, params: State) => {
-  const fetcher = getSource(query, params).debounceTime(debounceMSec.value).flatMap(v => {
+  const fetcher = getSource(query, params).throttleTime(throttleWindowMsec.value).flatMap(v => {
     const readyState = getReadyState(query, params); // eslint-disable-line no-use-before-define
     readyState.next({ ...readyState.value, waiting: false, fetching: true });
     return fetch(v).do(() => {
@@ -81,18 +79,10 @@ const getValue = memoize((query: Query, params: State) => {
       return Observable.empty();
     });
   });
-  // const isCacheable = ['optimistic', 'manual'].indexOf(query.cacheStrategy) !== -1;
-  // if (isCacheable) {
+
   const value = new BehaviorSubject(undefined);
   fetcher.subscribe(::value.next);
   return value;
-  // } else {
-  //   // TODO(gio):
-  //   // should instead have a subject, but valid in a window/buffer.
-  //   // this way (current) every requester even in same frame or close frames
-  //   // will throw away previous values ?
-  //   return fetcher;
-  // }
 });
 
 const getReadyState = memoize((query: Query, params: State) => { //eslint-disable-line no-unused-vars
@@ -114,9 +104,9 @@ function invalidateUpset(query, params, force = false) {
   } else if (force || query.cacheStrategy !== 'manual') {
     const value = getValue(query, params);
     if (typeof value.value !== 'undefined') {
+      const source = getSource(query, params);
       // be sure to allow for a sync value if there's one
       setTimeout(() => {
-        const source = getSource(query, params);
         // invalidate
         log('invalidateUpset:invalidate', query.id, JSON.stringify(params));
         source.next(source.value);
@@ -131,11 +121,9 @@ function getValueAndMaybeInvalidateUpset(query, params) {
   return getValue(query, params);
 }
 
-export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number) {
-  if (setDebounceMSec) {
-    // TODO(gio): every other setDebounceMSec after this one are useless
-    // it should be combineLatest'd where it's needed, not used statically
-    debounceMSec.next(setDebounceMSec);
+export default function mkAvenger(universe: Queries, throttleWindowMsecValue: ?t.Number) {
+  if (!t.Nil.is(throttleWindowMsecValue)) {
+    throttleWindowMsec.next(throttleWindowMsecValue);
   }
 
   const QueriesDict = t.dict(t.String, State);
@@ -165,7 +153,6 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
         }
       }), {}));
     return Observable.combineLatest([value, readyState])
-      .debounceTime(debounceMSec.value)
       .map(([val, rs]) => ({
         ...val,
         readyState: rs
@@ -208,9 +195,6 @@ export default function mkAvenger(universe: Queries, setDebounceMSec: ?t.Number)
         throw error;
       });
     },
-    // setDebounceMSec(ms: t.Number) {
-    //   debounceMSec.next(ms);
-    // },
     get cache() {
       const cache = getValue.cache.__data__;
       return Object.keys(cache).reduce((ac, k) => ({
