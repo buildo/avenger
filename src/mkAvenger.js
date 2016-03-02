@@ -9,7 +9,7 @@ import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/throttleTIme';
+import 'rxjs/add/operator/throttleTime';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/observable/fromPromise';
 import 'rxjs/add/observable/empty';
@@ -70,12 +70,15 @@ const getSource = memoize((query: Query, params: State) => {
 const getValue = memoize((query: Query, params: State) => {
   const fetcher = getSource(query, params).throttleTime(throttleWindowMsec.value).flatMap(v => {
     const readyState = getReadyState(query, params); // eslint-disable-line no-use-before-define
+    log('fetching', query.id, JSON.stringify(params));
     readyState.next({ ...readyState.value, waiting: false, fetching: true });
     return fetch(v).do(() => {
-      readyState.next({ ...readyState.value, fetching: false, error: undefined });
+      log('done', query.id, JSON.stringify(params));
+      readyState.next({ ...readyState.value, waiting: false, fetching: false, error: undefined });
     }).catch(error => {
       _error.next({ error, source: 'fetch' });
-      readyState.next({ ...readyState.value, fetching: false, error });
+      log('error', query.id, JSON.stringify(params));
+      readyState.next({ ...readyState.value, waiting: false, fetching: false, error });
       return Observable.empty();
     });
   });

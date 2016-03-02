@@ -28,7 +28,7 @@
     "babel-eslint": "^4.1.3",
     "babel-plugin-tcomb": "^0.1.3",
     "better-assert": "^1.0.2",
-    "eslint": "^1.6.0",
+    "eslint": "^2.2.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
     "expect": "^1.6.0",
     "mocha": "*",
