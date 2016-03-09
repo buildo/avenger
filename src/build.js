@@ -1,9 +1,9 @@
 import t from 'tcomb';
 import { AvengerInput, QueryNodes } from './types';
 import upset from './upset';
-import find from 'lodash/collection/find';
-import every from 'lodash/collection/every';
-import omit from 'lodash/object/omit';
+import find from 'lodash/find';
+import every from 'lodash/every';
+import omit from 'lodash/omit';
 
 export default function build(
   input: AvengerInput,

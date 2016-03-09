@@ -1,6 +1,6 @@
 import { PromiseType } from './types';
 import t from 'tcomb';
-import zipObject from 'lodash/array/zipObject';
+import zipObject from 'lodash/zipObject';
 
 const DictOfPromises = t.dict(t.String, PromiseType, 'DictOfPromises');
 
