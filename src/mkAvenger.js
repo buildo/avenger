@@ -14,12 +14,12 @@ import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/observable/fromPromise';
 import 'rxjs/add/observable/empty';
 import debug from 'debug';
-import map from 'lodash/collection/map';
-import every from 'lodash/collection/every';
-import pick from 'lodash/object/pick';
-import identity from 'lodash/utility/identity';
-import _memoize from 'lodash/function/memoize';
-import partialRight from 'lodash/function/partialRight';
+import map from 'lodash/map';
+import every from 'lodash/every';
+import pick from 'lodash/pick';
+import identity from 'lodash/identity';
+import _memoize from 'lodash/memoize';
+import partialRight from 'lodash/partialRight';
 import { Query, Queries, Command, State } from './types';
 
 const log = debug('avenger');
