@@ -24,107 +24,108 @@ import { Query, Queries, Command, State } from './types';
 
 const log = debug('avenger');
 
-const _error = new Subject();
-const throttleWindowMsec = new BehaviorSubject(10);
-
-const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
-const memoize = partialRight(_memoize, (query, _params) => {
-  const params = pick(_params, Object.keys(query.upsetActualParams));
-  return instanceId(query.id, params);
-});
-
-function fetch({ query, params }) {
-  if (query.params) {
-    t.struct(query.params, `${query.id}:FetchParams`)(params); // assert
-  }
-  log('fetch', query.id, JSON.stringify(params));
-  return Observable.fromPromise(query.fetch(params));
-}
-
-const getSource = memoize((query: Query, params: State) => {
-  if (!query.dependencies || Object.keys(query.dependencies).length === 0) {
-    // query with no deps
-    return new BehaviorSubject({ query, params });
-  }
-
-  // query with deps
-  const observableDeps = map(query.dependencies, ({ query, map }, key) => {
-    return getValue(query, params).map(value => ({ // eslint-disable-line no-use-before-define
-      value, key, map: map || identity
-    }));
-  });
-  return Observable.combineLatest(...observableDeps)
-    .filter(deps => every(deps, d => typeof d.value !== 'undefined'))
-    .map(deps => deps.map(({ value, key, map }) => ({ value: map(value), key })))
-    .map(deps => ({
-      query,
-      params: {
-        ...params,
-        ...deps.reduce((ac, { key, value }) => ({
-          ...ac, [key]: value
-        }), {})
-      }
-    }));
-});
-
-const getValue = memoize((query: Query, params: State) => {
-  const fetcher = getSource(query, params).throttleTime(throttleWindowMsec.value).flatMap(v => {
-    const readyState = getReadyState(query, params); // eslint-disable-line no-use-before-define
-    log('fetching', query.id, JSON.stringify(params));
-    readyState.next({ ...readyState.value, waiting: false, fetching: true });
-    return fetch(v).do(() => {
-      log('done', query.id, JSON.stringify(params));
-      readyState.next({ ...readyState.value, waiting: false, fetching: false, error: undefined });
-    }).catch(error => {
-      _error.next({ error, source: 'fetch' });
-      log('error', query.id, JSON.stringify(params));
-      readyState.next({ ...readyState.value, waiting: false, fetching: false, error });
-      return Observable.empty();
-    });
-  });
-
-  const value = new BehaviorSubject(undefined);
-  fetcher.subscribe(::value.next);
-  return value;
-});
-
-const getReadyState = memoize((query: Query, params: State) => { //eslint-disable-line no-unused-vars
-  return new BehaviorSubject({ waiting: true, fetching: false });
-});
-
-function invalidateUpset(query, params, force = false) {
-  const deps = query.dependencies;
-  // should invalidate only the leaves here. in fact, non-leaves are
-  // just observables not subjects -> cannot .next() (and it makes sense)
-  if (deps && Object.keys(deps).length > 0) {
-    // sync-wait a possibly non-free query
-    const rs = getReadyState(query, params);
-    if (!rs.value.waiting) {
-      rs.next({ ...rs.value, waiting: true });
-    }
-
-    map(deps, ({ query }) => invalidateUpset(query, params));
-  } else if (force || query.cacheStrategy !== 'manual') {
-    const value = getValue(query, params);
-    if (typeof value.value !== 'undefined') {
-      const source = getSource(query, params);
-      // be sure to allow for a sync value if there's one
-      setTimeout(() => {
-        // invalidate
-        log('invalidateUpset:invalidate', query.id, JSON.stringify(params));
-        source.next(source.value);
-      });
-    }
-  }
-}
-
-function getValueAndMaybeInvalidateUpset(query, params) {
-  log('getValueAndMaybeInvalidateUpset', query.id, JSON.stringify(params));
-  invalidateUpset(query, params, false);
-  return getValue(query, params);
-}
-
 export default function mkAvenger(universe: Queries, throttleWindowMsecValue: ?t.Number) {
+  const _error = new Subject();
+  const throttleWindowMsec = new BehaviorSubject(10);
+
+  const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
+  const memoize = partialRight(_memoize, (query, _params) => {
+    const params = pick(_params, Object.keys(query.upsetActualParams));
+    return instanceId(query.id, params);
+  });
+
+  function fetch({ query, params }) {
+    if (query.params) {
+      t.struct(query.params, `${query.id}:FetchParams`)(params); // assert
+    }
+    log('fetch', query.id, JSON.stringify(params));
+    return Observable.fromPromise(query.fetch(params));
+  }
+
+  const getSource = memoize((query: Query, params: State) => {
+    if (!query.dependencies || Object.keys(query.dependencies).length === 0) {
+      // query with no deps
+      return new BehaviorSubject({ query, params });
+    }
+
+    // query with deps
+    const observableDeps = map(query.dependencies, ({ query, map }, key) => {
+      return getValue(query, params).map(value => ({ // eslint-disable-line no-use-before-define
+        value, key, map: map || identity
+      }));
+    });
+    return Observable.combineLatest(...observableDeps)
+      .filter(deps => every(deps, d => typeof d.value !== 'undefined'))
+      .map(deps => deps.map(({ value, key, map }) => ({ value: map(value), key })))
+      .map(deps => ({
+        query,
+        params: {
+          ...params,
+          ...deps.reduce((ac, { key, value }) => ({
+            ...ac, [key]: value
+          }), {})
+        }
+      }));
+  });
+
+  const getValue = memoize((query: Query, params: State) => {
+    const fetcher = getSource(query, params).throttleTime(throttleWindowMsec.value).flatMap(v => {
+      const readyState = getReadyState(query, params); // eslint-disable-line no-use-before-define
+      log('fetching', query.id, JSON.stringify(params));
+      readyState.next({ ...readyState.value, waiting: false, fetching: true });
+      return fetch(v).do(() => {
+        log('done', query.id, JSON.stringify(params));
+        readyState.next({ ...readyState.value, waiting: false, fetching: false, error: undefined });
+      }).catch(error => {
+        _error.next({ error, source: 'fetch' });
+        log('error', query.id, JSON.stringify(params));
+        readyState.next({ ...readyState.value, waiting: false, fetching: false, error });
+        return Observable.empty();
+      });
+    });
+
+    const value = new BehaviorSubject(undefined);
+    fetcher.subscribe(::value.next);
+    return value;
+  });
+
+  const getReadyState = memoize((query: Query, params: State) => { //eslint-disable-line no-unused-vars
+    return new BehaviorSubject({ waiting: true, fetching: false });
+  });
+
+  function invalidateUpset(query, params, force = false) {
+    const deps = query.dependencies;
+    // should invalidate only the leaves here. in fact, non-leaves are
+    // just observables not subjects -> cannot .next() (and it makes sense)
+    if (deps && Object.keys(deps).length > 0) {
+      // sync-wait a possibly non-free query
+      const rs = getReadyState(query, params);
+      if (!rs.value.waiting) {
+        rs.next({ ...rs.value, waiting: true });
+      }
+
+      map(deps, ({ query }) => invalidateUpset(query, params));
+    } else if (force || query.cacheStrategy !== 'manual') {
+      const value = getValue(query, params);
+      if (typeof value.value !== 'undefined') {
+        const source = getSource(query, params);
+        // be sure to allow for a sync value if there's one
+        setTimeout(() => {
+          // invalidate
+          log('invalidateUpset:invalidate', query.id, JSON.stringify(params));
+          source.next(source.value);
+        });
+      }
+    }
+  }
+
+  function getValueAndMaybeInvalidateUpset(query, params) {
+    log('getValueAndMaybeInvalidateUpset', query.id, JSON.stringify(params));
+    invalidateUpset(query, params, false);
+    return getValue(query, params);
+  }
+
+
   if (!t.Nil.is(throttleWindowMsecValue)) {
     throttleWindowMsec.next(throttleWindowMsecValue);
   }
