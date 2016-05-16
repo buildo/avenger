@@ -36,7 +36,10 @@ export default function mkAvenger(universe: Queries, throttleWindowMsecValue: ?t
 
   function fetch({ query, params }) {
     if (query.params) {
-      t.struct(query.params, `${query.id}:FetchParams`)(params); // assert
+      t.struct(query.params, {
+        name: `${query.id}:FetchParams`,
+        strict: false
+      })(params); // assert
     }
     log('fetch', query.id, JSON.stringify(params));
     return Observable.fromPromise(query.fetch(params));
@@ -184,12 +187,18 @@ export default function mkAvenger(universe: Queries, throttleWindowMsecValue: ?t
       const invalidates = cmd.invalidates || {};
       if (cmd.params) {
         // assert: all run() params must be there
-        t.struct(cmd.params, `${cmd.id}:RunParams`)(params || {});
+        t.struct(cmd.params, {
+          name: `${cmd.id}:RunParams`,
+          strict: false
+        })(params || {});
       }
       return run(params || {}).then((moreParams = {}) => {
         const allParams = { ...params, ...moreParams };
         // assert: all invalidate query params must be there
-        t.struct(cmd.invalidateParams, `${cmd.id}:InvalidateParams`)(allParams);
+        t.struct(cmd.invalidateParams, {
+          name: `${cmd.id}:InvalidateParams`,
+          strict: false
+        })(allParams);
         invalidateQueries(Object.keys(invalidates).reduce((ac, k) => ({
           ...ac, [k]: allParams
         }), {}));
