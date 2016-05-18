@@ -13,6 +13,7 @@ This is still under heavy development, and this readme refers to a not-yet-publi
 ### TLDR
 
 A CQRS-flavoured data fetching and caching layer in JavaScript.
+
 Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser.
 
 ### API layers
