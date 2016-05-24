@@ -36,7 +36,8 @@ export default class Avenger {
   emit = (meta: EmitMeta, value: t.Any) => {
     const {
       id,
-      loading,
+      waiting,
+      fetching,
       cache,
       error,
       multi,
@@ -64,7 +65,9 @@ export default class Avenger {
     this.result.__meta[id] = {
       timestamp: now,
       cache: !!cache,
-      loading: !!loading,
+      loading: !!(waiting || fetching),
+      waiting: !!waiting,
+      fetching: !!fetching,
       error: !!error
     };
 

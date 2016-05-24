@@ -44,7 +44,7 @@ export function invalidateLocal(params: InvalidateLocalParams): PromiseType {
 
     // invalidate cache for this query
     cache.invalidate(id, filteredCacheParams);
-    // keep track of non-stale (invaldiated) queries
+    // keep track of non-stale (invalidated) queries
     // in oldInput in order to trick `run`
     delete oldInput[id];
 

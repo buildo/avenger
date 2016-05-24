@@ -28,7 +28,7 @@ export default function createFetcher({
     emit({
       id,
       cache: cached,
-      loading: needsFetch
+      fetching: needsFetch
     }, fromCache || null);
 
     if (needsFetch) {
