@@ -1,5 +1,4 @@
 {
-  "stage": 0,
-  "loose": true,
-  "plugins": ["tcomb"]
+  "presets": ["es2015", "react"],
+  "plugins" : ["syntax-flow", "tcomb"]
 }

@@ -1,4 +1,5 @@
-node_modules/
-mocha.json
-*.log
-lib
+node_modules
+dist
+dev
+server
+webpack.config.js
