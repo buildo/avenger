@@ -6,10 +6,6 @@
 [![](https://david-dm.org/buildo/avenger.svg)](https://david-dm.org/buildo/avenger#info=dependencies&view=list)
 [![](https://david-dm.org/buildo/avenger/dev-status.svg)](https://david-dm.org/buildo/avenger#info=devDependencies&view=list)
 
-### A word of caution
-
-This is still under heavy development, and this readme refers to a not-yet-published branch
-
 ### TLDR
 
 A CQRS-flavoured data fetching and caching layer in JavaScript.
@@ -25,7 +21,6 @@ Avenger provides 3+ levels of apis:
 - **layer 2** `query`: extends `fcache` with observable queries. On top of this, it provides the CQRS:command channel for mutations and optimistic updates. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data.
 - **layer** + [react-avenger](https://github.com/buildo/react-avenger): provides helpers to connect an avenger instance to React components in a declarative fashion. You'd use this layer in a generic React client
 
-# fcache
 
 # Fetch
 
