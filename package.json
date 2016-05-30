@@ -1,13 +1,17 @@
 {
   "name": "avenger",
-  "version": "0.3.0",
+  "version": "0.2.7",
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "lint": "eslint src",
     "start": "webpack --watch --progress",
     "server": "babel-node server/app",
-    "test": "mocha --require babel-core/register"
+    "test": "mocha --require babel-core/register",
+    "build": "rm -rf lib && mkdir lib && babel --out-dir lib src",
+    "preversion": "npm run lint && npm test",
+    "prepublish": "npm run build"
   },
+  "main": "lib",
   "author": "",
   "license": "MIT",
   "dependencies": {

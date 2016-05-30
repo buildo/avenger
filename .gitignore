@@ -3,3 +3,4 @@ dist
 dev
 server
 webpack.config.js
+lib
