@@ -4,8 +4,8 @@
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "lint": "eslint src",
-    "start": "webpack --watch --progress",
-    "server": "babel-node server/app",
+    "start": "webpack --config=./dev/webpack.config.js --watch --progress",
+    "server": "http-server ./dev",
     "test": "mocha --require babel-core/register",
     "build": "rm -rf lib && mkdir lib && babel --out-dir lib src",
     "preversion": "npm run lint && npm test",
@@ -31,6 +31,7 @@
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
     "express": "4.13.4",
+    "http-server": "0.9.0",
     "mocha": "2.5.3",
     "sinon": "1.17.4",
     "webpack": "1.13.0"

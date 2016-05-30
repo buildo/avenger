@@ -1,6 +1,8 @@
+*.log
 node_modules
-dist
-dev
+dev/bundle.js
+dev/bundle.js.map
+dev/index.js
 server
 webpack.config.js
 lib
