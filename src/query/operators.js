@@ -21,7 +21,7 @@ function removeEntriesByPredicate(cache, predicate) {
 
 export function cacheFetch(fetch, strategy, cache) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(cache instanceof ObservableCache, () => `Invalid argument cache supplied to cache (expected a ObservableCache)`)
+    t.assert(cache instanceof ObservableCache, () => 'Invalid argument cache supplied to cache (expected a ObservableCache)')
   }
 
   const cachedFetch = cf(fetch, strategy, cache)

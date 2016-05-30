@@ -9,7 +9,7 @@ function observeCache(cache, a) {
 
 export function observe(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => `Invalid argument fetch supplied to observe (expected a function)`)
+    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to observe (expected a function)')
   }
 
   if (fetch.type === 'product') {

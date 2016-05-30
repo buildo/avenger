@@ -16,14 +16,14 @@ export class Expire {
 
   constructor(delay) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(Delay.is(delay), () => `Invalid argument delay supplied to Expire constructor (expected a Delay)`)
+      t.assert(Delay.is(delay), () => 'Invalid argument delay supplied to Expire constructor (expected a Delay)')
     }
     this.delay = delay
   }
 
   isExpired(time) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(t.Number.is(time), () => `Invalid argument time supplied to isExpired (expected a number)`)
+      t.assert(t.Number.is(time), () => 'Invalid argument time supplied to isExpired (expected a number)')
     }
 
     const delta = new Date().getTime() - time
@@ -36,7 +36,7 @@ export class Expire {
 
   isAvailable(value) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheValue.is(value), () => `Invalid argument value supplied to isAvailable (expected a CacheValue)`)
+      t.assert(CacheValue.is(value), () => 'Invalid argument value supplied to isAvailable (expected a CacheValue)')
     }
     return !t.Nil.is(value.done) && !this.isExpired(value.done.timestamp)
   }
@@ -48,7 +48,7 @@ export class Expire {
     if (this.delay === Infinity) {
       return 'Available'
     }
-    return `Expire(${this.delay})`
+    return 'Expire(${this.delay})'
   }
 
 }

@@ -10,9 +10,9 @@ import {
 
 export function cacheFetch(fetch, strategy, cache) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => `Invalid argument fetch supplied to cache (expected a function)`)
-    t.assert(Strategy.is(strategy), () => `Invalid argument strategy supplied to cache (expected a Strategy)`)
-    t.assert(cache instanceof Cache, () => `Invalid argument cache supplied to cache (expected a Cache)`)
+    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to cache (expected a function)')
+    t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to cache (expected a Strategy)')
+    t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cache (expected a Cache)')
   }
 
   return function cachedFetch(a) {
@@ -22,10 +22,10 @@ export function cacheFetch(fetch, strategy, cache) {
 
 export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(catalog), () => `Invalid argument catalog supplied to cacheCatalog (expected a function)`)
-    t.assert(cache instanceof Cache, () => `Invalid argument cache supplied to cacheCatalog (expected a Cache)`)
-    t.assert(Strategy.is(strategy), () => `Invalid argument strategy supplied to cacheCatalog (expected a Strategy)`)
-    t.assert(pcache instanceof Cache, () => `Invalid argument pcache supplied to cacheCatalog (expected a Cache)`)
+    t.assert(t.Function.is(catalog), () => 'Invalid argument catalog supplied to cacheCatalog (expected a function)')
+    t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cacheCatalog (expected a Cache)')
+    t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to cacheCatalog (expected a Strategy)')
+    t.assert(pcache instanceof Cache, () => 'Invalid argument pcache supplied to cacheCatalog (expected a Cache)')
   }
 
   return function cachedCatalog(s) {
@@ -47,10 +47,10 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
 
 export function cacheStar(star, strategy, cache, pcache) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(star), () => `Invalid argument star supplied to cacheStar (expected a function)`)
-    t.assert(Strategy.is(strategy), () => `Invalid argument strategy supplied to cacheStar (expected a Strategy)`)
-    t.assert(cache instanceof Cache, () => `Invalid argument cache supplied to cacheStar (expected a Cache)`)
-    t.assert(pcache instanceof Cache, () => `Invalid argument pcache supplied to cacheStar (expected a Cache)`)
+    t.assert(t.Function.is(star), () => 'Invalid argument star supplied to cacheStar (expected a function)')
+    t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to cacheStar (expected a Strategy)')
+    t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cacheStar (expected a Cache)')
+    t.assert(pcache instanceof Cache, () => 'Invalid argument pcache supplied to cacheStar (expected a Cache)')
   }
 
   let resolvedPromise

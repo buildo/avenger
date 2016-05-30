@@ -22,7 +22,7 @@ export class Cache {
   constructor(options = {}) {
     this.name = options.name || '<anonymous>'
     this.map = options.map || new Map()
-    this.log = debug(`fcache:${this.name}`)
+    this.log = debug(`avenger:${this.name}`)
     this.atok = options.atok || JSON.stringify
   }
 
@@ -32,7 +32,7 @@ export class Cache {
 
   set(a, value) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheValue.is(value), () => `Invalid argument value supplied to set (expected a CacheValue)`)
+      t.assert(CacheValue.is(value), () => 'Invalid argument value supplied to set (expected a CacheValue)')
     }
     return this.map.set(this.atok(a), value)
   }
@@ -47,7 +47,7 @@ export class Cache {
 
   getAvailablePromise(a, strategy) /* Maybe[Promise[P]] */ {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(Strategy.is(strategy), () => `Invalid argument strategy supplied to getPromise (expected a Strategy)`)
+      t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to getPromise (expected a Strategy)')
     }
 
     const value = this.get(a)
@@ -67,8 +67,8 @@ export class Cache {
 
   getPromise(a, strategy, fetch) /* Promise[P] */ {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(Strategy.is(strategy), () => `Invalid argument strategy supplied to getPromise (expected a Strategy)`)
-      t.assert(t.Function.is(fetch), () => `Invalid argument fetch supplied to getPromise (expected a function)`)
+      t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to getPromise (expected a Strategy)')
+      t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to getPromise (expected a function)')
     }
 
     const availablePromise = this.getAvailablePromise(a, strategy)
@@ -88,8 +88,8 @@ export class Cache {
     const value = {
       done: {
         value: p,
-        timestamp: timestamp,
-        promise: promise
+        timestamp,
+        promise
       }
     }
 
