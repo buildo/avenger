@@ -4,5 +4,4 @@ dev/bundle.js
 dev/bundle.js.map
 dev/index.js
 server
-webpack.config.js
 lib
