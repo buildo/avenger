@@ -2,6 +2,8 @@ import t from 'tcomb'
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/observable/of';
 
 function observeCache(cache, a) {
   return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
