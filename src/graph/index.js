@@ -8,6 +8,7 @@ import { apply } from '../query/apply';
 import { ObservableCache } from '../query/ObservableCache';
 import { refetch, Strategy } from '../cache/strategies';
 import { cacheFetch } from '../query/operators';
+import { compose, product } from '../fetch/operators';
 
 const As = t.list(t.String, 'As');
 const Fetch = t.Function; // <a1, ..., an> => Promise<Any>
@@ -29,12 +30,14 @@ const Nodes = t.dict(t.String, Node, 'Nodes');
 const AAs = t.union([As, t.list(As)], 'AAs');
 const GraphNode = t.declare('GraphNode');
 GraphNode.define(t.interface({
-  A: AAs, fetch: Fetch
+  A: AAs,
+  fetch: Fetch, // the "cached" one
+  _fetch: Fetch // the "naked" one
 }), { strict: true });
 const Graph = t.dict(t.String, GraphNode, 'Graph');
 
-function find(nodes: Nodes, fetch: Fetch): Node {
-  const P = _find(Object.keys(nodes), P => nodes[P].fetch === fetch);
+function find(nodes: Nodes|Graph, fetch: Fetch): ?(Node|GraphNode) {
+  const P = _find(Object.keys(nodes), P => nodes[P].fetch === fetch || nodes[P]._fetch === fetch);
   return nodes[P];
 }
 
@@ -44,21 +47,50 @@ function fetchToA(nodes: Nodes, fetch: Fetch): AAs {
       return fetch.fetches.map(f => fetchToA(nodes, f));
     case DerivateFetchType('composition'):
       return fetchToA(nodes, fetch.master);
-    default: // t.Nil
-      return find(nodes, fetch).A;
+    default: // eslint-disable-line no-case-declarations
+      const node = find(nodes, fetch);
+      t.assert(Node.is(node), () => 'missing "naked" node for fetch');
+      return node.A;
+  }
+}
+
+function createOrReuseCached(nodes: Graph, _fetch: Fetch, P: t.String, strategy: Strategy): Fetch {
+  switch (_fetch.type) {
+    case DerivateFetchType('product'):
+      return product(_fetch.fetches.map(f => createOrReuseCached(nodes, f, P, strategy)));
+    case DerivateFetchType('composition'):
+      return compose(
+        createOrReuseCached(nodes, _fetch.master, P, strategy),
+        _fetch.ptoa,
+        createOrReuseCached(nodes, _fetch.slave, P, strategy)
+      );
+    default:
+      return (find(nodes, _fetch) || {}).fetch || cacheFetch(_fetch, strategy, new ObservableCache({ name: P }))
   }
 }
 
 export function make(input: Nodes): Graph {
-  return Object.keys(input).reduce((graph, P) => {
+  const all = Object.keys(input);
+  const atoms = all.filter(P => t.Nil.is(input[P].fetch.type));
+
+  const _graph = atoms.reduce((graph, P) => {
     const _fetch = input[P].fetch;
     const A = input[P].A || fetchToA(input, _fetch);
     const strategy = input[P].strategy || refetch;
-    // TODO(gio): we shouldn't probably always create a new cache
     const cache = new ObservableCache({ name: P });
     const fetch = cacheFetch(_fetch, strategy, cache);
-    return Object.assign(graph, { [P]: { fetch, A } });
+    return Object.assign(graph, { [P]: GraphNode({ fetch, A, _fetch }) });
   }, {});
+
+  const composed = all.filter(P => !t.Nil.is(input[P].fetch.type));
+
+  return composed.reduce((graph, P) => {
+    const _fetch = input[P].fetch;
+    const A = fetchToA(input, _fetch);
+    const strategy = input[P].strategy || refetch;
+    const fetch = createOrReuseCached(graph, _fetch, P, strategy);
+    return Object.assign(graph, { [P]: GraphNode({ fetch, A, _fetch }) });
+  }, _graph);
 }
 
 const Pss = t.list(t.String, 'Pss');
@@ -86,7 +118,10 @@ function argumentz(graph: Graph, Ps: Pss, A: AA) {
 }
 
 export function query(graph: Graph, Ps: Pss, A: AA)/*: Observable */ {
-  const queries = Ps.reduce((qs, p) => Object.assign(qs, { [p]: graph[p].fetch }), {});
+  const queries = Ps.reduce((qs, p) => {
+    t.assert(GraphNode.is(graph[p]), () => `missing graph node '${p}'`);
+    return Object.assign(qs, { [p]: graph[p].fetch })
+  }, {});
   const args = argumentz(graph, Ps, A);
 
   return apply(queries, args);
