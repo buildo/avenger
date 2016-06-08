@@ -151,4 +151,25 @@ describe('observe', () => {
 
   })
 
+  describe('subscription', () => {
+
+    it('should allow unsubscribe()', (done) => {
+      const c = new ObservableCache()
+      const raw = a => Promise.resolve(2 * a)
+      const fetch = cacheFetch(raw, available, c)
+      const o = observe(fetch, 1)
+      const subscription = o.bufferTime(10).take(1).subscribe(events => {
+        assert.deepEqual(events, [])
+        subscription.unsubscribe()
+        observe(fetch, 2).bufferTime(10).take(1).subscribe(events => {
+          assert.deepEqual(events, [{ data: 4, loading: false }])
+          done()
+        })
+        fetch(2)
+      })
+      fetch(2)
+    });
+
+  })
+
 })
