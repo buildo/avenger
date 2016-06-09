@@ -1,3 +1,5 @@
+// TODO add Flow
+
 import {
   product
 } from '../fetch/operators'

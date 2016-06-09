@@ -1,4 +1,15 @@
-import t from 'tcomb'
+// @flow
+
+import type { Observable } from 'rxjs/Observable';
+
+import type {
+  FetchT
+} from '../fetch/operators'
+
+import type {
+  CachedFetchT
+} from './operators'
+
 import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/map'
 
@@ -6,14 +17,8 @@ import {
   observe
 } from './observe'
 
-export function query(fetch, a) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to query (expected a function)')
-  }
-
+export function query<A, P>(fetch: FetchT<A, P> | CachedFetchT<A, P>, a: A): Observable {
   const observer = observe(fetch, a)
-
   fetch(a)
-
   return observer
 }

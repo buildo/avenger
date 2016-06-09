@@ -1,33 +1,25 @@
+// @flow
 import t from 'tcomb'
 
-import {
-  Strategy
+import type {
+  StrategyT
 } from './strategies'
+
+import type {
+  FetchT
+} from '../fetch/operators'
 
 import {
   Cache
 } from './Cache'
 
-export function cacheFetch(fetch, strategy, cache) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to cache (expected a function)')
-    t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to cache (expected a Strategy)')
-    t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cache (expected a Cache)')
-  }
-
+export function cacheFetch<A, P>(fetch: FetchT<A, P>, strategy: StrategyT, cache: Cache): FetchT<A, P> {
   return function cachedFetch(a) {
     return cache.getPromise(a, strategy, fetch)
   }
 }
 
-export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(catalog), () => 'Invalid argument catalog supplied to cacheCatalog (expected a function)')
-    t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cacheCatalog (expected a Cache)')
-    t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to cacheCatalog (expected a Strategy)')
-    t.assert(pcache instanceof Cache, () => 'Invalid argument pcache supplied to cacheCatalog (expected a Cache)')
-  }
-
+export function cacheCatalog<S, P>(catalog: FetchT<S, Array<P>>, strategy: StrategyT, cache: Cache, pcache: Cache, ptoa: Function): FetchT<S, Array<P>> {
   return function cachedCatalog(s) {
     const { blocked, done } = cache.get(s)
     const promise = cache.getPromise(s, strategy, catalog)
@@ -45,13 +37,7 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
   }
 }
 
-export function cacheStar(star, strategy, cache, pcache) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(star), () => 'Invalid argument star supplied to cacheStar (expected a function)')
-    t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to cacheStar (expected a Strategy)')
-    t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cacheStar (expected a Cache)')
-    t.assert(pcache instanceof Cache, () => 'Invalid argument pcache supplied to cacheStar (expected a Cache)')
-  }
+export function cacheStar<A, P>(star: FetchT<Array<A>, Array<P>>, strategy: StrategyT, cache: Cache, pcache: Cache): FetchT<Array<A>, Array<P>> {
 
   let resolvedPromise
   let queue = []

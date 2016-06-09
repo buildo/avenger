@@ -1,44 +1,39 @@
-import t from 'tcomb'
+// @flow
+import type {
+  $Refinement
+} from 'tcomb'
 
-import {
+import type {
   CacheValue
 } from './Cache'
 
-export const Strategy = t.interface({
-  isAvailable: t.Function
-}, 'Strategy')
+const isPositiveInfinity = x => x === Infinity
 
-const PositiveInfinity = t.irreducible('PositiveInfinity', x => x === Infinity)
-const Delay = t.union([t.Number, PositiveInfinity], 'Delay')
+type InfinityT = any & $Refinement<typeof isPositiveInfinity>;
+type DelayT = number | InfinityT;
+export type StrategyT = {
+  isAvailable(value: CacheValue): boolean
+}
 
 // questa strategia esegue una fetch se non c'è un done oppure se il done presente è troppo vecchio
 export class Expire {
 
-  constructor(delay) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(Delay.is(delay), () => 'Invalid argument delay supplied to Expire constructor (expected a Delay)')
-    }
+  delay: DelayT;
+
+  constructor(delay: DelayT) {
     this.delay = delay
   }
 
-  isExpired(time) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(t.Number.is(time), () => 'Invalid argument time supplied to isExpired (expected a number)')
-    }
-
+  isExpired(time: number) {
     const delta = new Date().getTime() - time
-    // prendo in considerazione tempi futuri
     if (delta < 0) {
       return false
     }
     return delta >= this.delay
   }
 
-  isAvailable(value) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheValue.is(value), () => 'Invalid argument value supplied to isAvailable (expected a CacheValue)')
-    }
-    return !t.Nil.is(value.done) && !this.isExpired(value.done.timestamp)
+  isAvailable(value: CacheValue) {
+    return typeof value.done !== 'undefined' && !this.isExpired(value.done.timestamp)
   }
 
   toString() {
@@ -48,7 +43,7 @@ export class Expire {
     if (this.delay === Infinity) {
       return 'Available'
     }
-    return 'Expire(${this.delay})'
+    return `Expire(${this.delay})`
   }
 
 }

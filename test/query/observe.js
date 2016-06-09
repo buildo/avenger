@@ -1,6 +1,6 @@
 /* global describe,it */
 import assert from 'assert'
-import 'rxjs'
+import Rx from 'rxjs'
 
 import {
   product,
@@ -135,9 +135,8 @@ describe('observe', () => {
 
     it('should emit L + P events for an empty cache', (done) => {
       const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
-      const c = new ObservableCache()
       const pc = new ObservableCache()
-      const cc = cacheCatalog(catalog, available, c, pc, (p) => p / 2)
+      const cc = cacheCatalog(catalog, available, pc, (p) => p / 2)
       const o = observe(cc, undefined)
       o.bufferTime(10).take(1).subscribe(events => {
         assert.deepEqual(events, [
@@ -148,6 +147,35 @@ describe('observe', () => {
       })
       cc()
     })
+
+  })
+
+  describe('subscription', () => {
+
+    it('should allow unsubscribe()', (done) => {
+      const c = new ObservableCache()
+      const raw = a => Promise.resolve(2 * a)
+      const fetch = cacheFetch(raw, available, c)
+      const o = observe(fetch, 1)
+      const actual = []
+      const subscription = o.takeUntil(Rx.Observable.of(null).delay(10)).subscribe(
+        event => { actual.push(event) },
+        null,
+        () => {
+          assert.deepEqual(actual, [])
+          subscription.unsubscribe()
+          observe(fetch, 2).takeUntil(Rx.Observable.of(null).delay(10)).subscribe(
+            event => { actual.push(event) },
+            null,
+            () => {
+              assert.deepEqual(actual, [{ data: 4, loading: false }])
+              done()
+            }
+          )
+        }
+      )
+      fetch(2)
+    });
 
   })
 

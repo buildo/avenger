@@ -1,22 +1,38 @@
-import t from 'tcomb'
+// TODO add Flow
+
+import type {
+  FetchT
+} from '../fetch/operators'
+
+import type {
+  CachedFetchT
+} from './operators'
+
+import type {
+  ObservableCache
+} from './ObservableCache'
+
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/observable/of';
 
-function observeCache(cache, a) {
+function observeCache<A, P>(cache: ObservableCache<A, P>, a: A) {
   return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
 }
 
-export function observe(fetch, a) {
-  if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to observe (expected a function)')
-  }
+function combineLatest(fs) {
+  // fix https://github.com/ReactiveX/rxjs/issues/1686
+  return Observable.combineLatest(...fs, (...values) => values)
+}
 
+export function observe<A, P>(fetch: FetchT<A, P> | CachedFetchT<A, P>, a: A): Observable {
   if (fetch.type === 'product') {
-    // fix https://github.com/ReactiveX/rxjs/issues/1686
-    return Observable.combineLatest(...fetch.fetches.map((fetch, i) => observe(fetch, a[i])), (...values) => values)
+    return combineLatest(fetch.fetches.map((fetch, i) => observe(fetch, a[i])))
+  }
+  if (fetch.type === 'star') {
+    return combineLatest(a.map((ai) => observe(fetch.fetch, ai)))
   }
   if (fetch.type === 'composition') {
     const { master, slave, ptoa } = fetch

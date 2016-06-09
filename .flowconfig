@@ -1,0 +1,12 @@
+[include]
+
+[libs]
+decls
+
+[ignore]
+<PROJECT_ROOT>/node_modules/*
+<PROJECT_ROOT>/test/*
+<PROJECT_ROOT>/lib/*
+
+[options]
+suppress_comment= \\(.\\|\n\\)*\\$FlowIKnowWhatImDoing
