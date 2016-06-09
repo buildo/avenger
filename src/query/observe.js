@@ -24,10 +24,10 @@ export function observe(fetch, a) {
       if (x.hasOwnProperty('data')) {
         const a1  = ptoa(x.data, a)
         if (x.loading) {
-          return {
+          return Observable.of({
             loading: true,
-            data: slave.cache.getSubject(a1).value
-          }
+            data: slave.cache.getSubject(a1).value.data
+          })
         }
         return observeCache(slave.cache, a1)
       }
