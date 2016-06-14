@@ -20,9 +20,12 @@ export function observe(fetch, a) {
   }
   if (fetch.type === 'composition') {
     const { master, slave, ptoa } = fetch
+    const isProduct = ( master.type === 'product' )
     return observe(master, a).switchMap(x => {
-      if (x.hasOwnProperty('data')) {
-        const a1  = ptoa(x.data, a)
+      const ok = isProduct ? x.every(xi => xi.hasOwnProperty('data')) : x.hasOwnProperty('data')
+      if (ok) {
+        const data = isProduct ? x.map(xi => xi.data) : x.data
+        const a1  = ptoa(data, a)
         if (x.loading) {
           return Observable.of({
             loading: true,
