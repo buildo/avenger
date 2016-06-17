@@ -5,7 +5,7 @@ import { apply } from '../query/apply';
 import { ObservableCache } from '../query/ObservableCache';
 import { refetch } from '../cache/strategies';
 import { cacheFetch } from '../query/operators';
-// import { compose, product } from '../fetch/operators';
+import { compose, product } from '../fetch/operators';
 
 function findP(inputOrGraph, f) {
   return findKey(inputOrGraph, ({ fetch }) => fetch === f);
@@ -25,6 +25,42 @@ function derivateA(inputOrGraph, P) {
   })();
 }
 
+// TODO(gio): prob. only atom parts of this tree should be cached, verify this holds true
+function asCached(inputOrGraph, fetch, P, strategy) {
+  if (inputOrGraph[P] && t.Function.is(inputOrGraph[P].cachedFetch)) {
+    // TODO(gio): this case could go away?
+    return inputOrGraph[P].cachedFetch;
+  }
+
+  if (t.Nil.is(fetch.type)) {
+    // TODO(gio): random should go away after tests
+    const cache = new ObservableCache({ name: `${P}_${Math.random()}` });
+    return cacheFetch(fetch, strategy || refetch, cache);
+  }
+
+  if (!t.Nil.is(fetch.type)) {
+    let fc;
+    // this is a composition or product (possibly?) given in terms
+    // of "naked" fetches. We should reconstruct the same "tree"
+    // but using `cachedFetch`es along the way
+    if (fetch.type === 'composition') {
+      const masterP = findP(inputOrGraph, fetch.master);
+      const slaveP = findP(inputOrGraph, fetch.slave);
+      fc = compose(
+        asCached(inputOrGraph, fetch.master, masterP, strategy),
+        fetch.ptoa,
+        asCached(inputOrGraph, fetch.slave, slaveP, strategy)
+      );
+    } else { // fetch.type === 'product'
+      fc = product(
+        fetch.fetches.map(f => asCached(inputOrGraph, f, findP(inputOrGraph, f), strategy))
+      );
+    }
+    const cache = new ObservableCache({ name: `${P}_${Math.random()}` });
+    return cacheFetch(fc, strategy || refetch, cache);
+  }
+}
+
 function pickA(AA, A) {
   if (t.list(t.String).is(A)) { // ['foo', 'bar']
     return pick(AA, A);
@@ -37,14 +73,8 @@ export function make(input) {
   return Object.keys(input).reduce((graph, P) => {
     const naked = input[P];
     const A = derivateA(graph, P);
-    const dress = { A };
-
-    // TODO(gio): prob. only atoms should be cached
-    // we are caching everything anyway, otherwise `observe` complains
-    // if (t.Nil.is(naked.fetch.type)) {
-    const cache = new ObservableCache({ name: `${P}_${Math.random()}` }); // TODO(gio)
-    dress.cachedFetch = cacheFetch(naked.fetch, naked.strategy || refetch, cache);
-    // }
+    const cachedFetch = asCached(graph, naked.fetch, P, naked.strategy);
+    const dress = { A, cachedFetch };
 
     return Object.assign(graph, {
       [P]: Object.assign({}, naked, dress)
