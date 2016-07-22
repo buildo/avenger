@@ -1,3 +1,5 @@
+import 'rxjs/add/operator/map'
+
 import {
   product
 } from '../fetch/operators'
