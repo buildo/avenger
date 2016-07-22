@@ -48,7 +48,7 @@ export class Expire {
     if (this.delay === Infinity) {
       return 'Available'
     }
-    return 'Expire(${this.delay})'
+    return `Expire(${this.delay})`
   }
 
 }
