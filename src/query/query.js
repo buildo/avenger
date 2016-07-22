@@ -1,6 +1,4 @@
 import t from 'tcomb'
-import 'rxjs/add/operator/scan'
-import 'rxjs/add/operator/map'
 
 import {
   observe

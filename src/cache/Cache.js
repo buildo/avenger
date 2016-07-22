@@ -38,6 +38,7 @@ export class Cache {
   }
 
   delete(a) {
+    this.log('delete(%o)', a)
     return this.map.delete(this.atok(a))
   }
 
