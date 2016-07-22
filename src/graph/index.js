@@ -2,6 +2,7 @@ import t from 'tcomb';
 import findKey from 'lodash/findKey';
 import pick from 'lodash/pick';
 import { apply } from '../query/apply';
+import { invalidate as _invalidate } from '../query/invalidate';
 import { ObservableCache } from '../query/ObservableCache';
 import { refetch } from '../cache/strategies';
 import { cacheFetch } from '../query/operators';
@@ -82,17 +83,29 @@ export function make(input) {
   }, Object.assign({}, input));
 }
 
-export function query(graph, Ps, A) {
+function queriesAndArgs(graph, Ps, A) {
   const queries = Ps.reduce((qs, P) => Object.assign(qs, {
     [P]: graph[P].cachedFetch || graph[P].fetch // only atoms could be cached
   }), {});
   const args = Ps.reduce((argz, P) => Object.assign(argz, {
     [P]: pickA(A, graph[P].A)
   }), {});
+  return { queries, args };
+}
 
+export function query(graph, Ps, A) {
+  const { queries, args } = queriesAndArgs(graph, Ps, A);
   return apply(queries, args);
 }
 
-// export function invalidate(graph, Ps, A) {
-//
-// }
+export function invalidate(graph, Ps, A) {
+  const { queries, args } = queriesAndArgs(graph, Ps, A);
+  const toRefetch = Object.keys(queries).map(P => {
+    const fetch = queries[P];
+    const needsRefetch = _invalidate(fetch, args[P]);
+    return { fetch, needsRefetch, P };
+  }).filter(i => i.needsRefetch);
+  toRefetch.forEach(({ fetch, P }) => {
+    fetch(args[P]);
+  });
+}
