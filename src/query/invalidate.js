@@ -5,9 +5,9 @@ function del(cache, a) {
   cache.delete(a)
 }
 
-function hasObservers(cache, a) {
-  return cache.getSubject(a).observers.length > 0
-}
+// function hasObservers(cache, a) {
+//   return cache.getSubject(a).observers.length > 0
+// }
 
 // returns true if something is observing the fetch
 export function invalidate(fetch, a) {
@@ -18,5 +18,6 @@ export function invalidate(fetch, a) {
     return invalidate(fetch.master, a)
   }
   del(fetch.cache, a)
-  return hasObservers(fetch.cache, a)
+  return true
+  // return hasObservers(fetch.cache, a)
 }
