@@ -9,37 +9,21 @@ import {
 } from './query'
 
 
-function otoa(args, fetch) {
-  if (fetch.type === 'product') {
-    return fetch.fetches.map((f, i) => otoa(args[fetch.itok[i]], f))
-  }
-  return args
-}
-
-function etoo(e, fetch) {
-  if (fetch.type === 'product') {
-    const data = {}
-    let loading = false
-    fetch.fetches.forEach((f, i) => {
-      data[fetch.itok[i]] = etoo(e[i], f)
-      loading = loading || e[i].loading
-    })
-    return { loading, data }
-  }
-  return e
-}
-
-function createProduct(queries, itok) {
-  const fetches = itok.map(k => queries[k])
-  const fetch = product(fetches)
-  fetch.itok = itok
-  return fetch
+function etoo(e, fetch, itok) {
+  const data = {}
+  let loading = false
+  fetch.fetches.forEach((f, i) => {
+    data[itok[i]] = e[i]
+    loading = loading || e[i].loading
+  })
+  return { loading, data }
 }
 
 export function apply(queries, args) {
   const itok = Object.keys(args)
-  const fetch = createProduct(queries, itok)
-  return query(fetch, otoa(args, fetch))
-    .map(e => etoo(e, fetch))
+  const fetches = itok.map(k => queries[k])
+  const as = itok.map(k => args[k])
+  const prod = product(fetches)
+  return query(prod, as).map(e => etoo(e, prod, itok))
 }
 
