@@ -60,8 +60,7 @@ function asCached(inputOrGraph, fetch, P, strategy) {
         fetch.fetches.map(f => asCached(inputOrGraph, f, findP(inputOrGraph, f), strategy))
       );
     }
-    const cache = new ObservableCache({ name: `${P}_${Math.random()}` });
-    return cacheFetch(fc, strategy || refetch, cache);
+    return fc;
   }
 }
 
