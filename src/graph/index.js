@@ -160,33 +160,28 @@ export function make(input) {
   // is an array containing all the Ps belonging to the "downset" for this node
   // In other words, slaves contains all the Ps that must be invalidated when this node is.
   //
-  // DISCLAIMER: this is algoritmically very bad and dumb in general :P
-  //
-  console.time(); // eslint-disable-line no-console
   Ps.forEach(P => {
-    const master = graph[P];
+    const master = graph[P].fetch;
     // start with an empty downset
-    master.slaves = [];
+    graph[P].slaves = [];
     Ps.forEach(PP => {
       if (PP !== P) { // skip self
         const f = graph[PP].fetch;
         if (f.type === 'composition') { // if we find a composition
-          if (findP(graph, f.master) === P) { // with this node as master
+          if (f.master === master) { // with this node as master
             // it means it is part of this node downset
-            master.slaves.push(PP);
+            graph[P].slaves.push(PP);
           }
         }
         if (f.type === 'product') { // if we find a product
-          if (some(f.fetches, ff => findP(graph, ff) === P)) { // with this node among `product.fetches`
+          if (some(f.fetches, ff => ff === master)) { // with this node among `product.fetches`
             // it means it is part of this node downset
-            master.slaves.push(PP);
+            graph[P].slaves.push(PP);
           }
         }
       }
     });
   });
-  // this currently takes ~8s on OD, for about 450 keys (Ps)
-  console.timeEnd(); // eslint-disable-line no-console
   return graph;
 }
 
