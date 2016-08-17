@@ -1,6 +1,6 @@
 import uniq from 'lodash/uniq';
 import flatten from 'lodash/flatten';
-import { invalidate as _invalidate } from '../query/invalidate';
+import { invalidate as _invalidate, hasObservers } from '../query/invalidate';
 import { queriesAndArgs } from './util';
 
 // returns "the downset" for all the given `Ps`
@@ -42,6 +42,12 @@ export function invalidate(graph, invalidatePs, A) {
   // distribute the arguments following graph edges
   // i.e. produce `args` for each `P` that are valid for the lower level `fetch` signature
   const { args: refetchArgs } = queriesAndArgs(graph, refetchPs, A);
-  // actually refetch() (all the Ps, that is `invalidatePs` + entire downset)
-  refetchPs.forEach(P => (graph[P].cachedFetch || graph[P].fetch)(refetchArgs[P]));
+  // actually refetch()
+  refetchPs
+    // instead of refetching everything blindly, limit to the queries with observers
+    // this is not perfect: it avoids underfetching but it just limits overfetching
+    .filter(P => hasObservers(graph[P].cachedFetch || graph[P].fetch, refetchArgs[P]))
+    .forEach(P => {
+      (graph[P].cachedFetch || graph[P].fetch)(refetchArgs[P]);
+    });
 }
