@@ -1,6 +1,7 @@
 import t from 'tcomb';
 import findKey from 'lodash/findKey';
 import some from 'lodash/some';
+import assign from 'lodash/assign';
 import { ObservableCache } from '../query/ObservableCache';
 import { refetch } from '../cache/strategies';
 import { cacheFetch } from '../query/operators';
@@ -123,10 +124,10 @@ export function make(input) {
     // in the end, we add this info to the node:
     const dress = { A, cachedFetch };
 
-    return Object.assign(graph, {
-      [P]: Object.assign({}, naked, dress)
+    return assign(graph, {
+      [P]: assign({}, naked, dress)
     });
-  }, Object.assign({}, input));
+  }, assign({}, input));
 
   // this additional pass of the graph is very WIP
   // the objective here is to add "master -> slave" links
