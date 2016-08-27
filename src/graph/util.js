@@ -1,5 +1,6 @@
 import t from 'tcomb';
 import pick from 'lodash/pick';
+import assign from 'lodash/assign';
 
 // given a flat `AA` object, e.g.
 //
@@ -27,10 +28,10 @@ function pickA(AA, A) {
 // returns the same information rearranged to match the
 // lower level `apply` signature expectations
 export function queriesAndArgs(graph, Ps, A) {
-  const queries = Ps.reduce((qs, P) => Object.assign(qs, {
+  const queries = Ps.reduce((qs, P) => assign(qs, {
     [P]: graph[P].cachedFetch || graph[P].fetch // non-atoms are not cached, we return the naked fetch
   }), {});
-  const args = Ps.reduce((argz, P) => Object.assign(argz, {
+  const args = Ps.reduce((argz, P) => assign(argz, {
     [P]: pickA(A, graph[P].A)
   }), {});
   return { queries, args };
