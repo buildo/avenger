@@ -1,5 +1,5 @@
 import t from 'tcomb';
-import { BehaviorSubject } from 'rxjs/subject/BehaviorSubject';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/map';
