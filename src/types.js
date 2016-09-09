@@ -114,9 +114,15 @@ Object.defineProperty(Command.prototype, 'invalidateParams', {
 // internal types
 
 const ActionType = t.enums.of([
-  'addQueries', 'removeQueries', 'setState',
-  'setWaitingQueries', 'setFetchingQueriesAndLastState', 'setInvalidQueries', 'setInvalidFetchingQueries',
-  'setValue', 'setError'
+  'addQueries',
+  'removeQueries',
+  'setState',
+  'setWaitingQueries',
+  'setFetchingQueriesAndLastState',
+  'setInvalidQueries',
+  'setInvalidFetchingQueries',
+  'setValue',
+  'setError'
 ], 'ActionType');
 
 export const Action = t.struct({

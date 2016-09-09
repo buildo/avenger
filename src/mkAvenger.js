@@ -28,7 +28,9 @@ export default function mkAvenger(universe: Queries, throttleWindowMsecValue: ?t
   const _error = new Subject();
   const throttleWindowMsec = new BehaviorSubject(10);
 
-  const instanceId = (id: t.String, params: State)/*: t.String*/ => `${id}-${JSON.stringify(params)}`;
+  const instanceId = (id: t.String, params: State)/*: t.String*/ => {
+    return `${id}-${JSON.stringify(params)}`;
+  };
   const memoize = partialRight(_memoize, (query, _params) => {
     const params = pick(_params, Object.keys(query.upsetActualParams));
     return instanceId(query.id, params);
