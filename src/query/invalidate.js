@@ -5,12 +5,32 @@ function del(cache, a) {
   cache.delete(a)
 }
 
+const NOT_DONE = {};
+
+function extractDone(fetch, a) {
+  if (fetch.type === 'product') {
+    const productDone = fetch.fetches.map((f, i) => extractDone(f, a[i]))
+    const allDone = productDone.every(d => d !== NOT_DONE)
+    return allDone ? productDone : NOT_DONE
+  }
+  else if (fetch.type === 'composition') {
+    const masterDone = extractDone(fetch.master, a)
+    return masterDone !== NOT_DONE ? extractDone(fetch.slave, fetch.ptoa(masterDone)) : NOT_DONE
+  }
+  const cache = fetch.cache
+  const value = cache && cache.get(a)
+  return value && value.done && value.done.hasOwnProperty('done') ? value.done.value : NOT_DONE
+}
+
 export function invalidate(fetch, a) {
   if (fetch.type === 'product') {
     return fetch.fetches.some((f, i) => invalidate(f, a[i]))
   }
   else if (fetch.type === 'composition') {
-    return invalidate(fetch.master, a)
+    const masterDone = extractDone(fetch.master, a)
+    const slaveObserved = masterDone !== NOT_DONE ? invalidate(fetch.slave, fetch.ptoa(masterDone)) : false
+    const masterObserved = invalidate(fetch.master, a)
+    return slaveObserved || masterObserved
   }
   del(fetch.cache, a)
 }
@@ -26,6 +46,9 @@ export function hasObservers(fetch, a) {
     //
     // but `fetch.master(a)` is async
     // how to do this without an ad-hoc cache for the composition?
+    //
+    // see e3911a8 for a tentative implementation that doesn't work
+    // (it's overfetching)
     //
     // the following hacky solution just limits overfetching
     // but it is not ok in theory: there might be multiple active instances
