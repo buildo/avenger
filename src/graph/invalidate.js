@@ -38,7 +38,7 @@ export function invalidate(graph, invalidatePs, A) {
   // i.e. produce `args` for each `P` that are valid for the lower level `invalidate` signature
   const { args: invalidateArgs } = queriesAndArgs(graph, invalidatePs, A);
   // actually invalidate (only the Ps to invalidate)
-  invalidatePs.forEach(P => _invalidate(graph[P].cachedFetch, invalidateArgs[P]));
+  invalidatePs.forEach(P => _invalidate(graph[P].fetch, invalidateArgs[P]));
   // distribute the arguments following graph edges
   // i.e. produce `args` for each `P` that are valid for the lower level `fetch` signature
   const { args: refetchArgs } = queriesAndArgs(graph, refetchPs, A);
@@ -46,8 +46,8 @@ export function invalidate(graph, invalidatePs, A) {
   refetchPs
     // instead of refetching everything blindly, limit to the queries with observers
     // this is not perfect: it avoids underfetching but it just limits overfetching
-    .filter(P => hasObservers(graph[P].cachedFetch || graph[P].fetch, refetchArgs[P]))
+    .filter(P => hasObservers(graph[P].fetch, refetchArgs[P]))
     .forEach(P => {
-      (graph[P].cachedFetch || graph[P].fetch)(refetchArgs[P]);
+      graph[P].fetch(refetchArgs[P]);
     });
 }
