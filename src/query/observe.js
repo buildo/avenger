@@ -26,7 +26,8 @@ export function observe(fetch, a) {
       if (ok) {
         const data = isProduct ? x.map(xi => xi.data) : x.data
         const a1  = ptoa(data, a)
-        if (x.loading) {
+        const loading = isProduct ? x.some(xi => xi.loading) : x.loading
+        if (loading) {
           return Observable.of({
             loading: true,
             data: slave.cache.getSubject(a1).value.data
