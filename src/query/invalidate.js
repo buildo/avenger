@@ -24,15 +24,17 @@ function extractDone(fetch, a) {
 
 export function invalidate(fetch, a) {
   if (fetch.type === 'product') {
-    return fetch.fetches.some((f, i) => invalidate(f, a[i]))
+    fetch.fetches.forEach((f, i) => invalidate(f, a[i]))
   }
   else if (fetch.type === 'composition') {
     const masterDone = extractDone(fetch.master, a)
-    const slaveObserved = masterDone !== NOT_DONE ? invalidate(fetch.slave, fetch.ptoa(masterDone)) : false
-    const masterObserved = invalidate(fetch.master, a)
-    return slaveObserved || masterObserved
+    if (masterDone !== NOT_DONE) {
+      invalidate(fetch.master, a)
+      invalidate(fetch.slave, fetch.ptoa(masterDone))
+    }
+  } else {
+    del(fetch.cache, a)
   }
-  del(fetch.cache, a)
 }
 
 export function hasObservers(fetch, a) {
@@ -59,5 +61,5 @@ export function hasObservers(fetch, a) {
     const subjects = fetch.slave.cache.subjects
     return Object.keys(subjects).some(k => subjects[k].observers.length > 0)
   }
-  return fetch.cache && fetch.cache.getSubject(a).observers.length > 0
+  return fetch.cache ? fetch.cache.getSubject(a).observers.length > 0 : false
 }
