@@ -73,27 +73,27 @@ export function make(input) {
 
   // this additional pass of the graph is very WIP
   // the objective here is to add "master -> slave" links
-  // where a `master` is any node (any fetch) and `slaves`
+  // where a `master` is any node (any fetch) and `downset`
   // is an array containing all the Ps belonging to the "downset" for this node
-  // In other words, slaves contains all the Ps that must be invalidated when this node is.
+  // In other words, downset contains all the Ps that must be invalidated when this node is.
   //
   Ps.forEach(P => {
     const master = graph[P].fetch;
     // start with an empty downset
-    graph[P].slaves = [];
+    graph[P].downset = [];
     Ps.forEach(PP => {
       if (PP !== P) { // skip self
         const f = graph[PP].fetch;
         if (f.type === 'composition') { // if we find a composition
           if (f.master === master) { // with this node as master
             // it means it is part of this node downset
-            graph[P].slaves.push(PP);
+            graph[P].downset.push(PP);
           }
         }
         if (f.type === 'product') { // if we find a product
           if (some(f.fetches, ff => ff === master)) { // with this node among `product.fetches`
             // it means it is part of this node downset
-            graph[P].slaves.push(PP);
+            graph[P].downset.push(PP);
           }
         }
       }
