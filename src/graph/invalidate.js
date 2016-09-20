@@ -4,7 +4,7 @@ import { invalidate as _invalidate, hasObservers } from '../query/invalidate';
 import { queriesAndArgs } from './util';
 
 // returns "the downset" for all the given `Ps`
-// following `slaves` link (see `make`)
+// following `downset` links (see `make`)
 // always in terms of `Ps`
 //
 // e.g. `_refetchPs(g, ['a', 'b']) // => ['a', 'b', 'c', 'e']`
@@ -12,8 +12,8 @@ import { queriesAndArgs } from './util';
 // the downset always contains the given `Ps`
 function _refetchPs(graph, Ps) {
   return Ps.reduce((ps, P) => {
-    const slaves = graph[P].slaves;
-    if (slaves.length === 0) {
+    const downset = graph[P].downset;
+    if (downset.length === 0) {
       // we are visiting a "leaf"
       // just add its own `P`
       return uniq( // filter out useless duplicate Ps (reached more than once from different paths)
@@ -22,9 +22,9 @@ function _refetchPs(graph, Ps) {
     }
     return uniq( // filter out useless duplicate Ps (reached more than once from different paths)
       ps.concat(
-        // recurse on all this node `slaves`
+        // recurse on all this node `downset`
         // then flatten into a single string array
-        flatten(slaves.map(p => _refetchPs(graph, [p])))
+        flatten(downset.map(p => _refetchPs(graph, [p])))
       )
     );
   }, []);
