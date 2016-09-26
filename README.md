@@ -38,10 +38,14 @@ ex: we can write `fetch: A ~> P` for short.
 
 Given a fetch `fetch: A ~> P`:
 
-- an *index* for `fetch` is defined as `List[A] ~> List[P]`
-  - ex: `getListOfThingsByIds`
-- a *catalog* for `fetch` is defined as `S ~> List[P]`
-  - ex: `searchThingsWithQuery`
+- an *index* for `fetch` is defined as `A ~> List[Id]` where
+  - `A` is a generic "filter" argument (e.g: `ageMin=25`)
+  - `Id` is an identifier for the `P` (it returns a list of Ids)
+  - ex: `getThingIdsBySearchQuery -> Promise[List[ThingId]]`
+- a *catalog* for `fetch` is defined as `A ~> List[P]` where
+  - `A` is again a generic "filter" argument
+  - `P` is the type of each item returned (it returns a list of payloads)
+  - ex: `getThingsBySearchQuery -> Promise[List[Thing]]`
 
 ## Operators
 
