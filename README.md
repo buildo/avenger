@@ -68,7 +68,7 @@ product([f1, ... , fn]): [A1, ... , An] ~> [P1, ... , Pn]
 
 in short:
 
-We use the operator *product* whenever we want (and we always do if we can) to run multiple fetches in **parallel**.
+We use the operator *product* whenever we have a set of queries that DO NOT depend on one another: with *product* these queries are run in **parallel**.
 
 ### Composition
 
