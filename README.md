@@ -356,15 +356,65 @@ We can identify 2 phases:
 
 ### invalidate
 
-which caches (cached fetches), upon executing a certain command, should be invalidated?
+which caches (cached fetches), e.g. upon executing a certain "command", should be invalidated?
 
-**It's explicit**: the invalidate phase, starting from a potentially (half) filled cache, should invalidate (aka delete) specific cached values that we know a certain `Command` could have made obsolete. This overrides any caching policy, it just *deletes*.
+**It's explicit**: the invalidate phase, starting from a potentially (half) filled cache, should invalidate (aka delete) specific cached values that we know could now be obsolete. This overrides any caching policy, it just *deletes*.
 
 It is recursive: invalidating a node, the entire *downset* for that node is considered obsolete as well and thus all cached values (matching current input `A`) of *dependents* of that node are deleted as well.
 
 ### refetch
 
-Which fetches should be re-run (`fetch()`ed) after executing a command and invalidating?
+Which fetches should be re-run (`fetch()`ed) after the invalidation phase?
 
 **It's implicit**: the system knows exactly which are the `fetch` functions we want to re-run at any point in time, given it knows if someone is *observing* each cached fetch or not. Only observed fetches are re-`fetch()`ed; non-currently-observed ones will be `fetch()`ed when someone asks for them.
 
+To clarify these two phases and the `invalidate` api, here's an example:
+
+### Example
+
+Assume our `graph` is composed of 3 compound nodes, `A`, `B` and `C`.
+
+> **Note**: lower level `fetch`es are in general >= to the number of compound nodes, the number of compound nodes corresponds to the user-provided `fetch` functions. Here we reason in terms of compound nodes though.
+
+The graph is arranged in this way in terms of dependencies:
+
+```
+    A
+   / \
+  B   C
+```
+
+In other words:
+
+- `A` is a *leaf* node, it has no dependencies (except of course for the input `Aa`)
+- `B` has one dependencies (`A`) plus some input `Ab`
+- `C` has one dependency (`B`) plus some input `Ac`
+
+To simplify things, let's assume every node holds a fetch cached as `refetch` (that is: multiple semi-concurrent requests will reuse a single async request, but requesting the fetch again later on will cause a new refetch).
+
+We'll describe what happens in terms of calls to `query` and `invalidate`, assuming we already have the graph described above obtained with `make()`. We thus omit passing the first argument `graph` in these calls.
+
+We'll also assume that every fetch is performing an async authenticated request to a web server, and thus it needs a `token`.
+`B` and `C` also need something more (they have a dependency on `A` after all): we can imagine this to be whatever, e.g. `C` fetches a user's "posts" and thus it needs the currently authenticated user id, something that can be obtained by `A` that fetches the current authenticated user given a `token`.
+
+1. `subscription1 = query(['A', 'B'], { token: 'foo' })`
+
+  - `A` and `B` are run, respecting dependencies, and the `subscription1` observer is notified accordingly
+
+2. `invalidate(['A'], { token: 'foo' })`
+
+  - "invalidate" phase: `A` and its entire *downset* (`A`, `B`, `C`) is invalidated. Since `C` was never fetched (and thus never fetched for `token='foo'`), there's nothing to delete there. `A(token='foo')` and its dependent `B` have been fetched instead, so both `A` and `B` instances for `token='foo'` are removed from cache.
+
+  - "refetch" phase: `A` and its entire *downset* are evaluated as "refetchable" candidates. `B` is thus fetched, but since `C` has no observers, its `fetch` is not run. Since `A` and `B` both have `strategy=refetch`, they will both run "for real".
+
+3. `subscription2 = query(['C'], { token: 'foo' })`
+
+  - `C` is run, and the `subscription2` observer is notified accordingly
+
+  - since every node has `strategy=refetch`, and `C` needs `A` to complete, `A` is re-fetched as well, and the `subscription1` listener notified accordingly
+
+4. `invalidate(['A'], { token: 'foo' })`
+
+  - "invalidate" phase: `A` and its entire *downset* (`A`, `B`, `C`) is invalidated. `A(token='foo')` and all its dependents (`B` and `C`) have been fetched this time, so all three instances for `token='foo'` are deleted from cache.
+
+  - "refetch" phase: `A` and its entire *downset* are evaluated as "refetchable" candidates. `A`, `B` and `C` are fetched since they are all observed.
