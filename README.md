@@ -311,3 +311,60 @@ compose(
 ```
 
 # Graph
+
+## make
+
+signature: `make(<graph description>: GraphDescription): Graph`
+
+*TODO*
+
+## query
+
+signature: `query(graph: Graph, Ps: List[string], A: Dict[string,any]): Observable<>`
+
+`query` accepts the `P`s to query and the `A`s to use as arguments:
+
+- `graph` is the entire graph description obtained with `make()`
+
+- `Ps` is an array of strings corresponding to compound node ids, e.g. `['A', 'C']`
+
+- `A` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible `A`s any fetch we are requesting could need to run
+
+*TODO*
+
+## invalidate
+
+signature: `invalidate(graph: Graph, invalidatePs: List[string], A: Dict[string,any])`
+
+`invalidate` accepts all the `P`s that should be invalidated, for the given `A`s:
+
+- `graph` is the entire graph description obtained with `make()`
+
+- `invalidatePs` is an array of strings corresponding to compound node ids, e.g. `['A', 'C']`
+
+- `A` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible `A`s any fetch we are invalidating could need to run
+
+When invoking `invalidate`, we should provide explicitly everything that needs to be force-refetched. There's no automatic deletion of *dependencies* when invalidating a node, while there's automatic invalidation of all *dependents*:
+
+  - invalidation of all *dependents* will be automatic (all of the *downset* of any invalidated node is recursively invalidated)
+
+  - refetch of some *dependencies* may be transparent/automatic (if needed given the cache policies)
+
+To explain this better, let's be more precise about what "invalidating" means
+
+We can identify 2 phases:
+
+### invalidate
+
+which caches (cached fetches), upon executing a certain command, should be invalidated?
+
+**It's explicit**: the invalidate phase, starting from a potentially (half) filled cache, should invalidate (aka delete) specific cached values that we know a certain `Command` could have made obsolete. This overrides any caching policy, it just *deletes*.
+
+It is recursive: invalidating a node, the entire *downset* for that node is considered obsolete as well and thus all cached values (matching current input `A`) of *dependents* of that node are deleted as well.
+
+### refetch
+
+Which fetches should be re-run (`fetch()`ed) after executing a command and invalidating?
+
+**It's implicit**: the system knows exactly which are the `fetch` functions we want to re-run at any point in time, given it knows if someone is *observing* each cached fetch or not. Only observed fetches are re-`fetch()`ed; non-currently-observed ones will be `fetch()`ed when someone asks for them.
+
