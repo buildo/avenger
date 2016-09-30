@@ -19,7 +19,7 @@ Avenger provides different levels of api:
 - **layer 0** `fetch`: provides an abstraction over asyncronous data retrieval (`fetch`) and operators to compose different fetches together (`composition` and `product`). Includes data-dependencies and promise pipelining, and a prescription for api categorization. Read more in [Fetch](https://github.com/buildo/avenger#fetch).
 - **layer 1** `fcache`: caching layer on top of `fetch`. Caching and batching happens here. This layer can be considered similar to [DataLoader](https://github.com/facebook/dataloader), adding more powerful caching strategies. You'd use this layer directly in a stateless (server-side) environment, where no long-living cache is involved. Read more in [Cache](https://github.com/buildo/avenger#cache).
 - **layer 2** `query`: extends `fcache` with observable queries. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data.
-- **layer 3** `graph`: provides an higher level interface to `query`. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data. Read more in [Graph](https://github.com/buildo/avenger#graph).
+- **layer 3** `graph`: provides a higher level interface to `query`. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data. Read more in [Graph](https://github.com/buildo/avenger#graph).
 - **layer** + [react-avenger](https://github.com/buildo/react-avenger): provides helpers to connect a `graph` avenger instance to React components in a declarative fashion. You'd use this layer in a generic React client
 
 
@@ -387,7 +387,7 @@ The graph is arranged in this way in terms of dependencies:
 In other words:
 
 - `A` is a *leaf* node, it has no dependencies (except of course for the input `Aa`)
-- `B` has one dependencies (`A`) plus some input `Ab`
+- `B` has one dependency (`A`) plus some input `Ab`
 - `C` has one dependency (`B`) plus some input `Ac`
 
 To simplify things, let's assume every node holds a fetch cached as `refetch` (that is: multiple semi-concurrent requests will reuse a single async request, but requesting the fetch again later on will cause a new refetch).
