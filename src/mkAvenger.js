@@ -175,6 +175,23 @@ export default function mkAvenger(universe: Queries, throttleWindowMsecValue: ?t
     });
   };
 
+  const queriesSync = (queries: QueriesDict) => {
+    const qs = map(queries, (params, id) => ({ id, params }));
+    const value = qs.map(
+      ({ params, id }) => getValue(universe[id], params)
+    ).reduce((ac, { value: v }, i) => ({
+      ...ac, [qs[i].id]: v
+    }), {});
+    const readyState = qs.map(
+      ({ params, id }) => getReadyState(universe[id], params)
+    ).reduce((ac, { value: rs }, i) => ({
+      ...ac, [qs[i].id]: {
+        ...rs, loading: !!(rs.waiting || rs.fetching)
+      }
+    }), {});
+    return { ...value, readyState };
+  };
+
   return {
     queries,
     query(id: t.String, params: ?State) {
@@ -217,6 +234,7 @@ export default function mkAvenger(universe: Queries, throttleWindowMsecValue: ?t
       }), {});
     },
     error: _error.map(identity),
-    errors: _error.scan((ac, e) => ac.concat(e), [])
+    errors: _error.scan((ac, e) => ac.concat(e), []),
+    queriesSync
   };
 }
