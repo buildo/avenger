@@ -1,4 +1,4 @@
-import { apply } from '../query/apply';
+import { apply, applySync } from '../query/apply';
 import { queriesAndArgs } from './util';
 
 // query the `graph`
@@ -13,4 +13,12 @@ import { queriesAndArgs } from './util';
 export function query(graph, Ps, A) {
   const { queries, args } = queriesAndArgs(graph, Ps, A);
   return apply(queries, args);
+}
+
+// same as `query`, but doesn't cause
+// any new `fetch` and returns sync any currently
+// available values
+export function querySync(graph, Ps, A) {
+  const { queries, args } = queriesAndArgs(graph, Ps, A);
+  return applySync(queries, args);
 }

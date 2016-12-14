@@ -1,3 +1,3 @@
 export { make } from './make';
-export { query } from './query';
+export { query, querySync } from './query';
 export { invalidate } from './invalidate';

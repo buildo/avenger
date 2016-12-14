@@ -9,6 +9,10 @@ function observeCache(cache, a) {
   return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
 }
 
+function observeCacheSync(cache, a) {
+  return cache.getSubject(a).value
+}
+
 export function observe(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
     t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to observe (expected a function)')
@@ -39,4 +43,34 @@ export function observe(fetch, a) {
     })
   }
   return observeCache(fetch.cache, a)
+}
+
+export function observeSync(fetch, a) {
+  if (process.env.NODE_ENV !== 'production') {
+    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to observe (expected a function)')
+  }
+
+  if (fetch.type === 'product') {
+    return fetch.fetches.map((fetch, i) => observeSync(fetch, a[i]))
+  }
+  if (fetch.type === 'composition') {
+    const { master, slave, ptoa } = fetch
+    const isProduct = ( master.type === 'product' )
+    const x = observeSync(master, a);
+    const ok = isProduct ? x.every(xi => xi.hasOwnProperty('data')) : x.hasOwnProperty('data')
+    if (ok) {
+      const data = isProduct ? x.map(xi => xi.data) : x.data
+      const a1  = ptoa(data, a)
+      const loading = isProduct ? x.some(xi => xi.loading) : x.loading
+      if (loading) {
+        return {
+          loading: true,
+          data: slave.cache.getSubject(a1).value.data
+        }
+      }
+      return observeCacheSync(slave.cache, a1)
+    }
+    return { loading: true }
+  }
+  return observeCacheSync(fetch.cache, a)
 }
