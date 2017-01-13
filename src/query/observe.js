@@ -1,12 +1,16 @@
 import t from 'tcomb'
+import debug from 'debug';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/observable/of';
+import 'rxjs/add/operator/do';
+
+const log = debug('avenger:query:observe')
 
 function observeCache(cache, a) {
-  return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
+  return cache.getSubject(a).do(e => console.log(e)).filter(e => e.hasOwnProperty('loading'))
 }
 
 export function observe(fetch, a) {
@@ -23,6 +27,7 @@ export function observe(fetch, a) {
     const isProduct = ( master.type === 'product' )
     return observe(master, a).switchMap(x => {
       const ok = isProduct ? x.every(xi => xi.hasOwnProperty('data')) : x.hasOwnProperty('data')
+      // log(`observe switchMap ok:${ok} x:${JSON.stringify(x, null, 2)}`)
       if (ok) {
         const data = isProduct ? x.map(xi => xi.data) : x.data
         const a1  = ptoa(data, a)
