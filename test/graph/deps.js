@@ -5,49 +5,61 @@ import Node from './Node'
 import { make, invalidate, query } from '../../src/graph';
 import { Expire, available } from '../../src/cache/strategies';
 
-let foo = 'foo';
-const makeTestGraph = () => {
-  const configuration = Node({
-    id: 'configuration',
-    strategy: new Expire(100),
-    params: { token: true },
-    fetch: () => new Promise(resolve => {
-      setTimeout(() => resolve({ user: { foo } }))
-    })
-  })
-  const userConfiguration = Node({
-    id: 'userConfiguration',
-    strategy: available,
-    dependencies: {
-      config: { query: configuration }
-    },
-    fetch: ({ config: { user } }) => new Promise(resolve => {
-      setTimeout(() => resolve(user))
-    })
-  })
-
-  return make({ ...configuration, ...userConfiguration });
+const state = {
+  foo: null,
+  slaveFetchCount: null
 }
 
-const log = r => console.log(JSON.stringify(r, null, 2));
+const MASTER_EXPIRE_TIME = 100;
+
+const makeTestGraph = () => {
+  const master = Node({
+    id: 'master',
+    strategy: new Expire(MASTER_EXPIRE_TIME),
+    params: { token: 'token' },
+    fetch: () => Promise.resolve({ bar: { foo: state.foo } })
+  });
+  const slave = Node({
+    id: 'slave',
+    strategy: available,
+    dependencies: {
+      master: { query: master }
+    },
+    fetch: ({ master: { bar } }) => {
+      state.slaveFetchCount = state.slaveFetchCount + 1;
+      return Promise.resolve(bar);
+    }
+  })
+
+  return make({ ...master, ...slave });
+}
 
 describe('graph/deps', () => {
 
-  it('should work', (done) => {
-
+  it('"slave" should be re-fetched if "master" changes and is being observed', (done) => {
     const graph = makeTestGraph()
 
-    const userConfiguration = query(graph, ['userConfiguration'], { token: 'lol' })
+    state.foo = 'foo_1';
+    state.slaveFetchCount = 0;
 
-    userConfiguration.subscribe((r) => {
-      log(r)
-    }) // add a subscriber
+    const slave = query(graph, ['slave'], { token: 'token' })
 
+    slave.subscribe(() => {}); // add a subscriber to "slave"
+
+    // invalidate "master" after its cache has already expired
     setTimeout(() => {
-      foo = 'bar';
-      invalidate(graph, ['configuration'], { token: 'lol' }) // invalidate later on
-      setTimeout(done, 200)
-    }, 200);
+      state.foo = 'foo_2';
+      invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
+
+      // verify that "slave" has been correctly re-fetched
+      setTimeout(() => {
+        slave.subscribe((r) => {
+          assert.equal(r.data.slave.data.foo, 'foo_2');
+          assert.equal(state.slaveFetchCount, 2);
+          done();
+        });
+      }, MASTER_EXPIRE_TIME * 2)
+    }, MASTER_EXPIRE_TIME * 2);
 
   });
 
