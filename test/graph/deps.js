@@ -63,4 +63,29 @@ describe('graph/deps', () => {
 
   });
 
+  it('"slave" should not be re-fetched if "master" changes but is not being observed', (done) => {
+    const graph = makeTestGraph()
+
+    state.foo = 'foo_1';
+    state.slaveFetchCount = 0;
+
+    const master = query(graph, ['master'], { token: 'token' });
+    query(graph, ['slave'], { token: 'token' });
+
+    master.subscribe(() => {}); // add a subscriber to "master"
+
+    // invalidate "master" after its cache has already expired
+    setTimeout(() => {
+      state.foo = 'foo_2';
+      invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
+
+      // verify that "slave" has been correctly re-fetched
+      setTimeout(() => {
+        assert(state.slaveFetchCount, 0);
+        done();
+      }, MASTER_EXPIRE_TIME * 2)
+    }, MASTER_EXPIRE_TIME * 2);
+
+  });
+
 });
