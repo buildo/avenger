@@ -15,7 +15,7 @@ import {
   available
 } from '../../src/cache/strategies'
 
-describe('cache', () => {
+xdescribe('cache', () => {
 
   describe('operators', () => {
 
