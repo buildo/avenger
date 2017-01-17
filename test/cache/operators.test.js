@@ -1,15 +1,15 @@
-/* global describe,it */
 import assert from 'assert'
 import sinon from 'sinon'
 
 import {
+  cacheFetch,
   cacheCatalog,
   cacheStar
-} from '../../src/query/operators'
+} from '../../src/cache/operators'
 
 import {
-  ObservableCache
-} from '../../src/query/ObservableCache'
+  Cache
+} from '../../src/cache/Cache'
 
 import {
   available
@@ -19,19 +19,32 @@ describe('cache', () => {
 
   describe('operators', () => {
 
+    describe('cacheFetch', () => {
+
+      it('should return a fetch', () => {
+        const fetch = a => Promise.resolve(2 * a)
+        const c = new Cache()
+        const cf = cacheFetch(fetch, available, c)
+        assert.strictEqual(typeof cf, 'function')
+      })
+
+    })
+
     describe('cacheCatalog', () => {
 
       it('should return a fetch', () => {
         const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
-        const pcache = new ObservableCache()
-        const cc = cacheCatalog(catalog, available, pcache, (p) => p / 2)
+        const c = new Cache()
+        const pcache = new Cache()
+        const cc = cacheCatalog(catalog, available, c, pcache, (p) => p / 2)
         assert.strictEqual(typeof cc, 'function')
       })
 
       it('should fill the cache', () => {
         const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
-        const pcache = new ObservableCache()
-        const cc = cacheCatalog(catalog, available, pcache, (p) => p / 2)
+        const c = new Cache()
+        const pcache = new Cache()
+        const cc = cacheCatalog(catalog, available, c, pcache, (p) => p / 2)
         cc([1, 2, 3]).then(ps => {
           // controllo il payload
           assert.deepEqual(ps, [2, 4, 6])
