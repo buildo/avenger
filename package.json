@@ -12,6 +12,9 @@
   "main": "lib",
   "author": "",
   "license": "MIT",
+  "jest": {
+    "setupTestFrameworkScriptFile": "./test/jestSetup.js"
+  },
   "dependencies": {
     "debug": "^2.2.0",
     "lodash": "^4.13.1",
