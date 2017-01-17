@@ -135,7 +135,7 @@ describe('observe', () => {
 
   describe('composition', () => {
 
-    fit('should emit L + P events for an empty cache', () => {
+    it('should emit L + P events for an empty cache', () => {
       const c = new ObservableCache()
       const fetch1 = a => Promise.resolve(2 * a)
       const fetch2 = a => Promise.resolve(`Hello ${a}`)
@@ -161,7 +161,7 @@ describe('observe', () => {
 
   describe('catalog', () => {
 
-    fit('should emit L + P events for an empty pcache', () => {
+    it('should emit L + P events for an empty pcache', () => {
       const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
       const pc = new ObservableCache()
       const cc = cacheCatalog(catalog, available, pc, (p) => p / 2)
