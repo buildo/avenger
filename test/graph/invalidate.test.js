@@ -16,7 +16,7 @@ describe('graph/invalidate', () => {
     })
   }), {})
 
-  it('should refetch a single leaf node if it has observers', (done) => {
+  it('should refetch a single leaf node if it has observers', () => {
 
     const graph = make(makeLeafNodes(['A', 'B']))
 
@@ -27,19 +27,24 @@ describe('graph/invalidate', () => {
       invalidate(graph, ['A'], { token: 'lol' })
     }, 5)
 
-    q.bufferTime(10).take(1).subscribe(events => {
-      assert.deepEqual(events, [
-        { loading: true, data: { A: { loading: true } } },
-        { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } },
-        { loading: true, data: { A: { loading: true, data: { token: 'lol' } } } },
-        { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } }
-      ])
-      done()
+    return new Promise((resolve, reject) => {
+      q.bufferTime(10).take(1).subscribe(events => {
+        try {
+          assert.deepEqual(events, [
+            { loading: true, data: { A: { loading: true } } },
+            { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } },
+            { loading: true, data: { A: { loading: true, data: { token: 'lol' } } } },
+            { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } }
+          ])
+          resolve()
+        } catch (e) {
+          reject(e);
+        }
+      })
     })
-
   })
 
-  it('should not refetch a single leaf node if it has no observers', (done) => {
+  it('should not refetch a single leaf node if it has no observers', () => {
 
     const graph = make(makeLeafNodes(['A', 'B']))
 
@@ -47,17 +52,22 @@ describe('graph/invalidate', () => {
 
     invalidate(graph, ['A'], { token: 'lol' }) // do not subscribe and invalidate right away
 
-    q.bufferTime(10).take(1).subscribe(events => {
-      assert.deepEqual(events, [
-        { loading: true, data: { A: { loading: true } } },
-        { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } }
-      ])
-      done()
+    return new Promise((resolve, reject) => {
+      q.bufferTime(10).take(1).subscribe(events => {
+        try {
+          assert.deepEqual(events, [
+            { loading: true, data: { A: { loading: true } } },
+            { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } }
+          ])
+          resolve()
+        } catch (e) {
+          reject(e)
+        }
+      })
     })
-
   })
 
-  it('should refetch multiple leaf nodes if they have observers', (done) => {
+  it('should refetch multiple leaf nodes if they have observers', () => {
 
     const graph = make(makeLeafNodes(['A', 'B', 'C']))
 
@@ -68,33 +78,38 @@ describe('graph/invalidate', () => {
       invalidate(graph, ['A', 'C'], { token: 'lol' })
     }, 5)
 
-    q.bufferTime(10).take(1).subscribe(events => {
-      assert.deepEqual(events, [
-        { loading: true, data: {
-          A: { loading: true }, C: { loading: true } }
-        },
-        { loading: true, data: {
-          A: { loading: false, data: { token: 'lol' } }, C: { loading: true } }
-        },
-        { loading: false, data: {
-          A: { loading: false, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
-        },
-        { loading: true, data: {
-          A: { loading: true, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
-        },
-        { loading: true, data: {
-          A: { loading: true, data: { token: 'lol' } }, C: { loading: true, data: { token: 'lol' } } }
-        },
-        { loading: true, data: {
-          A: { loading: false, data: { token: 'lol' } }, C: { loading: true, data: { token: 'lol' } } }
-        },
-        { loading: false, data: {
-          A: { loading: false, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
+    return new Promise((resolve, reject) => {
+      q.bufferTime(10).take(1).subscribe(events => {
+        try {
+          assert.deepEqual(events, [
+            { loading: true, data: {
+              A: { loading: true }, C: { loading: true } }
+            },
+            { loading: true, data: {
+              A: { loading: false, data: { token: 'lol' } }, C: { loading: true } }
+            },
+            { loading: false, data: {
+              A: { loading: false, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
+            },
+            { loading: true, data: {
+              A: { loading: true, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
+            },
+            { loading: true, data: {
+              A: { loading: true, data: { token: 'lol' } }, C: { loading: true, data: { token: 'lol' } } }
+            },
+            { loading: true, data: {
+              A: { loading: false, data: { token: 'lol' } }, C: { loading: true, data: { token: 'lol' } } }
+            },
+            { loading: false, data: {
+              A: { loading: false, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
+            }
+          ])
+          resolve()
+        } catch (e) {
+          reject(e)
         }
-      ])
-      done()
+      })
     })
-
   })
 
   describe('in a complex setup', () => {
@@ -131,7 +146,7 @@ describe('graph/invalidate', () => {
       return make({ ...A, ...B, ...C })
     }
 
-    it('should refetch observed nodes', (done) => {
+    it('should refetch observed nodes', () => {
 
       const graph = makeTestGraph()
 
@@ -143,38 +158,43 @@ describe('graph/invalidate', () => {
         invalidate(graph, ['A'], { token: 'lol' }) // invalidate later on
       }, 5)
 
-      q1.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-          // query()
-          { loading: true, data: {
-            A: { loading: true }, B: { loading: true } }
-          },
-          { loading: true, data: {
-            A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: true } }
-          },
-          { loading: false, data: {
-            A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
-          },
-          // invalidate()
-          { loading: true, data: {
-            A: { loading: true, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
-          },
-          { loading: true, data: {
-            A: { loading: true, data: { id: 1, token: 'lol' } }, B: { loading: true, data: { posts: ['p1'], token: 'lol' } } }
-          },
-          { loading: true, data: {
-            A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: true, data: { posts: ['p1'], token: 'lol' } } }
-          },
-          { loading: false, data: {
-            A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
+      return new Promise((resolve, reject) => {
+        q1.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [
+              // query()
+              { loading: true, data: {
+                A: { loading: true }, B: { loading: true } }
+              },
+              { loading: true, data: {
+                A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: true } }
+              },
+              { loading: false, data: {
+                A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
+              },
+              // invalidate()
+              { loading: true, data: {
+                A: { loading: true, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
+              },
+              { loading: true, data: {
+                A: { loading: true, data: { id: 1, token: 'lol' } }, B: { loading: true, data: { posts: ['p1'], token: 'lol' } } }
+              },
+              { loading: true, data: {
+                A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: true, data: { posts: ['p1'], token: 'lol' } } }
+              },
+              { loading: false, data: {
+                A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
+              }
+            ])
+            resolve()
+          } catch (e) {
+            reject(e)
           }
-        ])
-        done()
+        })
       })
-
     })
 
-    it('should refetch observed nodes 2', (done) => {
+    it('should refetch observed nodes 2', () => {
 
       const graph = makeTestGraph()
 
@@ -186,64 +206,69 @@ describe('graph/invalidate', () => {
         invalidate(graph, ['A'], { token: 'lol' }) // invalidate later on
       }, 5)
 
-      q1.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-          // query()
-          { loading: true, data: {
-            B: { loading: true },
-            C: { loading: true } }
-          },
-          { loading: true, data: {
-            B: { loading: false, data: {
-              posts: ['p1'], token: 'lol' }
-            },
-            C: { loading: true } }
-          },
-          { loading: false, data: {
-            B: { loading: false, data: {
-              posts: ['p1'], token: 'lol'
-            } },
-            C: { loading: false, data: {
-              profile: 'p1', token: 'lol'
-            } } }
-          },
-          // invalidate()
-          { loading: true, data: {
-            B: { loading: true, data: {
-              posts: ['p1'], token: 'lol'
-            } },
-            C: { loading: false, data: {
-              profile: 'p1', token: 'lol'
-            } } }
-          },
-          { loading: true, data: {
-            B: { loading: true, data: {
-              posts: ['p1'], token: 'lol'
-            } },
-            C: { loading: true, data: {
-              profile: 'p1', token: 'lol'
-            } } }
-          },
-          { loading: true, data: {
-            B: { loading: false, data: {
-              posts: ['p1'], token: 'lol'
-            } },
-            C: { loading: true, data: {
-              profile: 'p1', token: 'lol'
-            } } }
-          },
-          { loading: false, data: {
-            B: { loading: false, data: {
-              posts: ['p1'], token: 'lol'
-            } },
-            C: { loading: false, data: {
-              profile: 'p1', token: 'lol'
-            } } }
+      return new Promise((resolve, reject) => {
+        q1.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [
+              // query()
+              { loading: true, data: {
+                B: { loading: true },
+                C: { loading: true } }
+              },
+              { loading: true, data: {
+                B: { loading: false, data: {
+                  posts: ['p1'], token: 'lol' }
+                },
+                C: { loading: true } }
+              },
+              { loading: false, data: {
+                B: { loading: false, data: {
+                  posts: ['p1'], token: 'lol'
+                } },
+                C: { loading: false, data: {
+                  profile: 'p1', token: 'lol'
+                } } }
+              },
+              // invalidate()
+              { loading: true, data: {
+                B: { loading: true, data: {
+                  posts: ['p1'], token: 'lol'
+                } },
+                C: { loading: false, data: {
+                  profile: 'p1', token: 'lol'
+                } } }
+              },
+              { loading: true, data: {
+                B: { loading: true, data: {
+                  posts: ['p1'], token: 'lol'
+                } },
+                C: { loading: true, data: {
+                  profile: 'p1', token: 'lol'
+                } } }
+              },
+              { loading: true, data: {
+                B: { loading: false, data: {
+                  posts: ['p1'], token: 'lol'
+                } },
+                C: { loading: true, data: {
+                  profile: 'p1', token: 'lol'
+                } } }
+              },
+              { loading: false, data: {
+                B: { loading: false, data: {
+                  posts: ['p1'], token: 'lol'
+                } },
+                C: { loading: false, data: {
+                  profile: 'p1', token: 'lol'
+                } } }
+              }
+            ])
+            resolve()
+          } catch (e) {
+            reject(e)
           }
-        ])
-        done()
+        })
       })
-
     })
 
   })

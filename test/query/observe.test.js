@@ -31,55 +31,72 @@ describe('observe', () => {
 
   describe('fetch', () => {
 
-    it('should not emit events for different inputs', (done) => {
+    it('should not emit events for different inputs', () => {
       const c = new ObservableCache()
       const raw = a => Promise.resolve(2 * a)
       const fetch = cacheFetch(raw, available, c)
       const o = observe(fetch, 1)
-      o.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-        ])
-        done()
+      return new Promise((resolve, reject) => {
+        o.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [])
+            resolve()
+          } catch (e) {
+            reject(e)
+          }
+        })
+        fetch(2)
       })
-      fetch(2)
     })
 
-    it('should emit L + P events for an empty cache', (done) => {
+    it('should emit L + P events for an empty cache', () => {
       const c = new ObservableCache()
       const raw = a => Promise.resolve(2 * a)
       const fetch = cacheFetch(raw, available, c)
       const o = observe(fetch, 1)
-      o.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-          { loading: true },
-          { loading: false, data: 2 }
-        ])
-        done()
+      return new Promise((resolve, reject) => {
+        o.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [
+              { loading: true },
+              { loading: false, data: 2 }
+            ])
+            resolve()
+          } catch (e) {
+            reject(e)
+          }
+        })
+        fetch(1)
       })
-      fetch(1)
     })
 
-    it('should emit L + P events when strategy is refetch, even after a cache hit', (done) => {
+    it('should emit L + P events when strategy is refetch, even after a cache hit', () => {
       const c = new ObservableCache()
       c.set(1, { done: { value: 2, timestamp: new Date().getTime(), promise: Promise.resolve(2) } })
       const raw = a => Promise.resolve(2 * a)
       const fetch = cacheFetch(raw, refetch, c)
       const o = observe(fetch, 1)
-      o.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-          { loading: true },
-          { loading: false, data: 2 }
-        ])
-        done()
+      return new Promise((resolve, reject) => {
+        o.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [
+              { loading: true },
+              { loading: false, data: 2 }
+            ])
+            resolve()
+          } catch (e) {
+            reject(e)
+          }
+        })
+        fetch(1)
       })
-      fetch(1)
     })
 
   })
 
   describe('product', () => {
 
-    it('should emit L + L + P events for an empty cache', (done) => {
+    it('should emit L + L + P events for an empty cache', () => {
       const c1 = new ObservableCache()
       const raw1 = a => Promise.resolve(2 * a)
       const fetch1 = cacheFetch(raw1, available, c1)
@@ -88,63 +105,81 @@ describe('observe', () => {
       const fetch2 = cacheFetch(raw2, available, c2)
       const fetch = product([fetch1, fetch2])
       const o = observe(fetch, [1, 'Giulio'])
-      o.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-          [
-            { loading: true },
-            { loading: true }
-          ],
-          [
-            { loading: false, data: 2 },
-            { loading: true }
-          ],
-          [
-            { loading: false, data: 2 },
-            { loading: false, data: 'Hello Giulio' }
-          ]
-        ])
-        done()
+      return new Promise((resolve, reject) => {
+        o.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [
+              [
+                { loading: true },
+                { loading: true }
+              ],
+              [
+                { loading: false, data: 2 },
+                { loading: true }
+              ],
+              [
+                { loading: false, data: 2 },
+                { loading: false, data: 'Hello Giulio' }
+              ]
+            ])
+            resolve()
+          } catch (e) {
+            reject(e)
+          }
+        })
+        fetch([1, 'Giulio'])
       })
-      fetch([1, 'Giulio'])
     })
 
   })
 
   describe('composition', () => {
 
-    fit('should emit L + P events for an empty cache', (done) => {
+    fit('should emit L + P events for an empty cache', () => {
       const c = new ObservableCache()
       const fetch1 = a => Promise.resolve(2 * a)
       const fetch2 = a => Promise.resolve(`Hello ${a}`)
       const fetch = cacheFetch(compose(fetch2, s => s.length, fetch1), available, c)
       const o = observe(fetch, 'Giulio')
-      o.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-          { loading: true },
-          { loading: false, data: 24 }
-        ])
-        done()
+      return new Promise((resolve, reject) => {
+        o.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [
+              { loading: true },
+              { loading: false, data: 24 }
+            ])
+            resolve()
+          } catch (e) {
+            reject(e)
+          }
+        })
+        fetch('Giulio')
       })
-      fetch('Giulio')
     })
 
   })
 
   describe('catalog', () => {
 
-    fit('should emit L + P events for an empty pcache', (done) => {
+    fit('should emit L + P events for an empty pcache', () => {
       const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
       const pc = new ObservableCache()
       const cc = cacheCatalog(catalog, available, pc, (p) => p / 2)
       const o = observe(cc, undefined)
-      o.bufferTime(10).take(1).subscribe(events => {
-        assert.deepEqual(events, [
-          { loading: true },
-          { loading: false, data: [2, 4, 6] }
-        ])
-        done()
+      return new Promise((resolve, reject) => {
+        o.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.deepEqual(events, [
+              { loading: true },
+              { loading: false, data: [2, 4, 6] }
+            ])
+            resolve()
+          } catch (e) {
+            reject(e)
+          }
+        })
+        cc()
       })
-      cc()
     })
 
   })
