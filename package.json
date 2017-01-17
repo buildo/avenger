@@ -4,7 +4,7 @@
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "lint": "eslint src",
-    "test": "mocha --require babel-core/register",
+    "test": "jest",
     "build": "rm -rf lib && mkdir lib && babel --out-dir lib src",
     "preversion": "npm run lint && npm test",
     "prepublish": "npm run build"
@@ -21,6 +21,7 @@
   "devDependencies": {
     "babel-cli": "6.8.0",
     "babel-eslint": "6.0.4",
+    "babel-jest": "^18.0.0",
     "babel-loader": "6.2.4",
     "babel-plugin-syntax-flow": "6.8.0",
     "babel-plugin-tcomb": "^0.2.3",
@@ -30,6 +31,7 @@
     "babel-preset-react": "^6.5.0",
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
+    "jest": "^18.1.0",
     "sinon": "1.17.4"
   }
 }
