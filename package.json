@@ -3,7 +3,7 @@
   "version": "0.4.0-alpha.7",
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
-    "lint": "eslint src",
+    "lint": "eslint src test",
     "test": "jest",
     "build": "rm -rf lib && mkdir lib && babel --out-dir lib src",
     "preversion": "npm run lint && npm test",

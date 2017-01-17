@@ -1,4 +1,3 @@
-/* global describe,it */
 import assert from 'assert'
 import 'rxjs'
 
@@ -85,7 +84,7 @@ describe('observe', () => {
       const raw1 = a => Promise.resolve(2 * a)
       const fetch1 = cacheFetch(raw1, available, c1)
       const c2 = new ObservableCache()
-      const raw2 = a => Promise.resolve('Hello ' + a)
+      const raw2 = a => Promise.resolve(`Hello ${a}`)
       const fetch2 = cacheFetch(raw2, available, c2)
       const fetch = product([fetch1, fetch2])
       const o = observe(fetch, [1, 'Giulio'])
@@ -116,7 +115,7 @@ describe('observe', () => {
     it('should emit L + P events for an empty cache', (done) => {
       const c = new ObservableCache()
       const fetch1 = a => Promise.resolve(2 * a)
-      const fetch2 = a => Promise.resolve('Hello ' + a)
+      const fetch2 = a => Promise.resolve(`Hello ${a}`)
       const fetch = cacheFetch(compose(fetch2, s => s.length, fetch1), available, c)
       const o = observe(fetch, 'Giulio')
       o.bufferTime(10).take(1).subscribe(events => {

@@ -1,4 +1,4 @@
-/* global describe,it */
+/* eslint-disable */
 import assert from 'assert'
 import sinon from 'sinon'
 
