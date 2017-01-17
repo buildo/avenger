@@ -35,7 +35,7 @@ const makeTestGraph = () => {
 
 describe('graph/deps', () => {
 
-  it('"slave" should be re-fetched if "master" changes and is being observed', (done) => {
+  it('"slave" should be re-fetched if "master" changes and is being observed', () => {
     const graph = makeTestGraph()
 
     state.foo = 'foo_1';
@@ -45,24 +45,30 @@ describe('graph/deps', () => {
 
     slave.subscribe(() => {}); // add a subscriber to "slave"
 
-    // invalidate "master" after its cache has already expired
-    setTimeout(() => {
-      state.foo = 'foo_2';
-      invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
-
-      // verify that "slave" has been correctly re-fetched
+    return new Promise((resolve, reject) => {
+      // invalidate "master" after its cache has already expired
       setTimeout(() => {
-        slave.subscribe((r) => {
-          assert.equal(r.data.slave.data.foo, 'foo_2');
-          assert.equal(state.slaveFetchCount, 2);
-          done();
-        });
-      }, MASTER_EXPIRE_TIME * 2)
-    }, MASTER_EXPIRE_TIME * 2);
+        state.foo = 'foo_2';
+        invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
+
+        // verify that "slave" has been correctly re-fetched
+        setTimeout(() => {
+          slave.subscribe((r) => {
+            try {
+              assert.equal(r.data.slave.data.foo, 'foo_2');
+              assert.equal(state.slaveFetchCount, 2);
+              resolve();
+            } catch (e) {
+              reject(e)
+            }
+          });
+        }, MASTER_EXPIRE_TIME * 2)
+      }, MASTER_EXPIRE_TIME * 2);
+    })
 
   });
 
-  it('"slave" should not be re-fetched if "master" changes but is not being observed', (done) => {
+  it('"slave" should not be re-fetched if "master" changes but is not being observed', () => {
     const graph = makeTestGraph()
 
     state.foo = 'foo_1';
@@ -73,18 +79,23 @@ describe('graph/deps', () => {
 
     master.subscribe(() => {}); // add a subscriber to "master"
 
-    // invalidate "master" after its cache has already expired
-    setTimeout(() => {
-      state.foo = 'foo_2';
-      invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
-
-      // verify that "slave" has been correctly re-fetched
+    return new Promise((resolve, reject) => {
+      // invalidate "master" after its cache has already expired
       setTimeout(() => {
-        assert(state.slaveFetchCount, 0);
-        done();
-      }, MASTER_EXPIRE_TIME * 2)
-    }, MASTER_EXPIRE_TIME * 2);
+        state.foo = 'foo_2';
+        invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
 
+        // verify that "slave" has been correctly re-fetched
+        setTimeout(() => {
+          try {
+            assert(state.slaveFetchCount, 0);
+            resolve();
+          } catch (e) {
+            reject(e)
+          }
+        }, MASTER_EXPIRE_TIME * 2)
+      }, MASTER_EXPIRE_TIME * 2);
+    });
   });
 
 });
