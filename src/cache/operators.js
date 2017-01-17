@@ -26,6 +26,7 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
     t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cacheCatalog (expected a Cache)')
     t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to cacheCatalog (expected a Strategy)')
     t.assert(pcache instanceof Cache, () => 'Invalid argument pcache supplied to cacheCatalog (expected a Cache)')
+    t.assert(t.Function.is(ptoa), () => 'Invalid argument ptoa supplied to cacheCatalog (expected a function)')
   }
 
   return function cachedCatalog(s) {
