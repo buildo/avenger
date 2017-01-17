@@ -112,7 +112,7 @@ describe('observe', () => {
 
   describe('composition', () => {
 
-    it('should emit L + P events for an empty cache', (done) => {
+    fit('should emit L + P events for an empty cache', (done) => {
       const c = new ObservableCache()
       const fetch1 = a => Promise.resolve(2 * a)
       const fetch2 = a => Promise.resolve(`Hello ${a}`)
@@ -132,11 +132,10 @@ describe('observe', () => {
 
   describe('catalog', () => {
 
-    it('should emit L + P events for an empty cache', (done) => {
+    fit('should emit L + P events for an empty pcache', (done) => {
       const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
-      const c = new ObservableCache()
       const pc = new ObservableCache()
-      const cc = cacheCatalog(catalog, available, c, pc, (p) => p / 2)
+      const cc = cacheCatalog(catalog, available, pc, (p) => p / 2)
       const o = observe(cc, undefined)
       o.bufferTime(10).take(1).subscribe(events => {
         assert.deepEqual(events, [
