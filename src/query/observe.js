@@ -4,6 +4,7 @@ import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/observable/of';
+import { hasObservers } from './invalidate';
 
 function observeCache(cache, a) {
   return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
@@ -33,6 +34,14 @@ export function observe(fetch, a) {
             data: slave.cache.getSubject(a1).value.data
           })
         }
+
+        // if "slave" is being observed re-fetch it as its A may have changed due to the fetching of its "master"
+        Promise.resolve().then(() => {
+          if (hasObservers(slave, a1)) {
+            slave(a1);
+          }
+        })
+
         return observeCache(slave.cache, a1)
       }
       return Observable.of({ loading: true })
