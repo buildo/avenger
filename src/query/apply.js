@@ -1,6 +1,7 @@
 import 'rxjs/add/operator/map'
 
 import mapValues from 'lodash/mapValues'
+import some from 'lodash/some'
 
 import {
   product
@@ -35,5 +36,10 @@ export function apply(queries, args) {
 }
 
 export function applySync(queries, args) {
-  return mapValues(queries, (fetch, queryName) => querySync(fetch, args[queryName]));
+  const data = mapValues(queries, (fetch, queryName) => ({
+    loading: false,
+    ...querySync(fetch, args[queryName])
+  }));
+  const loading = some(data, { loading: true });
+  return { loading, data }
 }
