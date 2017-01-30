@@ -1,11 +1,14 @@
 import 'rxjs/add/operator/map'
 
+import mapValues from 'lodash/mapValues'
+
 import {
   product
 } from '../fetch/operators'
 
 import {
-  query
+  query,
+  querySync
 } from './query'
 
 
@@ -14,16 +17,23 @@ function etoo(e, fetch, itok) {
   let loading = false
   fetch.fetches.forEach((f, i) => {
     data[itok[i]] = e[i]
-    loading = loading || e[i].loading
+    loading = loading || e[i] && e[i].loading
   })
   return { loading, data }
 }
 
-export function apply(queries, args) {
+function _apply(queries, args, _query) {
   const itok = Object.keys(args)
   const fetches = itok.map(k => queries[k])
   const as = itok.map(k => args[k])
   const prod = product(fetches)
-  return query(prod, as).map(e => etoo(e, prod, itok))
+  return _query(prod, as).map(e => etoo(e, prod, itok))
 }
 
+export function apply(queries, args) {
+  return _apply(queries, args, query)
+}
+
+export function applySync(queries, args) {
+  return mapValues(queries, (fetch, queryName) => querySync(fetch, args[queryName]));
+}
