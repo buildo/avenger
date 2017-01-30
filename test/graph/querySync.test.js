@@ -45,6 +45,22 @@ describe('queriesSync', () => {
     expect(product).toEqual({ data: { a: { loading: false }, b: { loading: false } }, loading: false })
   });
 
+  it('should return "loading: true" when queries are loading', () => {
+    const graph = makeTestGraph()
+
+    query(graph, ['master'], { token: 'token' })
+    query(graph, ['slave'], { token: 'token' })
+    query(graph, ['a', 'b'], { token: 'token' })
+
+    const master = querySync(graph, ['master'], { token: 'token' })
+    const slave = querySync(graph, ['slave'], { token: 'token' })
+    const product = querySync(graph, ['a', 'b'], { token: 'token' })
+
+    expect(master).toEqual({ data: { master: { loading: true } }, loading: true })
+    expect(slave).toEqual({ data: { slave: { loading: true } }, loading: true })
+    expect(product).toEqual({ data: { a: { loading: true }, b: { loading: true } }, loading: true })
+  });
+
   it('should return current value', () => {
     const graph = makeTestGraph()
 
