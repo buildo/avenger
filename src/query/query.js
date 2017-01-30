@@ -9,7 +9,7 @@ function isEqual(a, b) {
   }
 
   for (const k in b) { // eslint-disable-line no-loops/no-loops
-    if (k !== 'loading' && typeof b[k] === 'object' && b[k].hasOwnProperty('loading')) {
+    if (k !== 'loading' && b[k] && typeof b[k] === 'object' && b[k].hasOwnProperty('loading')) {
       if (!isEqual(a[k], b[k])) {
         return false
       }
