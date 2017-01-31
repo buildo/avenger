@@ -37,7 +37,7 @@ export function query(fetch, a) {
 
 export function querySync(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to observe (expected a function)')
+    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to querySync (expected a function)')
   }
 
   if (fetch.type === 'product') {
