@@ -38,6 +38,7 @@ export class Cache {
   }
 
   delete(a) {
+    this.log('delete(%o)', a)
     return this.map.delete(this.atok(a))
   }
 
@@ -104,10 +105,22 @@ export class Cache {
   }
 
   storePromise(a, promise) {
-    // quando la promise risolve immagazzino il nuovo payload
-    promise.then(p => {
-      this.storePayload(a, p, promise)
-    })
+    promise.then(
+      p => {
+        // quando la promise risolve immagazzino il nuovo payload
+        this.storePayload(a, p, promise)
+      },
+      err => {
+        // quando viene rifiutata, pulisco il blocked, a meno che non sia già cambiato
+        const value = this.get(a)
+        if (value.blocked === promise) {
+          delete value.blocked
+          this.set(a, value);
+        }
+        // deve fallire in ogni caso
+        throw err;
+      }
+    )
 
     // immagazzino il nuovo valore mantenendo il payload presente
     const { done } = this.get(a)
