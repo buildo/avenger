@@ -1,7 +1,7 @@
 import 'rxjs'
 import { make, query, querySync } from '../../src/graph';
 import { available } from '../../src/cache/strategies';
-import Node from './Node'
+import { Query as Node } from '../../src/graph/QueryNode'
 
 const makeTestGraph = () => {
   const master = Node({
