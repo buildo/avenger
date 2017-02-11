@@ -2,7 +2,7 @@ import 'rxjs'
 import assert from 'assert'
 import { make, invalidate, query } from '../../src/graph';
 import { Expire, available } from '../../src/cache/strategies';
-import Node from './Node'
+import { Query as Node } from '../../src/graph/QueryNode'
 
 const state = {
   foo: null,
