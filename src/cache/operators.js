@@ -15,8 +15,8 @@ export function cacheFetch(fetch, strategy, cache) {
     t.assert(cache instanceof Cache, () => 'Invalid argument cache supplied to cache (expected a Cache)')
   }
 
-  return function cachedFetch(a) {
-    return cache.getPromise(a, strategy, fetch)
+  return function cachedFetch(a, callSiteStrategy = strategy) {
+    return cache.getPromise(a, callSiteStrategy, fetch)
   }
 }
 
