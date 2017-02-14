@@ -1,7 +1,9 @@
 import { invalidate } from './invalidate'
 import { queriesAndArgs } from './util';
 import { NOT_DONE, extractDone } from '../query/invalidate';
-import t from 'tcomb';
+import { refetch } from '../cache/strategies';
+import pick from 'lodash/pick';
+import find from 'lodash/find';
 
 function extractCache(fetch, a) {
   if (fetch.type === 'product') {
@@ -18,19 +20,21 @@ export function runCommand(graph, command, A) {
   const invalidates = command.invalidates;
   const allPs = Object.keys(invalidates);
   const { args } = queriesAndArgs(graph, allPs, A);
-  console.log('>>', invalidates);
-  const invalidatePs = allPs
-    .filter(P => !t.Function.is(invalidates[P]));
-  const optimisticPs = allPs
-    .filter(P => t.Function.is(invalidates[P]));
-  const optimisticChanges = optimisticPs
-    .map(P => ({ P, done: extractDone(graph[P].fetch, args[P]) }))
-    .filter(({ done }) => done !== NOT_DONE);
+  const optimisticChanges = allPs
+    .map(P => ({
+      P,
+      done: extractDone(graph[P].fetch, args[P]),
+      cache: extractCache(graph[P].fetch, args[P])
+    }))
+    .filter(({ done, cache }) => done !== NOT_DONE && cache);
+  console.log('>> optimistic', { optimisticChanges, invalidates });
+  const invalidatePs = allPs.filter(P => !find(optimisticChanges, { P }));
 
   const ret = command.run(A).then(v => {
     invalidate(graph, invalidatePs, A);
-    optimisticPs.forEach(P => {
-      graph[P].fetch(args[P]);
+    optimisticChanges.forEach(({ P }) => {
+      console.log('>> optimisticRefetch', args[P]);
+      graph[P].fetch(args[P], refetch);
     })
     return v;
   }).catch(err => {
@@ -38,15 +42,12 @@ export function runCommand(graph, command, A) {
     throw err;
   });
   // emit optimistic payloads
-  optimisticChanges.forEach(({ P, done }) => {
-    const cache = extractCache(graph[P].fetch, args[P]);
-    if (cache) {
-      const optimisticPayload = invalidates[P](done, args[P]);
-      const optimisticPromise = Promise.resolve(optimisticPayload);
-      console.log('>>', cache.atok(args[P]), cache.subjects);
-      cache.storePromise(args[P], optimisticPromise);
-      cache.storePayload(args[P], optimisticPayload, optimisticPromise);
-    }
+  optimisticChanges.forEach(({ P, done, cache }) => {
+    const optimisticPayload = invalidates[P](done, pick(A, Object.keys(command.params)));
+    const optimisticPromise = Promise.resolve(optimisticPayload);
+    console.log('>> optimisticPayload', args[P], optimisticPayload);
+    cache.storePromise(args[P], optimisticPromise);
+    cache.storePayload(args[P], optimisticPayload, optimisticPromise);
   });
   return ret;
 }
