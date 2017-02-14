@@ -38,7 +38,12 @@ export function runCommand(graph, command, A) {
     })
     return v;
   }).catch(err => {
-    // TODO: undo optimistic changes
+    optimisticChanges.forEach(({ P, done, cache }) => {
+      console.log('>> optimisticRollback', args[P], done);
+      const rollbackPromise = Promise.resolve(done);
+      cache.storePromise(args[P], rollbackPromise);
+      cache.storePayload(args[P], done, rollbackPromise);
+    });
     throw err;
   });
   // emit optimistic payloads
