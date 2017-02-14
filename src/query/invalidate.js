@@ -5,9 +5,9 @@ function del(cache, a) {
   cache.delete(a)
 }
 
-const NOT_DONE = {};
+export const NOT_DONE = {};
 
-function extractDone(fetch, a) {
+export function extractDone(fetch, a) {
   if (fetch.type === 'product') {
     const productDone = fetch.fetches.map((f, i) => extractDone(f, a[i]))
     const allDone = productDone.every(d => d !== NOT_DONE)
@@ -19,7 +19,7 @@ function extractDone(fetch, a) {
   }
   const cache = fetch.cache
   const value = cache && cache.get(a)
-  return value && value.done && value.done.hasOwnProperty('done') ? value.done.value : NOT_DONE
+  return value && value.done && value.done.hasOwnProperty('value') ? value.done.value : NOT_DONE
 }
 
 export function invalidate(fetch, a) {
