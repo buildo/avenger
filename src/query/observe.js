@@ -26,7 +26,7 @@ export function observe(fetch, a) {
       const ok = isProduct ? x.every(xi => xi.hasOwnProperty('data')) : x.hasOwnProperty('data')
       if (ok) {
         const data = isProduct ? x.map(xi => xi.data) : x.data
-        const a1  = ptoa(data, a)
+        const a1 = ptoa(data, a)
         const loading = isProduct ? x.some(xi => xi.loading) : x.loading
         if (loading) {
           return Observable.of({
