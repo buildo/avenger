@@ -6,15 +6,21 @@ import { compose, product } from '../fetch/operators';
 import { cacheFetch } from '../query/operators';
 import { ObservableCache } from '../query/ObservableCache';
 
-const _compoundFetch = qObj => {
+const _compound = qObj => {
   const compoundP = qObj[Object.keys(qObj)[0]].compound;
-  return qObj[compoundP].fetch;
+  return qObj[compoundP];
 };
 
 export const Query = ({ fetch: _fetch, cacheStrategy = refetch, ...q }) => {
   const compound = q.id;
   const cache = new ObservableCache({ name: compound });
   const fetch = cacheFetch(_fetch, cacheStrategy, cache);
+  const upsetParams = {
+    ...Object.keys(q.dependencies || {}).reduce((ac, k) => ({
+      ...ac, ..._compound(q.dependencies[k].query).upsetParams
+    }), {}),
+    ...(q.params || {})
+  };
 
   if (!q.dependencies) {
     // atom / no dependencies (can have params)
@@ -23,7 +29,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, ...q }) => {
     //
     const A = Object.keys(q.params || {});
     return {
-      [compound]: { fetch, A, compound }
+      [compound]: { fetch, A, compound, upsetParams }
     };
   } else {
     const paramKeys = Object.keys(q.params || {});
@@ -45,7 +51,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, ...q }) => {
       //
 
       const depsProduct = {
-        fetch: product(depsKeys.map(k => _compoundFetch(q.dependencies[k].query))),
+        fetch: product(depsKeys.map(k => _compound(q.dependencies[k].query).fetch)),
         compound
       };
 
@@ -61,7 +67,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, ...q }) => {
       }), {});
       const compoundRoot = {
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
-        compound
+        compound,
+        upsetParams
       };
 
       return {
@@ -93,7 +100,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, ...q }) => {
       };
 
       const depsAndA = {
-        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => _compoundFetch(q.dependencies[k].query)))),
+        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => _compound(q.dependencies[k].query).fetch))),
         compound
       };
 
@@ -116,7 +123,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, ...q }) => {
           }),
           finalFetch.fetch
         ),
-        compound
+        compound,
+        upsetParams
       };
 
       return {
