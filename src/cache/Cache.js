@@ -64,6 +64,8 @@ export class Cache {
     }
 
     this.log('getAvailablePromise(%o, %s): cache miss', a, String(strategy))
+
+    return undefined
   }
 
   getPromise(a, strategy, fetch) /* Promise[P] */ {
