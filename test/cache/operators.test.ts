@@ -36,7 +36,7 @@ describe('cache', () => {
         const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
         const c = new Cache()
         const pcache = new Cache()
-        const cc = cacheCatalog(catalog, available, c, pcache, (p) => p / 2)
+        const cc = cacheCatalog(catalog, available, c, pcache, (p: number) => p / 2)
         assert.strictEqual(typeof cc, 'function')
       })
 
@@ -44,7 +44,7 @@ describe('cache', () => {
         const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
         const c = new Cache()
         const pcache = new Cache()
-        const cc = cacheCatalog(catalog, available, c, pcache, (p) => p / 2)
+        const cc = cacheCatalog(catalog, available, c, pcache, (p: number) => p / 2)
         cc([1, 2, 3]).then(ps => {
           // controllo il payload
           assert.deepEqual(ps, [2, 4, 6])
@@ -68,7 +68,7 @@ describe('cache', () => {
       })
 
       it('should fill the cache', () => {
-        const star = (as) => Promise.resolve(as.map(a => 2 * a))
+        const star = (as: Array<number>) => Promise.resolve(as.map(a => 2 * a))
         const cache = new Cache()
         const pcache = new Cache()
         const cs = cacheStar(star, available, cache, pcache)

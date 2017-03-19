@@ -1,59 +1,50 @@
-import t from 'tcomb'
-import debug from 'debug'
-import {
-  Strategy
-} from './strategies'
+import * as debug from 'debug'
+import { Strategy, CacheValue } from './strategies'
+import { Fetch } from '../fetch/operators'
 
-const Done = t.interface({
-  value: t.Any,         // il valore contenuto nella promise
-  timestamp: t.Number,  // il momento in cui è stato valorizzato done
-  promise: Promise      // la promise che conteneva il done
-}, 'Done')
+export const empty: Readonly<CacheValue<any>> = Object.freeze({})
 
-export const CacheValue = t.interface({
-  done: t.maybe(Done),
-  blocked: t.maybe(Promise)
-}, 'CacheValue')
+export type CacheOptions<A, P> = {
+  name?: string
+  map?: Map<string, CacheValue<P>>,
+  atok?: (x: A) => string
+}
 
-export const empty = Object.freeze({})
+export class Cache<A, P> {
 
-export class Cache {
+  readonly name: string
+  readonly map: Map<string, CacheValue<P>>
+  readonly log: (s: string, ...args: Array<any>) => void
+  readonly atok: (x: A) => string
 
-  constructor(options = {}) {
+  constructor(options: CacheOptions<A, P> = {}) {
     this.name = options.name || '<anonymous>'
     this.map = options.map || new Map()
     this.log = debug(`avenger:${this.name}`)
     this.atok = options.atok || JSON.stringify
   }
 
-  get(a) {
+  get(a: A): CacheValue<P> {
     return this.map.get(this.atok(a)) || empty
   }
 
-  set(a, value) {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheValue.is(value), () => 'Invalid argument value supplied to set (expected a CacheValue)')
-    }
+  set(a: A, value: CacheValue<P>): Map<string, CacheValue<P>> {
     return this.map.set(this.atok(a), value)
   }
 
-  delete(a) {
+  delete(a: A): boolean {
     this.log('delete(%o)', a)
     return this.map.delete(this.atok(a))
   }
 
-  clear() {
+  clear(): void {
     return this.map.clear()
   }
 
-  getAvailablePromise(a, strategy) /* Maybe[Promise[P]] */ {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to getPromise (expected a Strategy)')
-    }
-
+  getAvailablePromise(a: A, strategy: Strategy): Promise<P> | undefined {
     const value = this.get(a)
 
-    if (strategy.isAvailable(value)) {
+    if (strategy.isAvailable(value) && typeof value.done !== 'undefined') {
       this.log('getAvailablePromise(%o, %s): returning available done %o', a, String(strategy), value.done)
       return value.done.promise
     }
@@ -68,12 +59,7 @@ export class Cache {
     return undefined
   }
 
-  getPromise(a, strategy, fetch) /* Promise[P] */ {
-    if (process.env.NODE_ENV !== 'production') {
-      t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to getPromise (expected a Strategy)')
-      t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to getPromise (expected a function)')
-    }
-
+  getPromise(a: A, strategy: Strategy, fetch: Fetch<A, P>): Promise<P> {
     const availablePromise = this.getAvailablePromise(a, strategy)
     if (availablePromise) {
       return availablePromise
@@ -85,10 +71,10 @@ export class Cache {
     return promise
   }
 
-  storePayload(a, p, promise) {
+  storePayload(a: A, p: P, promise: Promise<P>): void {
     const timestamp = new Date().getTime()
 
-    const value = {
+    const value: CacheValue<P> = {
       done: {
         value: p,
         timestamp,
@@ -106,7 +92,7 @@ export class Cache {
     this.set(a, value)
   }
 
-  storePromise(a, promise) {
+  storePromise(a: A, promise: Promise<P>): void {
     promise.then(
       p => {
         // quando la promise risolve immagazzino il nuovo payload

@@ -23,16 +23,12 @@ function etoo(e, fetch, itok) {
   return { loading, data }
 }
 
-function _apply(queries, args, _query) {
+export function apply(queries, args) {
   const itok = Object.keys(args)
   const fetches = itok.map(k => queries[k])
   const as = itok.map(k => args[k])
   const prod = product(fetches)
-  return _query(prod, as).map(e => etoo(e, prod, itok))
-}
-
-export function apply(queries, args) {
-  return _apply(queries, args, query)
+  return query(prod, as).map(e => etoo(e, prod, itok))
 }
 
 export function applySync(queries, args) {

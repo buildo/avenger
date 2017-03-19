@@ -4,8 +4,14 @@ import sinon from 'sinon'
 import {
   product,
   star,
-  compose
+  compose,
+  Fetch,
+  TypedFetch
 } from '../../src/fetch/operators'
+
+function spy<A, P>(f: Fetch<A, P>): sinon.SinonSpy & TypedFetch<A, P> {
+  return sinon.spy(f) as any
+}
 
 describe('fetch', () => {
 
@@ -14,8 +20,8 @@ describe('fetch', () => {
     describe('product', () => {
 
       it('should return a fetch', () => {
-        const f1 = sinon.spy(a => Promise.resolve(2 * a))
-        const f2 = sinon.spy(a => Promise.resolve(a - 1))
+        const f1 = spy((a: number) => Promise.resolve(2 * a))
+        const f2 = spy((a: number) => Promise.resolve(a - 1))
         const f3 = product([f1, f2])
         return f3([1, 1]).then(p => {
           // controllo che le fetch siano state chiamate esattamente una volta
@@ -31,7 +37,7 @@ describe('fetch', () => {
     describe('star', () => {
 
       it('should return a fetch', () => {
-        const f1 = sinon.spy(a => Promise.resolve(2 * a))
+        const f1 = spy((a: number) => Promise.resolve(2 * a))
         const f2 = star(f1)
         return f2([1, 2]).then(ps => {
           // controllo che la fetch sia stata chiamata esattamente due volte
@@ -46,8 +52,8 @@ describe('fetch', () => {
     describe('compose', () => {
 
       it('should return a fetch', () => {
-        const f1 = sinon.spy(a => Promise.resolve(2 * a))
-        const f2 = sinon.spy(a => Promise.resolve(`Hello ${a}`))
+        const f1 = spy((a: number) => Promise.resolve(2 * a))
+        const f2 = spy((a: string) => Promise.resolve(`Hello ${a}`))
         const f3 = compose(f2, x => x.length, f1)
         return f3('Giulio').then(p => {
           // controllo che le fetch siano state chiamate esattamente una volta

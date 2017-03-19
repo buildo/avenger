@@ -5,36 +5,49 @@
   "scripts": {
     "lint": "eslint src test",
     "test": "jest",
-    "build": "rm -rf lib && mkdir lib && babel --out-dir lib src",
+    "build": "rm -rf lib/* && tsc && tsc -m es6 --outDir lib-jsnext",
     "preversion": "npm run lint && npm test",
     "prepublish": "npm run build"
   },
   "main": "lib",
   "author": "",
   "license": "MIT",
-  "jest": {
-    "setupTestFrameworkScriptFile": "./test/jestSetup.js"
-  },
   "dependencies": {
-    "debug": "^2.2.0",
-    "lodash": "^4.13.1",
-    "rxjs": "^5.0.3",
-    "tcomb": "^3.1.0"
+    "debug": "^2.6.3",
+    "lodash": "^4.17.4",
+    "rxjs": "^5.2.0",
+    "tcomb": "^3.2.20"
   },
   "devDependencies": {
+    "@types/debug": "0.0.29",
+    "@types/mocha": "2.2.40",
+    "@types/node": "7.0.8",
+    "@types/sinon": "1.16.35",
     "babel-cli": "6.8.0",
     "babel-eslint": "6.0.4",
-    "babel-jest": "^18.0.0",
+    "babel-jest": "18.0.0",
     "babel-loader": "6.2.4",
     "babel-plugin-syntax-flow": "6.8.0",
-    "babel-plugin-tcomb": "^0.2.3",
     "babel-plugin-transform-flow-strip-types": "6.8.0",
-    "babel-plugin-transform-object-rest-spread": "^6.16.0",
+    "babel-plugin-transform-object-rest-spread": "6.23.0",
     "babel-preset-es2015": "6.6.0",
-    "babel-preset-react": "^6.5.0",
+    "babel-preset-react": "6.23.0",
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
-    "jest": "^18.1.0",
-    "sinon": "1.17.4"
+    "jest": "18.1.0",
+    "sinon": "1.17.4",
+    "typescript": "2.2.1"
+  },
+  "jest": {
+    "setupTestFrameworkScriptFile": "./test/jestSetup.js",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.js$": "<rootDir>/node_modules/babel-jest",
+      ".(ts|tsx)": "./test/preprocessor.js"
+    }
   }
 }
