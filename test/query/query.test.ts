@@ -1,9 +1,10 @@
-import assert from 'assert'
+import * as assert from 'assert'
 import 'rxjs'
 
 import {
   product,
-  compose
+  compose,
+  to
 } from '../../src/fetch/operators'
 
 import {
@@ -32,7 +33,7 @@ describe('query', () => {
 
     it('should emit L + P events for an empty cache', () => {
       const c = new ObservableCache()
-      const raw = a => Promise.resolve(2 * a)
+      const raw = (a: number) => Promise.resolve(2 * a)
       const fetch = cacheFetch(raw, available, c)
       const q = query(fetch, 1)
       return new Promise((resolve, reject) => {
@@ -53,7 +54,7 @@ describe('query', () => {
     it('should emit L + P events when strategy is refetch, even after a cache hit', () => {
       const c = new ObservableCache()
       c.set(1, { done: { value: 2, timestamp: new Date().getTime(), promise: Promise.resolve(2) } })
-      const raw = a => Promise.resolve(2 * a)
+      const raw = (a: number) => Promise.resolve(2 * a)
       const fetch = cacheFetch(raw, refetch, c)
       const q = query(fetch, 1)
       return new Promise((resolve, reject) => {
@@ -77,12 +78,12 @@ describe('query', () => {
 
     it('should emit L + L + P events for an empty cache', () => {
       const c1 = new ObservableCache()
-      const raw1 = a => Promise.resolve(2 * a)
+      const raw1 =(a: number) => Promise.resolve(2 * a)
       const fetch1 = cacheFetch(raw1, available, c1)
       const c2 = new ObservableCache()
-      const raw2 = a => Promise.resolve(`Hello ${a}`)
+      const raw2 = (a: string) => Promise.resolve(`Hello ${a}`)
       const fetch2 = cacheFetch(raw2, available, c2)
-      const fetch = product([fetch1, fetch2])
+      const fetch = product({ fetch1, fetch2 })
       const q = query(fetch, [1, 'Giulio'])
       return new Promise((resolve, reject) => {
         q.bufferTime(10).take(1).subscribe(events => {
@@ -106,7 +107,7 @@ describe('query', () => {
             reject(e)
           }
         })
-        fetch([1, 'Giulio'])
+        fetch({ fetch1: 1, fetch2: 'Giulio' })
       })
     })
 
@@ -116,8 +117,8 @@ describe('query', () => {
 
     it('should emit L + P events for an empty cache', () => {
       const c = new ObservableCache()
-      const fetch1 = a => Promise.resolve(2 * a)
-      const fetch2 = a => Promise.resolve(`Hello ${a}`)
+      const fetch1 = to((a: number) => Promise.resolve(2 * a))
+      const fetch2 = to((a: string) => Promise.resolve(`Hello ${a}`))
       const fetch = cacheFetch(compose(fetch2, s => s.length, fetch1), available, c)
       const q = query(fetch, 'Giulio')
       return new Promise((resolve, reject) => {

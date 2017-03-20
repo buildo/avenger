@@ -4,7 +4,7 @@
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "lint": "eslint src test",
-    "test": "jest",
+    "test": "npm run mocha",
     "build": "rm -rf lib/* && tsc && tsc -m es6 --outDir lib-jsnext",
     "preversion": "npm run lint && npm test",
     "prepublish": "npm run build",
