@@ -3,7 +3,7 @@ import 'rxjs'
 
 import { product, compose } from '../../src/fetch/operators'
 import { available, refetch } from '../../src/cache/strategies'
-import { cacheFetch, cacheCatalog } from '../../src/query/operators'
+import { cacheFetch } from '../../src/query/operators'
 import { observe } from '../../src/query/observe'
 import { ObservableCache } from '../../src/query/ObservableCache'
 
@@ -143,6 +143,7 @@ describe('query/observe', () => {
 
   })
 
+  /*
   describe('catalog', () => {
 
     it('should emit L + P events for an empty pcache', () => {
@@ -167,5 +168,6 @@ describe('query/observe', () => {
     })
 
   })
+  */
 
 })

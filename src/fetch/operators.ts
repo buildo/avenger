@@ -26,14 +26,6 @@ export interface Composition<M extends Fetch<A1, P1>, S extends Fetch<A2, P2>, A
   readonly slave: S
 }
 
-// TODO more overloadings
-export type Star<A, P> =
-  & TypedFetch<[A, A, A, A, A], [P, P, P, P, P]>
-  & TypedFetch<[A, A, A, A], [P, P, P, P]>
-  & TypedFetch<[A, A, A], [P, P, P]>
-  & TypedFetch<[A, A], [P, P]>
-  & TypedFetch<[A], [P]>
-
 export function to<A, P>(fetch: Fetch<A, P>): TypedFetch<A, P> {
   return fetch as any
 }
@@ -71,7 +63,15 @@ export function compose<A1, P1, A2, P2>(master: Fetch<A1, P1>, ptoa: (p1: P1, a?
   return composition as any
 }
 
-// TODO: tests
+/*
+export type Star<A, P> =
+  & TypedFetch<[A, A, A, A, A], [P, P, P, P, P]>
+  & TypedFetch<[A, A, A, A], [P, P, P, P]>
+  & TypedFetch<[A, A, A], [P, P, P]>
+  & TypedFetch<[A, A], [P, P]>
+  & TypedFetch<[A], [P]>
+
+
 export function star<A, P>(fetch: Fetch<A, P>): Star<A, P> {
   const functions: { [key: number]: (as: Array<A>) => Promise<Array<P>> } = {}
 
@@ -86,4 +86,4 @@ export function star<A, P>(fetch: Fetch<A, P>): Star<A, P> {
 
   return star as any
 }
-
+*/

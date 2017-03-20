@@ -3,7 +3,7 @@ import * as sinon from 'sinon'
 
 import {
   product,
-  star,
+  // star,
   compose,
   Fetch,
   TypedFetch
@@ -32,22 +32,7 @@ describe('fetch/operators', () => {
 
   })
 
-  describe('star', () => {
-
-    it('should return a fetch', () => {
-      const f1 = spy((a: number) => Promise.resolve(2 * a))
-      const f2 = star(f1)
-      return f2([1, 2]).then(ps => {
-        // controllo che la fetch sia stata chiamata esattamente due volte
-        assert.equal(f1.callCount, 2)
-        // controllo il payload
-        assert.deepEqual(ps, [2, 4])
-      })
-    })
-
-  })
-
-  describe('compose', () => {
+    describe('compose', () => {
 
     it('should return a fetch', () => {
       const f1 = spy((a: number) => Promise.resolve(2 * a))
@@ -64,5 +49,22 @@ describe('fetch/operators', () => {
     })
 
   })
+
+  /*
+  describe('star', () => {
+
+    it('should return a fetch', () => {
+      const f1 = spy((a: number) => Promise.resolve(2 * a))
+      const f2 = star(f1)
+      return f2([1, 2]).then(ps => {
+        // controllo che la fetch sia stata chiamata esattamente due volte
+        assert.equal(f1.callCount, 2)
+        // controllo il payload
+        assert.deepEqual(ps, [2, 4])
+      })
+    })
+
+  })
+  */
 
 })

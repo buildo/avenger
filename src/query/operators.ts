@@ -1,12 +1,12 @@
 import {
   cacheFetch as cf,
-  cacheCatalog as cc,
-  cacheStar as cs
+  // cacheCatalog as cc,
+  // cacheStar as cs
 } from '../cache/operators'
 
 import { ObservableCache } from './ObservableCache'
 import { Strategy } from '../cache/strategies'
-import { Cache } from '../cache/Cache'
+// import { Cache } from '../cache/Cache'
 import { Fetch, TypedFetch } from '../fetch/operators'
 
 export interface Cached<A, P> extends TypedFetch<A, P> {
@@ -28,6 +28,7 @@ export function cacheFetch<A, P>(
   return cachedFetch as any
 }
 
+/*
 export function cacheCatalog<A, P>(
     catalog: Fetch<Array<A>, Array<P>>,
     strategy: Strategy,
@@ -61,3 +62,4 @@ export function cacheStar<A, P>(
   })
   return cachedStar as any
 }
+*/

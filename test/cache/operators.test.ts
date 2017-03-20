@@ -1,11 +1,11 @@
 import * as assert from 'assert'
-import * as sinon from 'sinon'
-import { assertCacheValueDone } from '../helpers'
+// import * as sinon from 'sinon'
+// import { assertCacheValueDone } from '../helpers'
 
 import {
   cacheFetch,
-  cacheCatalog,
-  cacheStar
+  // cacheCatalog,
+  // cacheStar
 } from '../../src/cache/operators'
 import { Cache } from '../../src/cache/Cache'
 import { available } from '../../src/cache/strategies'
@@ -23,6 +23,7 @@ describe('cache/operators', () => {
 
   })
 
+  /*
   describe('cacheCatalog', () => {
 
     const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
@@ -131,5 +132,6 @@ describe('cache/operators', () => {
     })
 
   })
+  */
 
 })

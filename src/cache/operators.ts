@@ -7,6 +7,7 @@ export function cacheFetch<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: 
   return cachedFetch as any
 }
 
+/*
 export function cacheCatalog<A, P>(
     catalog: Fetch<Array<A>, Array<P>>,
     strategy: Strategy,
@@ -33,7 +34,6 @@ export function cacheCatalog<A, P>(
   return cachedCatalog as any
 }
 
-// TODO: commentare
 export function cacheStar<A, P>(
     star: Fetch<Array<A>, Array<P>>,
     strategy: Strategy,
@@ -92,3 +92,4 @@ export function cacheStar<A, P>(
 
   return cachedStar as any
 }
+*/
