@@ -1,10 +1,3 @@
-function del(cache, a) {
-  if (cache.deleteBySingleton) {
-    cache.deleteBySingleton(a)
-  }
-  cache.delete(a)
-}
-
 const NOT_DONE = {};
 
 function extractDone(fetch, a) {
@@ -33,7 +26,7 @@ export function invalidate(fetch, a) {
       invalidate(fetch.slave, fetch.ptoa(masterDone))
     }
   } else {
-    del(fetch.cache, a)
+    fetch.cache.delete(a)
   }
 }
 
