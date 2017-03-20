@@ -43,7 +43,6 @@ describe('fetch/operators', () => {
         assert.equal(f1.callCount, 1)
         assert.equal(f2.callCount, 1)
         // controllo il payload
-        // assert.deepEqual(p, [24, 'Hello Giulio'])
         assert.strictEqual(p, 24)
       })
     })

@@ -1,7 +1,7 @@
 import * as assert from 'assert'
 import 'rxjs'
 
-import { product, compose } from '../../src/fetch/operators'
+import { product, compose, to } from '../../src/fetch/operators'
 import { available, refetch } from '../../src/cache/strategies'
 import { cacheFetch } from '../../src/query/operators'
 import { observe } from '../../src/query/observe'
@@ -120,8 +120,8 @@ describe('query/observe', () => {
 
     it('should emit L + P events for an empty cache', () => {
       const cache = new ObservableCache<string, number>()
-      const fetch1 = (a: number) => Promise.resolve(2 * a)
-      const fetch2 = (a: string) => Promise.resolve(`Hello ${a}`)
+      const fetch1 = to((a: number) => Promise.resolve(2 * a))
+      const fetch2 = to((a: string) => Promise.resolve(`Hello ${a}`))
       const composition = compose(fetch2, s => s.length, fetch1)
       const fetch = cacheFetch(composition, available, cache)
       const observableFetch = observe(fetch, 'Giulio')

@@ -5,7 +5,9 @@ export interface TypedFetch<A, P> extends Fetch<A, P> {
   readonly p: P
 }
 
-export type TypedFetchMap = { [key: string]: TypedFetch<any, any> }
+export type AnyTypedFetch = TypedFetch<any, any>
+
+export type TypedFetchMap = { [key: string]: AnyTypedFetch }
 
 export type AMap<FS extends TypedFetchMap> = { [K in keyof FS]: FS[K]['a'] }
 
@@ -19,10 +21,12 @@ export interface Product<FS extends TypedFetchMap> extends TypedFetch<AMap<FS>, 
   readonly fromArray: (ps: Array<any>) => PMap<FS>
 }
 
-export interface Composition<M extends Fetch<A1, P1>, S extends Fetch<A2, P2>, A1, P1, A2, P2> extends TypedFetch<A1, P2> {
+type Ptoa<M extends AnyTypedFetch, S extends AnyTypedFetch> = (p: M['p'], a?: M['a']) => S['a']
+
+export interface Composition<M extends AnyTypedFetch, S extends AnyTypedFetch> extends TypedFetch<M['a'], S['p']> {
   readonly type: 'composition',
   readonly master: M
-  readonly ptoa: (p1: P1, a?: A1) => A2
+  readonly ptoa: Ptoa<M, S>
   readonly slave: S
 }
 
@@ -52,8 +56,8 @@ export function product<FS extends TypedFetchMap>(fetches: FS): Product<FS> {
   return product as any
 }
 
-export function compose<A1, P1, A2, P2>(master: Fetch<A1, P1>, ptoa: (p1: P1, a?: A1) => A2, slave: Fetch<A2, P2>): Composition<typeof master, typeof slave, A1, P1, A2, P2> {
-  const composition = (a: A1) => master(a).then(p => slave(ptoa(p, a)))
+export function compose<M extends AnyTypedFetch, S extends AnyTypedFetch>(master: M, ptoa: Ptoa<M, S>, slave: S): Composition<M, S> {
+  const composition: Ptoa<M, S> = a => master(a).then(p => slave(ptoa(p, a)))
   Object.assign(composition, {
     type: 'composition',
     master,

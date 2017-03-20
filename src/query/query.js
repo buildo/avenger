@@ -1,8 +1,11 @@
-import t from 'tcomb'
+import * as t from 'tcomb'
 import 'rxjs/add/operator/distinctUntilChanged'
+// import { CacheEvent } from './ObservableCache'
+import { observe } from './observe'
 
 // avoid as much as possible deep comparisons
 // by just diffing on (nested) `loading` keys
+// function isEqual<P>(a: CacheEvent<P>, b: CacheEvent<P>) { // TODO
 function isEqual(a, b) {
   if (a.loading !== b.loading) {
     return false
@@ -18,10 +21,6 @@ function isEqual(a, b) {
 
   return true
 }
-
-import {
-  observe
-} from './observe'
 
 export function query(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {

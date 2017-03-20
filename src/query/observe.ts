@@ -8,31 +8,38 @@ import { Composition, Product, AMap } from '../fetch/operators'
 import { ObservableCache, CacheEvent } from './ObservableCache'
 import { Cached } from './operators'
 
-export interface ObservableCompositionFetch<A, P> extends Composition<ObservableProduct, Cached<any, P>, A, any, any, P> {}
+export interface ObservableCompositionFetch extends Composition<Product<ObservableFetchMap>, Cached<any, any>> {}
 
-export type ObservableProduct = Product<{ [key: string]: ObservableFetch<any, any> }>
+export type ObservableFetchMap = { [key: string]: ObservableFetch }
 
-export type ObservableFetch<A, P> =
-  | Cached<A, P>
-  | ObservableProduct
-  | ObservableCompositionFetch<A, P>
+export type ObservableFetch =
+  | Cached<any, any>
+  | Product<ObservableFetchMap>
+  | ObservableCompositionFetch
 
-function observeCached<A, P>(cache: ObservableCache<A, P>, a: A): Observable<CacheEvent<P>> {
+export function getObservableFromCached<A, P>(cache: ObservableCache<A, P>, a: A): Observable<CacheEvent<P>> {
   return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
 }
 
-function observeProduct<FS extends { [key: string]: ObservableFetch<any, any> }>(fetch: Product<FS>, as: AMap<FS>): Observable<{ [K in keyof FS]: CacheEvent<FS[K]['p']> }> {
-  return Observable.combineLatest(...fetch.keys.map(k => observe(fetch.fetches[k], as[k])), (...ps) => fetch.fromArray(ps))
+export function getObservableFromProduct<FS extends ObservableFetchMap>(fetch: Product<FS>, as: AMap<FS>): Observable<{ [K in keyof FS]: CacheEvent<FS[K]['p']> }> {
+  return Observable.combineLatest(
+    ...fetch.keys.map(k => {
+      const f = fetch.fetches[k]
+      return observe(f, as[k])
+    }),
+    (...ps) => fetch.fromArray(ps)
+  )
 }
 
-function observeComposition<A, P>(fetch: ObservableCompositionFetch<A, P>, a: A): Observable<CacheEvent<P>> {
+export function getObservableFromComposition<F extends ObservableCompositionFetch>(fetch: F, a1: F['master']['a']): Observable<CacheEvent<F['slave']['p']>> {
   const { master, ptoa, slave } = fetch
-  return observe(master, a).switchMap((x: typeof master.p) => {
-    const ok = Object.keys(x).every(k => x[k].hasOwnProperty('data'))
+  const observable = getObservableFromProduct(master, a1)
+  return observable.switchMap<F['master']['p'], CacheEvent<F['slave']['p']>>(p1 => {
+    const ok = Object.keys(p1).every(k => p1[k].hasOwnProperty('data'))
     if (ok) {
-      const data = master.fromArray(Object.keys(x).map(k => x[k].data))
-      const a2 = ptoa(data, a)
-      const loading = Object.keys(x).some(k => x[k].loading)
+      const data = master.fromArray(Object.keys(p1).map(k => p1[k].data))
+      const a2 = ptoa(data, a1)
+      const loading = Object.keys(p1).some(k => p1[k].loading)
       if (loading) {
         return Observable.of({
           loading: true,
@@ -46,19 +53,19 @@ function observeComposition<A, P>(fetch: ObservableCompositionFetch<A, P>, a: A)
         }
       })
 
-      // return observeCached(slave.cache, a2)
+      return getObservableFromCached(slave.cache, a2)
     }
     return Observable.of({ loading: true })
   })
 }
 
-export function observe<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
+export function observe<A, P>(fetch: ObservableFetch, a: A): Observable<CacheEvent<P>> {
   switch (fetch.type) {
     case 'product' :
-      return observeProduct(fetch, a)
+      return getObservableFromProduct(fetch, a)
     case 'composition' :
-      return observeComposition(fetch, a)
+      return getObservableFromComposition(fetch, a)
     case 'cached' :
-      return observeCached(fetch.cache, a)
+      return getObservableFromCached(fetch.cache, a)
   }
 }
