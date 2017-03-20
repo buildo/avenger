@@ -11,12 +11,12 @@ export interface CacheEvent<P> {
   error?: any
 }
 
-export class ObservableCache<A, P, S> extends Cache<A, P> {
+export class ObservableCache<A, P> extends Cache<A, P> {
 
   readonly subjects: { [key: string]: BehaviorSubject<CacheEvent<P>> }
-  deleteBySingleton?: (a: S) => void
+  deleteBySingleton?: (a: A) => void
 
-  constructor(options: CacheOptions<A, P>) {
+  constructor(options: CacheOptions<A, P> = {}) {
     super(options)
     this.subjects = {}
   }

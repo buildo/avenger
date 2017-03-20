@@ -33,6 +33,7 @@ export function cacheCatalog<A, P>(
   return cachedCatalog as any
 }
 
+// TODO: commentare
 export function cacheStar<A, P>(
     star: Fetch<Array<A>, Array<P>>,
     strategy: Strategy,

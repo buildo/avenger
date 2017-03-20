@@ -5,11 +5,18 @@ export interface TypedFetch<A, P> extends Fetch<A, P> {
   readonly p: P
 }
 
-export type AnyFetch = Fetch<any, any>
+export type TypedFetchMap = { [key: string]: TypedFetch<any, any> }
 
-export interface Product<A, P, FS> extends TypedFetch<A, P> {
+export type AMap<FS extends TypedFetchMap> = { [K in keyof FS]: FS[K]['a'] }
+
+export type PMap<FS extends TypedFetchMap> = { [K in keyof FS]: FS[K]['p'] }
+
+export interface Product<FS extends TypedFetchMap> extends TypedFetch<AMap<FS>, PMap<FS>> {
   readonly type: 'product',
   readonly fetches: FS
+  readonly keys: Array<keyof FS>
+  readonly toArray: (as: AMap<FS>) => Array<any>
+  readonly fromArray: (ps: Array<any>) => PMap<FS>
 }
 
 export interface Composition<M extends Fetch<A1, P1>, S extends Fetch<A2, P2>, A1, P1, A2, P2> extends TypedFetch<A1, P2> {
@@ -20,42 +27,55 @@ export interface Composition<M extends Fetch<A1, P1>, S extends Fetch<A2, P2>, A
 }
 
 // TODO more overloadings
-export type StarFetch<A, P> =
+export type Star<A, P> =
   & TypedFetch<[A, A, A, A, A], [P, P, P, P, P]>
   & TypedFetch<[A, A, A, A], [P, P, P, P]>
   & TypedFetch<[A, A, A], [P, P, P]>
   & TypedFetch<[A, A], [P, P]>
   & TypedFetch<[A], [P]>
 
-// export function to<A, P>(fetch: Fetch<A, P>): TypedFetch<A, P> {
-//   return fetch as any
-// }
+export function to<A, P>(fetch: Fetch<A, P>): TypedFetch<A, P> {
+  return fetch as any
+}
 
-// TODO more overloadings
-export function product<A1, P1, A2, P2, A3, P3>(fetches: [Fetch<A1, P1>, Fetch<A2, P2>, Fetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3], typeof fetches>
-export function product<A1, P1, A2, P2>(fetches: [Fetch<A1, P1>, Fetch<A2, P2>]): Product<[A1, A2], [P1, P2], typeof fetches>
-export function product<F extends Array<AnyFetch>>(fetches: F): Product<Array<any>, Array<any>, F>
-export function product<F extends Array<AnyFetch>>(fetches: F): Product<Array<any>, Array<any>, F> {
-  const product: any = (as: Array<any>) => Promise.all(fetches.map((fetch, i) => fetch(as[i])))
-  product.type = 'product'
-  product.fetches = fetches
-  return product
+export function product<FS extends TypedFetchMap>(fetches: FS): Product<FS> {
+  const keys: Array<keyof FS> = Object.keys(fetches)
+  const toArray = (as: AMap<FS>) => keys.map(k => as[k])
+  const fromArray = (ps: Array<any>): PMap<FS> => {
+    const o: any = {}
+    ps.forEach((p, i) => {
+      o[keys[i]] = p
+    })
+    return o
+  }
+
+  const product = (as: AMap<FS>) => Promise.all(keys.map(k => fetches[k](as[k]))).then(fromArray)
+  Object.assign(product, {
+    type: 'product',
+    fetches,
+    keys,
+    toArray,
+    fromArray
+  })
+  return product as any
 }
 
 export function compose<A1, P1, A2, P2>(master: Fetch<A1, P1>, ptoa: (p1: P1, a?: A1) => A2, slave: Fetch<A2, P2>): Composition<typeof master, typeof slave, A1, P1, A2, P2> {
-  const composition: any = (a: A1) => master(a).then(p => slave(ptoa(p, a)))
-  composition.type = 'composition'
-  composition.master = master
-  composition.ptoa = ptoa
-  composition.slave = slave
-  return composition
+  const composition = (a: A1) => master(a).then(p => slave(ptoa(p, a)))
+  Object.assign(composition, {
+    type: 'composition',
+    master,
+    ptoa,
+    slave
+  })
+  return composition as any
 }
 
 // TODO: tests
-export function star<A, P>(fetch: Fetch<A, P>): StarFetch<A, P> {
-  const functions: any = {}
+export function star<A, P>(fetch: Fetch<A, P>): Star<A, P> {
+  const functions: { [key: number]: (as: Array<A>) => Promise<Array<P>> } = {}
 
-  function fstar(as: Array<A>) {
+  const star = (as: Array<A>) => {
     const len = as.length
     if (!functions.hasOwnProperty(len)) {
       const fetches = as.map(() => fetch)
@@ -64,6 +84,6 @@ export function star<A, P>(fetch: Fetch<A, P>): StarFetch<A, P> {
     return functions[len](as)
   }
 
-  return fstar as any
+  return star as any
 }
 

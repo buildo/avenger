@@ -4,53 +4,49 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/observable/of';
 import { hasObservers } from './invalidate';
-import { Composition, Product } from '../fetch/operators'
+import { Composition, Product, AMap } from '../fetch/operators'
 import { ObservableCache, CacheEvent } from './ObservableCache'
-import { CachedFetch } from './operators'
+import { Cached } from './operators'
 
-interface ObservableFetches extends Array<ObservableFetch<any, any>> {}
+export interface ObservableCompositionFetch<A, P> extends Composition<ObservableProduct, Cached<any, P>, A, any, any, P> {}
 
-interface ObservableCompositionFetch<A, P> extends Composition<ObservableFetch<any, any>, ObservableFetch<any, any>, A, any, any, P> {}
+export type ObservableProduct = Product<{ [key: string]: ObservableFetch<any, any> }>
 
-type ObservableFetch<A, P> =
-  | CachedFetch<A, P>
-  | Product<A, P, ObservableFetches>
+export type ObservableFetch<A, P> =
+  | Cached<A, P>
+  | ObservableProduct
   | ObservableCompositionFetch<A, P>
 
-function observeCachedFetch<A, P>(cache: ObservableCache<A, P, A>, a: A): Observable<CacheEvent<P>> {
+function observeCached<A, P>(cache: ObservableCache<A, P>, a: A): Observable<CacheEvent<P>> {
   return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
 }
 
-function observeProductFetch<A, P, FS extends ObservableFetches>(fetch: Product<A, P, FS>, as: A): Observable<Array<CacheEvent<any>>> {
-  // fix https://github.com/ReactiveX/rxjs/issues/1686
-  return Observable.combineLatest(...fetch.fetches.map((fetch, i) => observe(fetch, (as as any)[i])), (...values) => values)
+function observeProduct<FS extends { [key: string]: ObservableFetch<any, any> }>(fetch: Product<FS>, as: AMap<FS>): Observable<{ [K in keyof FS]: CacheEvent<FS[K]['p']> }> {
+  return Observable.combineLatest(...fetch.keys.map(k => observe(fetch.fetches[k], as[k])), (...ps) => fetch.fromArray(ps))
 }
 
-function observeCompositionFetch<A, P>(fetch: ObservableCompositionFetch<A, P>, a: A): Observable<CacheEvent<P>> {
-  const { master, slave, ptoa } = fetch
-  const isProduct = ( master.type === 'product' )
-  const observable = observe<A, P>(master, a)
-  return observable.switchMap<CacheEvent<P>, CacheEvent<P>>(x => {
-    const ok = isProduct ? x.every(xi => xi.hasOwnProperty('data')) : x.hasOwnProperty('data')
+function observeComposition<A, P>(fetch: ObservableCompositionFetch<A, P>, a: A): Observable<CacheEvent<P>> {
+  const { master, ptoa, slave } = fetch
+  return observe(master, a).switchMap((x: typeof master.p) => {
+    const ok = Object.keys(x).every(k => x[k].hasOwnProperty('data'))
     if (ok) {
-      const data = isProduct ? x.map(xi => xi.data) : x.data
-      const a1 = ptoa(data, a)
-      const loading = isProduct ? x.some(xi => xi.loading) : x.loading
+      const data = master.fromArray(Object.keys(x).map(k => x[k].data))
+      const a2 = ptoa(data, a)
+      const loading = Object.keys(x).some(k => x[k].loading)
       if (loading) {
         return Observable.of({
           loading: true,
-          data: slave.cache.getSubject(a1).value.data
+          data: slave.cache.getSubject(a2).value.data
         })
       }
-
       // if "slave" is being observed re-fetch it as its A may have changed due to the fetching of its "master"
       Promise.resolve().then(() => {
-        if (hasObservers(slave, a1)) {
-          slave(a1);
+        if (hasObservers(slave, a2)) {
+          slave(a2);
         }
       })
 
-      return observeCachedFetch(slave.cache, a1)
+      // return observeCached(slave.cache, a2)
     }
     return Observable.of({ loading: true })
   })
@@ -59,10 +55,10 @@ function observeCompositionFetch<A, P>(fetch: ObservableCompositionFetch<A, P>, 
 export function observe<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
   switch (fetch.type) {
     case 'product' :
-      return observeProductFetch(fetch, a)
+      return observeProduct(fetch, a)
     case 'composition' :
-      return observeCompositionFetch(fetch, a)
+      return observeComposition(fetch, a)
     case 'cached' :
-      return observeCachedFetch(fetch.cache, a)
+      return observeCached(fetch.cache, a)
   }
 }

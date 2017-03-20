@@ -7,7 +7,8 @@
     "test": "jest",
     "build": "rm -rf lib/* && tsc && tsc -m es6 --outDir lib-jsnext",
     "preversion": "npm run lint && npm test",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "mocha": "mocha -r ts-node/register test/**/*.test.ts"
   },
   "main": "lib",
   "author": "",
@@ -35,7 +36,9 @@
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
     "jest": "18.1.0",
+    "mocha": "^3.2.0",
     "sinon": "1.17.4",
+    "ts-node": "^2.1.0",
     "typescript": "2.2.1"
   },
   "jest": {
