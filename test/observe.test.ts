@@ -1,5 +1,6 @@
 import * as assert from 'assert'
 import 'rxjs'
+import * as sinon from 'sinon'
 
 import {
   Leaf,
@@ -7,11 +8,16 @@ import {
   Composition,
   ObservableCache,
   available,
-  refetch
+  refetch,
+  Fetch
 } from '../src'
 
 // L = LOADING event
 // P = PAYLOAD event
+
+function spy<A, P>(f: Fetch<A, P>): sinon.SinonSpy & Fetch<A, P> {
+  return sinon.spy(f) as any
+}
 
 describe('observe', () => {
 
@@ -31,7 +37,7 @@ describe('observe', () => {
             reject(e)
           }
         })
-        leaf.fetch(2)
+        leaf.run(2)
       })
     })
 
@@ -52,7 +58,7 @@ describe('observe', () => {
             reject(e)
           }
         })
-        leaf.fetch(1)
+        leaf.run(1)
       })
     })
 
@@ -74,7 +80,7 @@ describe('observe', () => {
             reject(e)
           }
         })
-        leaf.fetch(1)
+        leaf.run(1)
       })
     })
 
@@ -103,7 +109,7 @@ describe('observe', () => {
             reject(e)
           }
         })
-        product.fetch([1, 'foo'])
+        product.run([1, 'foo'])
       })
     })
 
@@ -132,7 +138,7 @@ describe('observe', () => {
             reject(e)
           }
         })
-        composition.fetch('foo')
+        composition.run('foo')
       })
     })
 
@@ -174,9 +180,9 @@ describe('observe', () => {
             reject(e)
           }
         })
-        composition.fetch('foo')
+        composition.run('foo')
         setTimeout(() => {
-          composition.fetch('foo')
+          composition.run('foo')
         }, 10)
       })
     })
@@ -202,9 +208,9 @@ describe('observe', () => {
             reject(e)
           }
         })
-        composition.fetch('foo')
+        composition.run('foo')
         setTimeout(() => {
-          composition.fetch('foo')
+          composition.run('foo')
         }, 10)
       })
     })
@@ -230,11 +236,33 @@ describe('observe', () => {
             reject(e)
           }
         })
-        master.fetch('foo')
+        master.run('foo')
       })
     })
 
-    it('should not emit events calling slave', () => {
+    it.skip('should not call slave twice', () => {
+      const slaveCache = new ObservableCache<number, number>()
+      const slaveFetch = spy((a: number) => Promise.resolve(2 * a))
+      const slave = Leaf.create(slaveFetch, refetch, slaveCache)
+      const masterCache = new ObservableCache<string, string>()
+      const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
+      const master = Leaf.create(masterFetch, available, masterCache)
+      const composition = Composition.create(master, s => s.length, slave)
+      const observable = composition.observe('foo')
+      return new Promise((resolve, reject) => {
+        observable.bufferTime(10).take(1).subscribe(events => {
+          try {
+            assert.strictEqual(slaveFetch.callCount, 1)
+            resolve()
+          } catch (e) {
+            reject(e)
+          }
+        })
+        composition.run('foo')
+      })
+    })
+
+    it('should emit events calling slave', () => {
       const slaveCache = new ObservableCache<number, number>()
       const slaveFetch = (a: number) => Promise.resolve(2 * a)
       const slave = Leaf.create(slaveFetch, refetch, slaveCache)
@@ -257,9 +285,9 @@ describe('observe', () => {
             reject(e)
           }
         })
-        composition.fetch('foo')
+        composition.run('foo')
         setTimeout(() => {
-          slave.fetch(9)
+          slave.run(9)
         }, 10)
       })
     })

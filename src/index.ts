@@ -201,24 +201,50 @@ export class ObservableCache<A, P> extends Cache<A, P> {
   }
 }
 
-export interface ObservableFetch<A, P> {
-  readonly fetch: Fetch<A, P>
-  observe(a: A): Observable<CacheEvent<P>>
-  getCacheEvent(a: A): CacheEvent<P>
-  // hasObservers(a: A): Promise<boolean>
+export type Dependency<A, P> = {
+  fetch: ObservableFetch<any, any>,
+  trigger: (p: P, a: A) => void
 }
 
-export class Leaf<A, P> implements ObservableFetch<A, P> {
+export interface ObservableFetch<A, P> {
+  run(a: A, omit?: ObservableFetch<any, any>): Promise<P>
+  addDependency(d: Dependency<A, P>): void
+  observe(a: A): Observable<CacheEvent<P>>
+  getCacheEvent(a: A): CacheEvent<P>
+  hasObservers(a: A): Promise<boolean>
+}
+
+export abstract class BaseObservableFetch<A, P> {
+  private dependencies: Array<Dependency<A, P>> = []
+  constructor(private readonly fetch: Fetch<A, P>) {}
+  run(a: A, omit?: ObservableFetch<any, any>): Promise<P> {
+    const promise = this.fetch(a)
+    promise.then(p => {
+      this.dependencies.forEach(({ fetch, trigger }) => {
+        if (fetch !== omit) {
+          trigger(p, a)
+        }
+      })
+    })
+    return promise
+  }
+  addDependency(d: Dependency<A, P>): void {
+    if (!this.dependencies.some(({ fetch }) => fetch !== d.fetch)) {
+      this.dependencies.push(d)
+    }
+  }
+}
+
+export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
   static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: ObservableCache<A, P>): Leaf<A, P> {
     return new Leaf(fetch, strategy, cache)
   }
-  readonly fetch: Fetch<A, P>
   private constructor(
     fetch: Fetch<A, P>,
     strategy: Strategy,
     private readonly cache: ObservableCache<A, P>
   ) {
-    this.fetch = cacheFetch(fetch, strategy, cache)
+    super(cacheFetch(fetch, strategy, cache))
   }
   observe(a: A): Observable<CacheEvent<P>> {
     return this.cache.getSubject(a).filter(e => e !== INITIAL_LOADING).distinctUntilChanged(isEqual)
@@ -226,28 +252,37 @@ export class Leaf<A, P> implements ObservableFetch<A, P> {
   getCacheEvent(a: A): CacheEvent<P> {
     return this.cache.getSubject(a).value
   }
-  // hasObservers(a: A): Promise<boolean> {
-  //   return Promise.resolve(this.cache.getSubject(a).observers.length > 0)
-  // }
+  hasObservers(a: A): Promise<boolean> {
+    return Promise.resolve(this.cache.getSubject(a).observers.length > 0)
+  }
 }
 
-export class Composition<A1, P1, A2, P2> implements ObservableFetch<A1, P2> {
+export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> implements ObservableFetch<A1, P2> {
   static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, ptoa: (p1: P1, a1?: A1) => A2, slave: ObservableFetch<A2, P2>): Composition<A1, P1, A2, P2> {
     return new Composition(master, ptoa, slave)
   }
-  readonly fetch: Fetch<A1, P2>
   private constructor(
     private readonly master: ObservableFetch<A1, P1>,
     private readonly ptoa: (p1: P1, a1?: A1) => A2,
     private readonly slave: ObservableFetch<A2, P2>
   ) {
-    this.fetch = a1 => this.master.fetch(a1).then(p1 => this.slave.fetch(this.ptoa(p1, a1)))
+    super(a1 => this.master.run(a1, this.slave).then(p1 => this.slave.run(this.ptoa(p1, a1))))
+    master.addDependency({
+      fetch: this.slave,
+      trigger: (p1: P1, a1?: A1) => { 
+        const a2 = this.ptoa(p1, a1)
+        this.slave.hasObservers(a2).then(b => {
+          if (b) {
+            this.slave.run(a2)
+          }
+        })
+      }
+    })
   }
   observe(a1: A1): Observable<CacheEvent<P2>> {
     return this.master.observe(a1).switchMap<CacheEvent<P1>, CacheEvent<P2>>(cep1 => {
       if (typeof cep1.data !== 'undefined') {
         const a2 = this.ptoa(cep1.data, a1)
-        // this.slave.fetch(a2)
         return this.slave.observe(a2)
       } else {
         return Observable.of(LOADING)
@@ -263,12 +298,12 @@ export class Composition<A1, P1, A2, P2> implements ObservableFetch<A1, P2> {
       return LOADING
     }
   }
-  // hasObservers(a1: A1): Promise<boolean> {
-  //   return this.master.fetch(a1).then(p1 => this.ptoa(p1)).then(a2 => this.slave.hasObservers(a2))
-  // }
+  hasObservers(a1: A1): Promise<boolean> {
+    return this.master.run(a1).then(p1 => this.ptoa(p1, a1)).then(a2 => this.slave.hasObservers(a2))
+  }
 }
 
-export class Product<A extends Array<any>, P extends Array<any>>  implements ObservableFetch<A, P> {
+export class Product<A extends Array<any>, P extends Array<any>>  extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
   // TODO more overloadings
   static create<A1, P1, A2, P2, A3, P3>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3]>
   static create<A1, P1, A2, P2>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]): Product<[A1, A2], [P1, P2]>
@@ -276,9 +311,8 @@ export class Product<A extends Array<any>, P extends Array<any>>  implements Obs
   static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>> {
     return new Product(fetches)
   }
-  readonly fetch: Fetch<A, P>
   private constructor(private readonly fetches: Array<ObservableFetch<any, any>>) {
-    this.fetch = a => Promise.all(this.fetches.map((fetch, i) => fetch.fetch(a[i])))
+    super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))))
   }
   observe(a: A): Observable<CacheEvent<P>> {
     return Observable.combineLatest(...this.fetches.map((fetch, i) => fetch.observe(a[i])), (...values) => {
@@ -305,9 +339,9 @@ export class Product<A extends Array<any>, P extends Array<any>>  implements Obs
       return { loading }
     }
   }
-  // hasObservers(a: A): Promise<boolean> {
-  //   return Promise.all(this.fetches.map((fetch, i) => fetch.hasObservers(a[i]))).then(bs => bs.some(b => b))
-  // }
+  hasObservers(a: A): Promise<boolean> {
+    return Promise.all(this.fetches.map((fetch, i) => fetch.hasObservers(a[i]))).then(bs => bs.some(b => b))
+  }
 }
 
 function isEqual<P>(a: CacheEvent<P>, b: CacheEvent<P>) {
@@ -322,7 +356,7 @@ function isEqual<P>(a: CacheEvent<P>, b: CacheEvent<P>) {
 
 export function query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
   const observable = fetch.observe(a)
-  fetch.fetch(a)
+  fetch.run(a)
   return observable
 }
 
