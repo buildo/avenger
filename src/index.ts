@@ -247,6 +247,7 @@ export class Composition<A1, P1, A2, P2> implements ObservableFetch<A1, P2> {
     return this.master.observe(a1).switchMap<CacheEvent<P1>, CacheEvent<P2>>(cep1 => {
       if (typeof cep1.data !== 'undefined') {
         const a2 = this.ptoa(cep1.data, a1)
+        // this.slave.fetch(a2)
         return this.slave.observe(a2)
       } else {
         return Observable.of(LOADING)
@@ -288,7 +289,7 @@ export class Product<A extends Array<any>, P extends Array<any>>  implements Obs
           data: values.map(v => v.data) as any
         }
       } else {
-        return { loading }
+        return LOADING
       }
     }).distinctUntilChanged(isEqual)
   }
