@@ -1,5 +1,5 @@
 import * as assert from 'assert'
-import { CacheValue } from '../src/cache/strategies'
+import { CacheValue } from '../src'
 
 export function assertCacheValueDone<P>(cacheValue: CacheValue<P>, value: P) {
   if (cacheValue.done) {

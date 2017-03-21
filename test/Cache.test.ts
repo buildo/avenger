@@ -1,17 +1,17 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { assertCacheValueDone } from '../helpers'
+import { assertCacheValueDone } from './helpers'
 
-import { Cache } from '../../src/cache/Cache'
 import {
+  Cache,
   Expire,
   refetch,
   available
-} from '../../src/cache/strategies'
+} from '../src'
 
 const expire = new Expire(1000)
 
-describe('cache/Cache', () => {
+describe('Cache', () => {
 
   describe('getAvailablePromise', () => {
 

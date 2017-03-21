@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./lib",
     "sourceMap": true,
-    "declaration": false,
+    "declaration": true,
     "module": "commonjs",
     "noImplicitAny": true,
     "noImplicitReturns": false,

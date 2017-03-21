@@ -4,9 +4,9 @@ import {
   Expire,
   refetch,
   available
-} from '../../src/cache/strategies'
+} from '../src'
 
-describe('cache/strategies', () => {
+describe('strategies', () => {
 
   describe('available', () => {
 
