@@ -229,7 +229,7 @@ export abstract class BaseObservableFetch<A, P> {
     return promise
   }
   addDependency(d: Dependency<A, P>): void {
-    if (!this.dependencies.some(({ fetch }) => fetch !== d.fetch)) {
+    if (this.dependencies.every(({ fetch }) => fetch !== d.fetch)) {
       this.dependencies.push(d)
     }
   }
