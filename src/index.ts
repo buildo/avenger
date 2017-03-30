@@ -182,7 +182,7 @@ export class ObservableCache<A, P> extends Cache<A, P> {
     super.storePromise(a, promise)
     this.emitLoadingEvent(a)
   }
-  emitLoadingEvent(a: A): void {
+  private emitLoadingEvent(a: A): void {
     this.log('emitting LOADING event for %o', a)
     const subject = this.getSubject(a)
     if (subject.value.hasOwnProperty('data')) {
@@ -191,7 +191,7 @@ export class ObservableCache<A, P> extends Cache<A, P> {
       subject.next(LOADING)
     }
   }
-  emitPayloadEvent(a: A, p: P): void {
+  private emitPayloadEvent(a: A, p: P): void {
     this.log('emitting PAYLOAD event for %o (payload: %o)', a, p)
     const subject = this.getSubject(a)
     subject.next({
@@ -213,7 +213,9 @@ export interface ObservableFetch<A, P> {
   addDependency(d: Dependency<A, P>): void
   observe(a: A): Observable<CacheEvent<P>>
   getCacheEvent(a: A): CacheEvent<P>
+  getValue(a: A): undefined | P
   hasObservers(a: A): boolean
+  invalidate(a: A): void
 }
 
 export abstract class BaseObservableFetch<A, P> {
@@ -256,26 +258,35 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
   getCacheEvent(a: A): CacheEvent<P> {
     return this.cache.getSubject(a).value
   }
+  getValue(a: A): undefined | P {
+    const cacheValue = this.cache.get(a);
+    if (cacheValue && typeof cacheValue.done !== 'undefined') {
+      return cacheValue.done.value
+    }
+  }
   hasObservers(a: A): boolean {
     return this.cache.getSubject(a).observers.length > 0
+  }
+  invalidate(a: A): void {
+    this.cache.delete(a)
   }
 }
 
 export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> implements ObservableFetch<A1, P2> {
-  static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, ptoa: (p1: P1, a1?: A1) => A2, slave: ObservableFetch<A2, P2>): Composition<A1, P1, A2, P2> {
+  static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, ptoa: (p1: P1, a1: A1) => A2, slave: ObservableFetch<A2, P2>): Composition<A1, P1, A2, P2> {
     return new Composition(master, ptoa, slave)
   }
   _A: A1
   _P: P2
   private constructor(
     private readonly master: ObservableFetch<A1, P1>,
-    private readonly ptoa: (p1: P1, a1?: A1) => A2,
+    private readonly ptoa: (p1: P1, a1: A1) => A2,
     private readonly slave: ObservableFetch<A2, P2>
   ) {
     super(a1 => this.master.run(a1, this.slave).then(p1 => this.slave.run(this.ptoa(p1, a1))))
     master.addDependency({
       fetch: this.slave,
-      trigger: (p1: P1, a1?: A1) => { 
+      trigger: (p1: P1, a1: A1) => { 
         const a2 = this.ptoa(p1, a1)
         if (this.slave.hasObservers(a2)) {
           this.slave.run(a2)
@@ -302,6 +313,12 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
       return LOADING
     }
   }
+  getValue(a1: A1): undefined | P2 {
+    const p1 = this.master.getValue(a1)
+    if (typeof p1 !== 'undefined') {
+      return this.slave.getValue(this.ptoa(p1, a1))
+    }
+  }
   hasObservers(a1: A1): boolean {
     const cep1 = this.master.getCacheEvent(a1)
     if (typeof cep1.data !== 'undefined') {
@@ -309,6 +326,14 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
       return this.slave.hasObservers(a2)
     } else {
       return false
+    }
+  }
+  invalidate(a1: A1): void {
+    const p1 = this.master.getValue(a1)
+    if (typeof p1 !== 'undefined') {
+      const a2 = this.ptoa(p1, a1)
+      this.master.invalidate(a1)
+      this.slave.invalidate(a2)
     }
   }
 }
@@ -352,8 +377,17 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
       return { loading }
     }
   }
+  getValue(a: A): undefined | P {
+    const ps = this.fetches.map((fetch, i) => fetch.getValue(a[i]))
+    if (ps.every(p => typeof p !== 'undefined')) {
+      return ps as any; // TODO: Giulio :P
+    }
+  }
   hasObservers(a: A): boolean {
     return this.fetches.some((fetch, i) => fetch.hasObservers(a[i]))
+  }
+  invalidate(a: A): void {
+    this.fetches.forEach((f, i) => f.invalidate(a[i]))
   }
 }
 

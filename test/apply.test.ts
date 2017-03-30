@@ -10,7 +10,7 @@ import {
 
 describe('apply', () => {
 
-  it.only('should return an observable of dictionaries', () => {
+  it('should return an observable of dictionaries', () => {
     const cache1 = new ObservableCache<number, number>()
     const fetch1 = (a: number) => Promise.resolve(2 * a)
     const leaf1 = Leaf.create(fetch1, available, cache1)
