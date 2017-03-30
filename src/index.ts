@@ -83,6 +83,8 @@ export class Cache<A, P> {
   get(a: A): CacheValue<P> {
     return this.map.get(this.atok(a)) || empty
   }
+  // TODO: this could/should be private (at least at ObservableCache level)
+  // only tests are interested in set() (to inject a custom timestamp)
   set(a: A, value: CacheValue<P>): Map<string, CacheValue<P>> {
     return this.map.set(this.atok(a), value)
   }
