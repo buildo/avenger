@@ -6,8 +6,12 @@ import 'rxjs/add/observable/of';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/skip';
 import 'rxjs/add/operator/distinctUntilChanged'
+import { Option, none, some, isSome } from 'fp-ts/lib/Option'
+import { ops } from 'fp-ts/lib/Traversable'
+import * as array from 'fp-ts/lib/Array'
+import * as option from 'fp-ts/lib/Option'
+import { StaticSetoid } from 'fp-ts/lib/Setoid'
 
 export type Fetch<A, P> = (a: A) => Promise<P>
 
@@ -21,8 +25,8 @@ export interface Done<P> {
 }
 
 export interface CacheValue<P> {
-  readonly done?: Done<P>,
-  readonly blocked?: Promise<P>
+  readonly done: Option<Done<P>>,
+  readonly blocked: Option<Promise<P>>
 }
 
 export interface Strategy {
@@ -40,8 +44,11 @@ export class Expire {
     }
     return delta >= this.delay
   }
-  isAvailable<P>(value: CacheValue<P>): value is { done: Done<P> } {
-    return typeof value.done !== 'undefined' && !this.isExpired(value.done.timestamp)
+  isAvailable<P>(value: CacheValue<P>): boolean {
+    return value.done.fold(
+      () => false,
+      done => !this.isExpired(done.timestamp)
+    )
   }
   toString() {
     if (this.delay === -1) {
@@ -61,7 +68,10 @@ export const refetch = new Expire(-1)
 // questa strategia esegue una fetch solo se non c'è né un done né un blocked
 export const available = new Expire(Infinity)
 
-export const empty: Readonly<CacheValue<any>> = Object.freeze({})
+export const emptyCacheValue: CacheValue<any> = {
+  done: none,
+  blocked: none
+}
 
 export type CacheOptions<A, P> = {
   name?: string
@@ -81,7 +91,7 @@ export class Cache<A, P> {
     this.atok = options.atok || JSON.stringify
   }
   get(a: A): CacheValue<P> {
-    return this.map.get(this.atok(a)) || empty
+    return this.map.get(this.atok(a)) || emptyCacheValue
   }
   // TODO: this could/should be private (at least at ObservableCache level)
   // only tests are interested in set() (to inject a custom timestamp)
@@ -98,19 +108,17 @@ export class Cache<A, P> {
   getAvailablePromise(a: A, strategy: Strategy): Promise<P> | undefined {
     const value = this.get(a)
 
-    if (strategy.isAvailable(value) && typeof value.done !== 'undefined') {
+    if (strategy.isAvailable(value) && isSome(value.done)) {
       this.log('getAvailablePromise(%o, %s): returning available done %o', a, String(strategy), value.done)
-      return value.done.promise
+      return value.done.value.promise
     }
 
-    if (value.blocked) {
+    if (isSome(value.blocked)) {
       this.log('getAvailablePromise(%o, %s): returning available promise', a, String(strategy))
-      return value.blocked
+      return value.blocked.value
     }
 
     this.log('getAvailablePromise(%o, %s): cache miss', a, String(strategy))
-
-    return undefined
   }
   getPromise(a: A, strategy: Strategy, fetch: Fetch<A, P>): Promise<P> {
     const availablePromise = this.getAvailablePromise(a, strategy)
@@ -133,10 +141,16 @@ export class Cache<A, P> {
     const { blocked } = this.get(a)
     this.log('storing %o => %o (ts: %o)', a, p, timestamp)
     // se c'è una promise in flight la mantengo
-    if (blocked !== promise) {
-      this.set(a, { done, blocked })
+    if (isSome(blocked) && blocked.value !== promise) {
+      this.set(a, {
+        done: some(done),
+        blocked: blocked
+      })
     } else {
-      this.set(a, { done })
+      this.set(a, {
+        done: some(done),
+        blocked: none
+      })
     }
   }
   storePromise(a: A, promise: Promise<P>): void {
@@ -145,8 +159,10 @@ export class Cache<A, P> {
 
     // immagazzino il nuovo valore mantenendo il payload presente
     const { done } = this.get(a)
-    const value = { done, blocked: promise }
-    this.set(a, value)
+    this.set(a, {
+      done,
+      blocked: some(promise)
+    })
   }
 }
 
@@ -156,11 +172,23 @@ export function cacheFetch<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: 
 
 export interface CacheEvent<P> {
   readonly loading: boolean,
-  readonly data?: P
+  readonly data: Option<P>
 }
 
-const LOADING: CacheEvent<any> = { loading: true }
-const INITIAL_LOADING: CacheEvent<any> = { loading: true }
+export const setoidCacheEvent: StaticSetoid<CacheEvent<any>> = {
+  equals(x, y) {
+    if (x === y) {
+      return true
+    }
+    if (x.loading === y.loading && x.data === y.data) {
+      return true
+    }
+    return false
+  }
+}
+
+const LOADING: Readonly<CacheEvent<any>> = { loading: true, data: none }
+const INITIAL_LOADING: Readonly<CacheEvent<any>> = { loading: true, data: none }
 
 export class ObservableCache<A, P> extends Cache<A, P> {
   readonly subjects: { [key: string]: BehaviorSubject<CacheEvent<P>> }
@@ -187,7 +215,7 @@ export class ObservableCache<A, P> extends Cache<A, P> {
   private emitLoadingEvent(a: A): void {
     this.log('emitting LOADING event for %o', a)
     const subject = this.getSubject(a)
-    if (subject.value.hasOwnProperty('data')) {
+    if (isSome(subject.value.data)) {
       subject.next({ loading: true, data: subject.value.data })
     } else {
       subject.next(LOADING)
@@ -198,7 +226,7 @@ export class ObservableCache<A, P> extends Cache<A, P> {
     const subject = this.getSubject(a)
     subject.next({
       loading: false,
-      data: p
+      data: some(p)
     })
   }
 }
@@ -215,7 +243,7 @@ export interface ObservableFetch<A, P> {
   addDependency(d: Dependency<A, P>): void
   observe(a: A): Observable<CacheEvent<P>>
   getCacheEvent(a: A): CacheEvent<P>
-  getValue(a: A): undefined | P
+  getPayload(a: A): Option<P>
   hasObservers(a: A): boolean
   invalidate(a: A): void
 }
@@ -255,16 +283,15 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
     super(cacheFetch(fetch, strategy, cache))
   }
   observe(a: A): Observable<CacheEvent<P>> {
-    return this.cache.getSubject(a).filter(e => e !== INITIAL_LOADING).distinctUntilChanged(isEqual)
+    return this.cache.getSubject(a)
+      .filter(e => e !== INITIAL_LOADING)
+      .distinctUntilChanged(setoidCacheEvent.equals) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a: A): CacheEvent<P> {
     return this.cache.getSubject(a).value
   }
-  getValue(a: A): undefined | P {
-    const cacheValue = this.cache.get(a);
-    if (cacheValue && typeof cacheValue.done !== 'undefined') {
-      return cacheValue.done.value
-    }
+  getPayload(a: A): Option<P> {
+    return this.cache.get(a).done.map(done => done.value);
   }
   hasObservers(a: A): boolean {
     return this.cache.getSubject(a).observers.length > 0
@@ -297,46 +324,35 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
     })
   }
   observe(a1: A1): Observable<CacheEvent<P2>> {
-    return this.master.observe(a1).switchMap<CacheEvent<P1>, CacheEvent<P2>>(cep1 => {
-      if (typeof cep1.data !== 'undefined') {
-        const a2 = this.ptoa(cep1.data, a1)
-        return this.slave.observe(a2)
-      } else {
-        return Observable.of(LOADING)
-      }
-    }).distinctUntilChanged(isEqual)
+    return this.master.observe(a1)
+      .switchMap<CacheEvent<P1>, CacheEvent<P2>>(cep1 => cep1.data.fold(
+        () => Observable.of(LOADING),
+        p1 => this.slave.observe(this.ptoa(p1, a1))
+      ))
+      .distinctUntilChanged(setoidCacheEvent.equals) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a1: A1): CacheEvent<P2> {
-    const cep1 = this.master.getCacheEvent(a1)
-    if (typeof cep1.data !== 'undefined') {
-      const a2 = this.ptoa(cep1.data, a1)
-      return this.slave.getCacheEvent(a2)
-    } else {
-      return LOADING
-    }
+    return this.master.getCacheEvent(a1).data.fold(
+      () => LOADING,
+      p1 => this.slave.getCacheEvent(this.ptoa(p1, a1))
+    )
   }
-  getValue(a1: A1): undefined | P2 {
-    const p1 = this.master.getValue(a1)
-    if (typeof p1 !== 'undefined') {
-      return this.slave.getValue(this.ptoa(p1, a1))
-    }
+  getPayload(a1: A1): Option<P2> {
+    return this.master.getPayload(a1)
+      .chain(p1 => this.slave.getPayload(this.ptoa(p1, a1)))
   }
   hasObservers(a1: A1): boolean {
-    const cep1 = this.master.getCacheEvent(a1)
-    if (typeof cep1.data !== 'undefined') {
-      const a2 = this.ptoa(cep1.data, a1)
-      return this.slave.hasObservers(a2)
-    } else {
-      return false
-    }
+    return this.master.getCacheEvent(a1).data.fold(
+      () => false,
+      p1 => this.slave.hasObservers(this.ptoa(p1, a1))
+    )
   }
   invalidate(a1: A1): void {
-    const p1 = this.master.getValue(a1)
-    if (typeof p1 !== 'undefined') {
+    this.master.getPayload(a1).map(p1 => {
       const a2 = this.ptoa(p1, a1)
       this.master.invalidate(a1)
       this.slave.invalidate(a2)
-    }
+    })
   }
 }
 
@@ -357,33 +373,30 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
   observe(a: A): Observable<CacheEvent<P>> {
     return Observable.combineLatest(...this.fetches.map((fetch, i) => fetch.observe(a[i])), (...values) => {
       const loading = values.some(v => v.loading === true)
-      if (values.every(v => v.hasOwnProperty('data'))) {
+      if (values.every(v => isSome(v.data))) {
+        const os = values.map(v => v.data)
+        const o = ops.sequenceS(option, array, os)
         return {
           loading,
-          data: values.map(v => v.data) as any
+          data: o
         }
       } else {
         return LOADING
       }
-    }).distinctUntilChanged(isEqual)
+    }).distinctUntilChanged(setoidCacheEvent.equals) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a: A): CacheEvent<P> {
-    const values = this.fetches.map((fetch, i) => fetch.getCacheEvent(a[i]))
-    const loading = values.some(v => v.loading === true)
-    if (values.every(v => v.hasOwnProperty('data'))) {
-      return {
-        loading,
-        data: values.map(v => v.data) as any
-      }
-    } else {
-      return { loading }
+    const os = this.fetches.map((fetch, i) => fetch.getCacheEvent(a[i]).data)
+    const o = ops.sequenceS(option, array, os)
+    return {
+      loading: isSome(o),
+      data: o as any
     }
   }
-  getValue(a: A): undefined | P {
-    const ps = this.fetches.map((fetch, i) => fetch.getValue(a[i]))
-    if (ps.every(p => typeof p !== 'undefined')) {
-      return ps as any; // TODO: Giulio :P
-    }
+  getPayload(a: A): Option<P> {
+    const os = this.fetches.map((fetch, i) => fetch.getPayload(a[i]))
+    const o = ops.sequenceS(option, array, os)
+    return o as any
   }
   hasObservers(a: A): boolean {
     return this.fetches.some((fetch, i) => fetch.hasObservers(a[i]))
@@ -391,16 +404,6 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
   invalidate(a: A): void {
     this.fetches.forEach((f, i) => f.invalidate(a[i]))
   }
-}
-
-function isEqual<P>(a: CacheEvent<P>, b: CacheEvent<P>) {
-  if (a === b) {
-    return true
-  }
-  if (a.loading === b.loading && a.data === b.data) {
-    return true
-  }
-  return false
 }
 
 export function query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
@@ -415,9 +418,9 @@ export function querySync<A, P>(fetch: ObservableFetch<A, P>, a: A): CacheEvent<
 
 export type Queries = { [key: string]: ObservableFetch<any, any> }
 
-export type QueriesArguments<Q extends Queries> = { [K in keyof Q]: Q[K]['_A'] }
+export type QueriesArguments<Q extends Queries> = { readonly [K in keyof Q]: Q[K]['_A'] }
 
-export type QueriesCacheEvents<Q extends Queries> = Observable<CacheEvent<{ [K in keyof Q]: Q[K]['_P'] }>>
+export type QueriesCacheEvents<Q extends Queries> = Observable<CacheEvent<{ readonly [K in keyof Q]: Q[K]['_P'] }>>
 
 export function apply<Q extends Queries>(queries: Q, args: QueriesArguments<Q>): QueriesCacheEvents<Q> {
   // unsafe code
@@ -425,15 +428,16 @@ export function apply<Q extends Queries>(queries: Q, args: QueriesArguments<Q>):
   const fetches = itok.map(k => queries[k])
   const as = itok.map(k => args[k])
   const product = Product.create(fetches)
-  const x = query(product, as).map(({ loading, data }) => {
-    if (typeof data !== 'undefined') {
+  const x = query(product, as).map(({ loading, data }) => data.fold(
+    () => LOADING,
+    ps => {
       const dataMap: { [key: string]: any } = {}
-      itok.forEach((k, i) => {
-        dataMap[k] = data[i]
-      })
-      return { loading, data: dataMap }
+      itok.forEach((k, i) => { dataMap[k] = ps[i] })
+      return {
+        loading,
+        data: some(dataMap)
+      }
     }
-    return LOADING
-  })
+  ))
   return x as any
 }

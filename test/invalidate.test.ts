@@ -7,7 +7,7 @@ import {
   Product,
   ObservableCache,
   available,
-  empty
+  emptyCacheValue
 } from '../src'
 
 describe('invalidate', () => {
@@ -28,8 +28,8 @@ describe('invalidate', () => {
 
     composition.invalidate('you')
 
-    assert.equal(masterCache.get('you'), empty)
-    assert.equal(slaveCache.get(9), empty)
+    assert.equal(masterCache.get('you'), emptyCacheValue)
+    assert.equal(slaveCache.get(9), emptyCacheValue)
   })
 
   it('should delete caches in a Product', () => {
@@ -48,8 +48,8 @@ describe('invalidate', () => {
 
     product.invalidate([9, 'you'])
 
-    assert.equal(cache1.get(9), empty)
-    assert.equal(cache2.get('you'), empty)
+    assert.equal(cache1.get(9), emptyCacheValue)
+    assert.equal(cache2.get('you'), emptyCacheValue)
   })
 
   it('should delete caches in a Leaf', () => {
@@ -61,7 +61,7 @@ describe('invalidate', () => {
 
     leaf.invalidate(9)
 
-    assert.equal(cache.get(9), empty)
+    assert.equal(cache.get(9), emptyCacheValue)
   })
 
 })

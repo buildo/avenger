@@ -1,6 +1,7 @@
 import * as assert from 'assert'
 import 'rxjs'
 
+import { none, some } from 'fp-ts/lib/Option'
 import {
   Leaf,
   ObservableCache,
@@ -30,8 +31,8 @@ describe('apply', () => {
       observable.bufferTime(10).take(1).subscribe(events => {
         try {
           assert.deepEqual(events, [
-            { loading: true },
-            { loading: false, data: { n: 2, s: 'hello s' } }
+            { loading: true, data: none },
+            { loading: false, data: some({ n: 2, s: 'hello s' }) }
           ])
           resolve()
         } catch (e) {

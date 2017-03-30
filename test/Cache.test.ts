@@ -2,6 +2,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { assertCacheValueDone } from './helpers'
 
+import { none, some } from 'fp-ts/lib/Option'
 import {
   Cache,
   Expire,
@@ -21,7 +22,7 @@ describe('Cache', () => {
       assert.strictEqual(cache.getAvailablePromise(1, refetch), undefined)
       assert.strictEqual(cache.getAvailablePromise(1, expire), undefined)
 
-      cache.set(1, { done: { value: 2, timestamp: 0, promise: Promise.resolve(2) } })
+      cache.set(1, { done: some({ value: 2, timestamp: 0, promise: Promise.resolve(2) }), blocked: none })
       assert.strictEqual(cache.getAvailablePromise(1, refetch), undefined)
       assert.strictEqual(cache.getAvailablePromise(1, expire), undefined)
     })
@@ -30,16 +31,16 @@ describe('Cache', () => {
       const cache = new Cache()
       const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
       const blocked = Promise.resolve(2)
-      cache.set(1, { done })
+      cache.set(1, { done: some(done), blocked: none })
       assert.strictEqual(cache.getAvailablePromise(1, available), done.promise)
-      cache.set(1, { done, blocked })
+      cache.set(1, { done: some(done), blocked: some(blocked) })
       assert.strictEqual(cache.getAvailablePromise(1, available), done.promise)
     })
 
     it('should return blocked if there is an available blocked', () => {
       const cache = new Cache()
       const blocked = Promise.resolve(2)
-      cache.set(1, { blocked })
+      cache.set(1, { done: none, blocked: some(blocked) })
       assert.strictEqual(cache.getAvailablePromise(1, available), blocked)
       assert.strictEqual(cache.getAvailablePromise(1, refetch), blocked)
       assert.strictEqual(cache.getAvailablePromise(1, expire), blocked)
@@ -51,7 +52,7 @@ describe('Cache', () => {
 
     it('should fetch when a cache miss occours', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
-      const cache = new Cache()
+      const cache = new Cache<number, number>()
       return cache.getPromise(1, available, fetch).then(p => {
         assert.strictEqual(p, 2)
         assert.strictEqual(fetch.callCount, 1)
@@ -63,7 +64,7 @@ describe('Cache', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache()
       const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
-      cache.set(1, { done })
+      cache.set(1, { done: some(done), blocked: none })
       return cache.getPromise(1, refetch, fetch).then(p => {
         assert.strictEqual(p, 2)
         assert.strictEqual(fetch.callCount, 1)
@@ -75,7 +76,7 @@ describe('Cache', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache()
       const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
-      cache.set(1, { done })
+      cache.set(1, { done: some(done), blocked: none })
       return cache.getPromise(1, expire, fetch).then(p => {
         assert.strictEqual(p, 2)
         assert.strictEqual(fetch.callCount, 1)
@@ -87,7 +88,7 @@ describe('Cache', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache()
       const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
-      cache.set(1, { done })
+      cache.set(1, { done: some(done), blocked: none })
       return cache.getPromise(1, available, fetch).then(p => {
         assert.strictEqual(p, 2)
         assert.strictEqual(fetch.callCount, 0)
@@ -98,7 +99,7 @@ describe('Cache', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache()
       const blocked = Promise.resolve(2)
-      cache.set(1, { blocked })
+      cache.set(1, { done: none, blocked: some(blocked) })
       return cache.getPromise(1, available, fetch).then(p => {
         assert.strictEqual(p, 2)
         assert.strictEqual(fetch.callCount, 0)

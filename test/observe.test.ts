@@ -2,6 +2,7 @@ import * as assert from 'assert'
 import 'rxjs'
 import * as sinon from 'sinon'
 
+import { none, some } from 'fp-ts/lib/Option'
 import {
   Leaf,
   Product,
@@ -50,8 +51,8 @@ describe('observe', () => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true },
-              { loading: false, data: 2 }
+              { loading: true, data: none },
+              { loading: false, data: some(2) }
             ])
             resolve()
           } catch (e) {
@@ -64,7 +65,7 @@ describe('observe', () => {
 
     it('should emit L + P events when strategy is refetch, even after a cache hit', () => {
       const cache = new ObservableCache<number, number>()
-      cache.set(1, { done: { value: 2, timestamp: new Date().getTime() - 100, promise: Promise.resolve(2) } })
+      cache.set(1, { done: some({ value: 2, timestamp: new Date().getTime() - 100, promise: Promise.resolve(2) }), blocked: none })
       const fetch = (a: number) => Promise.resolve(2 * a)
       const leaf = Leaf.create(fetch, refetch, cache)
       const observable = leaf.observe(1)
@@ -72,8 +73,8 @@ describe('observe', () => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true },
-              { loading: false, data: 2 }
+              { loading: true, data: none },
+              { loading: false, data: some(2) }
             ])
             resolve()
           } catch (e) {
@@ -101,8 +102,8 @@ describe('observe', () => {
         o.bufferTime(10).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true },
-              { loading: false, data: [2, 'Hello foo'] }
+              { loading: true, data: none },
+              { loading: false, data: some([2, 'Hello foo']) }
             ])
             resolve()
           } catch (e) {
@@ -130,8 +131,8 @@ describe('observe', () => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true },
-              { loading: false, data: 18 }
+              { loading: true, data: none },
+              { loading: false, data: some(18) }
             ])
             resolve()
           } catch (e) {
@@ -160,18 +161,19 @@ describe('observe', () => {
           try {
             assert.deepEqual(events, [
               {
-                "loading": true
+                "loading": true,
+                "data": none
               },
               {
-                "data": 18,
+                "data": some(18),
                 "loading": false
               },
               {
-                "data": 18,
+                "data": some(18),
                 "loading": true
               },
               {
-                "data": 27,
+                "data": some(27),
                 "loading": false
               }
             ])
@@ -200,8 +202,8 @@ describe('observe', () => {
         observable.bufferTime(30).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true },
-              { loading: false, data: 18 }
+              { loading: true, data: none },
+              { loading: false, data: some(18) }
             ])
             resolve()
           } catch (e) {
@@ -228,8 +230,8 @@ describe('observe', () => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true },
-              { loading: false, data: 18 }
+              { loading: true, data: none },
+              { loading: false, data: some(18) }
             ])
             resolve()
           } catch (e) {
@@ -275,10 +277,10 @@ describe('observe', () => {
         observable.bufferTime(20).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true },
-              { loading: false, data: 18 },
-              { loading: true, data: 18 },
-              { loading: false, data: 18 }
+              { loading: true, data: none },
+              { loading: false, data: some(18) },
+              { loading: true, data: some(18) },
+              { loading: false, data: some(18) }
             ])
             resolve()
           } catch (e) {
