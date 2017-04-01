@@ -8,10 +8,12 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/distinctUntilChanged'
 import { Option, none, some, isSome } from 'fp-ts/lib/Option'
-import { ops } from 'fp-ts/lib/Traversable'
+import { sequence } from 'fp-ts/lib/Traversable'
 import * as array from 'fp-ts/lib/Array'
 import * as option from 'fp-ts/lib/Option'
 import { StaticSetoid } from 'fp-ts/lib/Setoid'
+
+const sequenceOptions = sequence(option, array)
 
 export type Fetch<A, P> = (a: A) => Promise<P>
 
@@ -375,7 +377,7 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
       const loading = values.some(v => v.loading === true)
       if (values.every(v => isSome(v.data))) {
         const os = values.map(v => v.data)
-        const o = ops.sequenceS(option, array, os)
+        const o = sequenceOptions(os)
         return {
           loading,
           data: o
@@ -387,7 +389,7 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
   }
   getCacheEvent(a: A): CacheEvent<P> {
     const os = this.fetches.map((fetch, i) => fetch.getCacheEvent(a[i]).data)
-    const o = ops.sequenceS(option, array, os)
+    const o = sequenceOptions(os)
     return {
       loading: isSome(o),
       data: o as any
@@ -395,7 +397,7 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
   }
   getPayload(a: A): Option<P> {
     const os = this.fetches.map((fetch, i) => fetch.getPayload(a[i]))
-    const o = ops.sequenceS(option, array, os)
+    const o = sequenceOptions(os)
     return o as any
   }
   hasObservers(a: A): boolean {
