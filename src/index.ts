@@ -28,7 +28,7 @@ export interface Done<P> {
 
 export interface CacheValue<P> {
   readonly done: Option<Done<P>>,
-  readonly blocked: Option<Promise<P>>
+  readonly promise: Option<Promise<P>>
 }
 
 export interface Strategy {
@@ -72,7 +72,7 @@ export const available = new Expire(Infinity)
 
 export const emptyCacheValue: CacheValue<any> = {
   done: none,
-  blocked: none
+  promise: none
 }
 
 export type CacheOptions<A, P> = {
@@ -92,13 +92,11 @@ export class Cache<A, P> {
     this.log = debug(`avenger:${this.name}`)
     this.atok = options.atok || JSON.stringify
   }
+  private set(a: A, value: CacheValue<P>): Map<string, CacheValue<P>> {
+    return this.map.set(this.atok(a), value)
+  }
   get(a: A): CacheValue<P> {
     return this.map.get(this.atok(a)) || emptyCacheValue
-  }
-  // TODO: this could/should be private (at least at ObservableCache level)
-  // only tests are interested in set() (to inject a custom timestamp)
-  set(a: A, value: CacheValue<P>): Map<string, CacheValue<P>> {
-    return this.map.set(this.atok(a), value)
   }
   delete(a: A): boolean {
     this.log('delete(%o)', a)
@@ -115,9 +113,9 @@ export class Cache<A, P> {
       return value.done.value.promise
     }
 
-    if (isSome(value.blocked)) {
+    if (isSome(value.promise)) {
       this.log('getAvailablePromise(%o, %s): returning available promise', a, String(strategy))
-      return value.blocked.value
+      return value.promise.value
     }
 
     this.log('getAvailablePromise(%o, %s): cache miss', a, String(strategy))
@@ -133,37 +131,40 @@ export class Cache<A, P> {
     this.storePromise(a, promise)
     return promise
   }
-  storePayload(a: A, p: P, promise: Promise<P>): void {
-    const timestamp = new Date().getTime()
-    const done: Done<P> = {
+  storeDone(a: A, done: Done<P>): void {
+    const {
       value: p,
       timestamp,
       promise
-    }
-    const { blocked } = this.get(a)
+    } = done
+    const { promise: blocked } = this.get(a)
     this.log('storing %o => %o (ts: %o)', a, p, timestamp)
     // se c'è una promise in flight la mantengo
     if (isSome(blocked) && blocked.value !== promise) {
       this.set(a, {
         done: some(done),
-        blocked: blocked
+        promise: blocked
       })
     } else {
       this.set(a, {
         done: some(done),
-        blocked: none
+        promise: none
       })
     }
   }
   storePromise(a: A, promise: Promise<P>): void {
     // quando la promise risolve immagazzino il nuovo payload
-    promise.then(p => this.storePayload(a, p, promise))
+    promise.then(value => this.storeDone(a, {
+      value,
+      timestamp: new Date().getTime(),
+      promise
+    }))
 
     // immagazzino il nuovo valore mantenendo il payload presente
     const { done } = this.get(a)
     this.set(a, {
       done,
-      blocked: some(promise)
+      promise: some(promise)
     })
   }
 }
@@ -206,14 +207,15 @@ export class ObservableCache<A, P> extends Cache<A, P> {
     }
     return this.subjects[k]
   }
-  storePayload(a: A, p: P, promise: Promise<P>): void {
-    super.storePayload(a, p, promise)
-    this.emitPayloadEvent(a, p)
+  storeDone(a: A, done: Done<P>): void {
+    super.storeDone(a, done)
+    this.emitPayloadEvent(a, done.value)
   }
   storePromise(a: A, promise: Promise<P>): void {
     super.storePromise(a, promise)
     this.emitLoadingEvent(a)
   }
+  // TODO override set
   private emitLoadingEvent(a: A): void {
     this.log('emitting LOADING event for %o', a)
     const subject = this.getSubject(a)

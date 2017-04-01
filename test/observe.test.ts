@@ -65,7 +65,7 @@ describe('observe', () => {
 
     it('should emit L + P events when strategy is refetch, even after a cache hit', () => {
       const cache = new ObservableCache<number, number>()
-      cache.set(1, { done: some({ value: 2, timestamp: new Date().getTime() - 100, promise: Promise.resolve(2) }), blocked: none })
+      cache.storeDone(1, { value: 2, timestamp: new Date().getTime() - 100, promise: Promise.resolve(2) })
       const fetch = (a: number) => Promise.resolve(2 * a)
       const leaf = Leaf.create(fetch, refetch, cache)
       const observable = leaf.observe(1)
@@ -73,7 +73,8 @@ describe('observe', () => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
             assert.deepEqual(events, [
-              { loading: true, data: none },
+              { loading: false, data: some(2) },
+              { loading: true, data: some(2) },
               { loading: false, data: some(2) }
             ])
             resolve()

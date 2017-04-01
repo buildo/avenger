@@ -16,8 +16,8 @@ describe('strategies', () => {
     })
 
     it('should approve a done if available', () => {
-      assert.equal(available.isAvailable({ done: none, blocked: none }), false)
-      assert.equal(available.isAvailable({ done: some({ value: 2, timestamp: 0, promise: Promise.resolve(2) }), blocked: none }), true)
+      assert.equal(available.isAvailable({ done: none, promise: none }), false)
+      assert.equal(available.isAvailable({ done: some({ value: 2, timestamp: 0, promise: Promise.resolve(2) }), promise: none }), true)
     })
 
   })
@@ -30,8 +30,8 @@ describe('strategies', () => {
     })
 
     it('should not approve a done even if available', () => {
-      assert.equal(refetch.isAvailable({ done: none, blocked: none }), false)
-      assert.equal(refetch.isAvailable({ done: some({ value: 2, timestamp: 0, promise: Promise.resolve(2) }), blocked: none }), false)
+      assert.equal(refetch.isAvailable({ done: none, promise: none }), false)
+      assert.equal(refetch.isAvailable({ done: some({ value: 2, timestamp: 0, promise: Promise.resolve(2) }), promise: none }), false)
     })
 
   })
@@ -47,8 +47,8 @@ describe('strategies', () => {
     })
 
     it('should approve a done if available', () => {
-      assert.equal(expire.isAvailable({ done: none, blocked: none }), false)
-      assert.equal(expire.isAvailable({ done: some({ value: 2, timestamp: new Date().getTime(), promise: Promise.resolve(2) }), blocked: none }), true)
+      assert.equal(expire.isAvailable({ done: none, promise: none }), false)
+      assert.equal(expire.isAvailable({ done: some({ value: 2, timestamp: new Date().getTime(), promise: Promise.resolve(2) }), promise: none }), true)
     })
 
   })

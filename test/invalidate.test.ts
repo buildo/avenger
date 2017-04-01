@@ -23,8 +23,8 @@ describe('invalidate', () => {
 
     const composition = Composition.create(master, s => s.length, slave)
 
-    masterCache.storePayload('you', 'hello you', Promise.resolve('hello you'))
-    slaveCache.storePayload(9, 18, Promise.resolve(18))
+    masterCache.storeDone('you', { value: 'hello you', timestamp: new Date().getTime(), promise: Promise.resolve('hello you') })
+    slaveCache.storeDone(9, { value: 18, timestamp: new Date().getTime(), promise: Promise.resolve(18) })
 
     composition.invalidate('you')
 
@@ -43,8 +43,8 @@ describe('invalidate', () => {
 
     const product = Product.create([leaf1, leaf2])
 
-    cache1.storePayload(9, 18, Promise.resolve(18))
-    cache2.storePayload('you', 'hello you', Promise.resolve('hello you'))
+    cache1.storeDone(9, { value: 18, timestamp: new Date().getTime(), promise: Promise.resolve(18) })
+    cache2.storeDone('you', { value: 'hello you', timestamp: new Date().getTime(), promise: Promise.resolve('hello you') })
 
     product.invalidate([9, 'you'])
 
@@ -57,7 +57,7 @@ describe('invalidate', () => {
     const fetch = (a: number) => Promise.resolve(2 * a)
     const leaf = Leaf.create(fetch, available, cache)
 
-    cache.storePayload(9, 18, Promise.resolve(18))
+    cache.storeDone(9, { value: 18, timestamp: new Date().getTime(), promise: Promise.resolve(18) })
 
     leaf.invalidate(9)
 
