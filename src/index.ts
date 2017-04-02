@@ -393,7 +393,7 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
     const os = this.fetches.map((fetch, i) => fetch.getCacheEvent(a[i]).data)
     const o = sequenceOptions(os)
     return {
-      loading: isSome(o),
+      loading: !isSome(o),
       data: o as any
     }
   }
@@ -410,13 +410,13 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
   }
 }
 
-export function query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
+export function _query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
   const observable = fetch.observe(a)
   fetch.run(a)
   return observable
 }
 
-export function querySync<A, P>(fetch: ObservableFetch<A, P>, a: A): CacheEvent<P> {
+export function _querySync<A, P>(fetch: ObservableFetch<A, P>, a: A): CacheEvent<P> {
   return fetch.getCacheEvent(a)
 }
 
@@ -424,15 +424,15 @@ export type Queries = { [key: string]: ObservableFetch<any, any> }
 
 export type QueriesArguments<Q extends Queries> = { readonly [K in keyof Q]: Q[K]['_A'] }
 
-export type QueriesCacheEvents<Q extends Queries> = Observable<CacheEvent<{ readonly [K in keyof Q]: Q[K]['_P'] }>>
+export type QueriesCacheEvents<Q extends Queries> = CacheEvent<{ readonly [K in keyof Q]: Q[K]['_P'] }>
 
-export function apply<Q extends Queries>(queries: Q, args: QueriesArguments<Q>): QueriesCacheEvents<Q> {
+export function apply<Q extends Queries>(queries: Q, args: QueriesArguments<Q>): Observable<QueriesCacheEvents<Q>> {
   // unsafe code
   const itok = Object.keys(args)
   const fetches = itok.map(k => queries[k])
   const as = itok.map(k => args[k])
   const product = Product.create(fetches)
-  const x = query(product, as).map(({ loading, data }) => data.fold(
+  const x = _query(product, as).map(({ loading, data }) => data.fold(
     () => LOADING,
     ps => {
       const dataMap: { [key: string]: any } = {}
@@ -444,4 +444,24 @@ export function apply<Q extends Queries>(queries: Q, args: QueriesArguments<Q>):
     }
   ))
   return x as any
+}
+
+export function applySync<Q extends Queries>(queries: Q, args: QueriesArguments<Q>): QueriesCacheEvents<Q> {
+  // unsafe code
+  const itok = Object.keys(args)
+  const fetches = itok.map(k => queries[k])
+  const as = itok.map(k => args[k])
+  const product = Product.create(fetches)
+  const { loading, data } = _querySync(product, as)
+  return data.fold(
+    () => LOADING,
+    ps => {
+      const dataMap: { [key: string]: any } = {}
+      itok.forEach((k, i) => { dataMap[k] = ps[i] })
+      return {
+        loading,
+        data: some(dataMap)
+      }
+    }
+  )
 }
