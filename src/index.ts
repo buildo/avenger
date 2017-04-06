@@ -11,7 +11,7 @@ import { Option, none, some, isSome } from 'fp-ts/lib/Option'
 import { sequence } from 'fp-ts/lib/Traversable'
 import * as array from 'fp-ts/lib/Array'
 import * as option from 'fp-ts/lib/Option'
-import { StaticSetoid } from 'fp-ts/lib/Setoid'
+import { identity } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 
 const sequenceOptions = sequence(option, array)
@@ -36,7 +36,7 @@ export interface Strategy {
   isAvailable<P>(value: CacheValue<P>): boolean
 }
 
-// questa strategia esegue una fetch se non c'è un done oppure se il done presente è troppo vecchio
+// questa strategia esegue una fetch se non c'è un done oppure se il done presente è scaduto
 export class Expire {
   constructor(public delay: number) {}
   isExpired(time: number) {
@@ -174,25 +174,28 @@ export function cacheFetch<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: 
   return (a: A) => cache.getPromise(a, strategy, fetch)
 }
 
-export interface CacheEvent<P> {
-  readonly loading: boolean,
-  readonly data: Option<P>
-}
-
-export const setoidCacheEvent: StaticSetoid<CacheEvent<any>> = {
-  equals(x, y) {
-    if (x === y) {
+/** CacheEvent possiede un'istanza di
+ * - Functor
+ * - Setoid
+ */
+export class CacheEvent<P> {
+  constructor(public readonly loading: boolean, public readonly data: Option<P>) {}
+  map<B>(f: (a: P) => B): CacheEvent<B> {
+    return new CacheEvent(this.loading, this.data.map(f))
+  }
+  equals(y: CacheEvent<P>): boolean {
+    if (this === y) {
       return true
     }
-    if (x.loading === y.loading && x.data === y.data) {
+    if (this.loading === y.loading && this.data === y.data) {
       return true
     }
     return false
   }
 }
 
-const LOADING: Readonly<CacheEvent<any>> = { loading: true, data: none }
-const INITIAL_LOADING: Readonly<CacheEvent<any>> = { loading: true, data: none }
+const LOADING = new CacheEvent<any>(true, none)
+const INITIAL_LOADING = new CacheEvent<any>(true, none)
 
 export class ObservableCache<A, P> extends Cache<A, P> {
   readonly subjects: { [key: string]: BehaviorSubject<CacheEvent<P>> }
@@ -221,7 +224,7 @@ export class ObservableCache<A, P> extends Cache<A, P> {
     this.log('emitting LOADING event for %o', a)
     const subject = this.getSubject(a)
     if (isSome(subject.value.data)) {
-      subject.next({ loading: true, data: subject.value.data })
+      subject.next(new CacheEvent(true, subject.value.data))
     } else {
       subject.next(LOADING)
     }
@@ -229,10 +232,7 @@ export class ObservableCache<A, P> extends Cache<A, P> {
   private emitPayloadEvent(a: A, p: P): void {
     this.log('emitting PAYLOAD event for %o (payload: %o)', a, p)
     const subject = this.getSubject(a)
-    subject.next({
-      loading: false,
-      data: some(p)
-    })
+    subject.next(new CacheEvent(false, some(p)))
   }
 }
 
@@ -253,11 +253,11 @@ export interface ObservableFetch<A, P> {
   invalidate(a: A): void
 }
 
-export abstract class BaseObservableFetch<A, P> {
+export class BaseObservableFetch<A, P> {
   _A: A
   _P: P
   private dependencies: Array<Dependency<A, P>> = []
-  constructor(private readonly fetch: Fetch<A, P>) {}
+  constructor(protected readonly fetch: Fetch<A, P>) {}
   run(a: A, omit?: ObservableFetch<any, any>): Promise<P> {
     const promise = this.fetch(a)
     promise.then(p => {
@@ -290,7 +290,7 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
   observe(a: A): Observable<CacheEvent<P>> {
     return this.cache.getSubject(a)
       .filter(e => e !== INITIAL_LOADING)
-      .distinctUntilChanged(setoidCacheEvent.equals) // TODO remove distinctUntilChanged?
+      .distinctUntilChanged((x, y) => x.equals(y)) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a: A): CacheEvent<P> {
     return this.cache.getSubject(a).value
@@ -332,7 +332,7 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
         () => Observable.of(LOADING),
         p1 => this.slave.observe(this.ptoa(p1, a1))
       ))
-      .distinctUntilChanged(setoidCacheEvent.equals) // TODO remove distinctUntilChanged?
+      .distinctUntilChanged((x, y) => x.equals(y)) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a1: A1): CacheEvent<P2> {
     return this.master.getCacheEvent(a1).data.fold(
@@ -377,22 +377,16 @@ export class Product<A extends Array<any>, P extends Array<any>> extends BaseObs
       if (values.every(v => isSome(v.data))) {
         const os = values.map(v => v.data)
         const o = sequenceOptions(os)
-        return {
-          loading,
-          data: o
-        }
+        return new CacheEvent(loading, o)
       } else {
         return LOADING
       }
-    }).distinctUntilChanged(setoidCacheEvent.equals) // TODO remove distinctUntilChanged?
+    }).distinctUntilChanged((x, y) => x.equals(y)) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a: A): CacheEvent<P> {
     const os = this.fetches.map((fetch, i) => fetch.getCacheEvent(a[i]).data)
     const o = sequenceOptions(os)
-    return {
-      loading: !isSome(o),
-      data: o as any
-    }
+    return new CacheEvent<P>(!isSome(o), o as any)
   }
   getPayload(a: A): Option<P> {
     const os = this.fetches.map((fetch, i) => fetch.getPayload(a[i]))
@@ -404,6 +398,31 @@ export class Product<A extends Array<any>, P extends Array<any>> extends BaseObs
   }
   invalidate(a: A): void {
     this.fetches.forEach((f, i) => f.invalidate(a[i]))
+  }
+}
+
+export class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implements ObservableFetch<A2, P2> {
+  constructor(
+    private readonly observableFetch: ObservableFetch<A1, P1>,
+    private readonly a2toa1: (a1: A2) => A1,
+    private readonly p1top2: (p1: P1) => P2
+  ) {
+    super(a2 => observableFetch.run(a2toa1(a2)).then(p1 => p1top2(p1)))
+  }
+  observe(a2: A2): Observable<CacheEvent<P2>> {
+    return this.observableFetch.observe(this.a2toa1(a2)).map(cep1 => cep1.map(this.p1top2))
+  }
+  getCacheEvent(a2: A2): CacheEvent<P2> {
+    return this.observableFetch.getCacheEvent(this.a2toa1(a2)).map(this.p1top2)
+  }
+  getPayload(a2: A2): Option<P2> {
+    return this.observableFetch.getPayload(this.a2toa1(a2)).map(this.p1top2)
+  }
+  hasObservers(a2: A2): boolean {
+    return this.observableFetch.hasObservers(this.a2toa1(a2))
+  }
+  invalidate(a2: A2): void {
+    this.observableFetch.invalidate(this.a2toa1(a2))
   }
 }
 
@@ -434,10 +453,7 @@ export function apply<Q extends ObservableFetches>(queries: Q, args: ObservableF
     ps => {
       const dataMap: { [key: string]: any } = {}
       itok.forEach((k, i) => { dataMap[k] = ps[i] })
-      return {
-        loading,
-        data: some(dataMap)
-      }
+      return new CacheEvent(loading, some(dataMap))
     }
   ))
   return x as any
@@ -455,43 +471,56 @@ export function applySync<Q extends ObservableFetches>(queries: Q, args: Observa
     ps => {
       const dataMap: { [key: string]: any } = {}
       itok.forEach((k, i) => { dataMap[k] = ps[i] })
-      return {
-        loading,
-        data: some(dataMap)
-      }
+      return new CacheEvent(loading, some(dataMap))
     }
   )
 }
 
 export interface QueryableFetch<A extends { [key: string]: any }, P> extends Fetch<A, P> {}
 
-// export const fare = Query({
-//   id: 'fare',
-//   cacheStrategy: new Expire(2000),
-//   params: { fareId: t.String },
-//   returnType: Fare,
-//   fetch: ({ fareId }) => API.fareController_read({
-//     query: {
-//       id: fareId
-//     }
-//   })
-// });
+export interface QueryableObservableFetch<A extends { [key: string]: any }, P> extends ObservableFetch<A, P> {}
 
-export type Queries = { [key: string]: Query<any, any, any, any> }
+export type QueryableObservableFetches = { [key: string]: QueryableObservableFetch<any, any> }
 
-export type Types = { [key: string]: t.Any }
+export type Params = { [key: string]: t.Any }
 
-export type TypesOf<FA extends Types> = { [P in keyof FA]: t.TypeOf<FA[P]> }
+export function Query<A, P>(options: {
+  cacheStrategy: Strategy,
+  params: Params,
+  fetch: QueryableFetch<any, P>,
+  dependencies: QueryableObservableFetches
+}): ObservableFetch<A, P> {
 
-export class Query<I extends string, FA extends Types, P, D extends Queries> extends BaseObservableFetch<{ [K in I]: { [K in keyof FA]: t.TypeOf<FA[K]> } } & { [K in keyof D]: { [P in keyof D[K]['_FA']]: t.TypeOf<D[K]['_FA'][P]> } }, P> {
-  _FA: FA
-  constructor(
-    id: I,
-    strategy: Strategy,
-    params: FA,
-    fetch: QueryableFetch<{ [K in keyof FA]: t.TypeOf<FA[K]> } & { [K in keyof D]: D[K]['_P'] }, P>,
-    dependencies: D
-  ) {
-    super(null as any)
+  const keys = Object.keys(options.dependencies)
+  const keysLength = keys.length
+  const leaf = Leaf.create(options.fetch, options.cacheStrategy, new ObservableCache<A, P>())
+  if (keysLength === 0) {
+    return leaf
+  } else {
+    const fetches = keys.map(k => options.dependencies[k])
+    const params = options.params
+    const paramsLength = Object.keys(params).length
+    if (paramsLength > 0) {
+      const paramsFetch = Leaf.create(a => Promise.resolve(a), refetch, new ObservableCache<any, P>())
+      fetches.push(paramsFetch)
+    }
+    const product = Product.create(fetches)
+    const composition = Composition.create(
+      product,
+      leaf
+    )(p => {
+      const a: { [key: string]: any } = {}
+      keys.forEach((k, i) => {
+        a[k] = p[i]
+      })
+      if (paramsLength > 0) {
+        for (let k in params) {
+          a[k] = p[keysLength][k]
+        }
+      }
+      return a
+    })
+    const a2toa1 = (a2: A) => fetches.map(() => a2)
+    return new Bimap(composition, a2toa1, identity)
   }
 }
