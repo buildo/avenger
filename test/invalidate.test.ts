@@ -21,7 +21,7 @@ describe('invalidate', () => {
     const masterFetch = (a: string) => Promise.resolve(`hello ${a}`)
     const master = Leaf.create(masterFetch, available, masterCache)
 
-    const composition = Composition.create(master, s => s.length, slave)
+    const composition = Composition.create(master, slave)(s => s.length)
 
     masterCache.storeDone('you', { value: 'hello you', timestamp: new Date().getTime(), promise: Promise.resolve('hello you') })
     slaveCache.storeDone(9, { value: 18, timestamp: new Date().getTime(), promise: Promise.resolve(18) })

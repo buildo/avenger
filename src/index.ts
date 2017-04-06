@@ -306,8 +306,8 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
 }
 
 export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> implements ObservableFetch<A1, P2> {
-  static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, ptoa: (p1: P1, a1: A1) => A2, slave: ObservableFetch<A2, P2>): Composition<A1, P1, A2, P2> {
-    return new Composition(master, ptoa, slave)
+  static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, slave: ObservableFetch<A2, P2>): (ptoa: (p1: P1, a1: A1) => A2) => Composition<A1, P1, A2, P2> {
+    return ptoa => new Composition(master, ptoa, slave)
   }
   _A: A1
   _P: P2
@@ -365,7 +365,7 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
   static create<A1, P1, A2, P2, A3, P3>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3]>
   static create<A1, P1, A2, P2>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]): Product<[A1, A2], [P1, P2]>
   static create<A1, P1>(fetches: [ObservableFetch<A1, P1>]): Product<[A1], [P1]>
-  static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>>
+  static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>> // TODO si può levare?
   static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>> {
     return new Product(fetches)
   }

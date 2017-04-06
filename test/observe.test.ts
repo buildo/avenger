@@ -126,7 +126,7 @@ describe('observe', () => {
       const masterCache = new ObservableCache<string, string>()
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
       const master = Leaf.create(masterFetch, refetch, masterCache)
-      const composition = Composition.create(master, s => s.length, slave)
+      const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
@@ -155,7 +155,7 @@ describe('observe', () => {
       const masterCache = new ObservableCache<string, string>()
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
       const master = Leaf.create(masterFetch, refetch, masterCache)
-      const composition = Composition.create(master, s => s.length, slave)
+      const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
         observable.bufferTime(20).take(1).subscribe(events => {
@@ -197,7 +197,7 @@ describe('observe', () => {
       const masterCache = new ObservableCache<string, string>()
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
       const master = Leaf.create(masterFetch, refetch, masterCache)
-      const composition = Composition.create(master, s => s.length, slave)
+      const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
         observable.bufferTime(30).take(1).subscribe(events => {
@@ -225,7 +225,7 @@ describe('observe', () => {
       const masterCache = new ObservableCache<string, string>()
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
       const master = Leaf.create(masterFetch, available, masterCache)
-      const composition = Composition.create(master, s => s.length, slave)
+      const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
@@ -250,7 +250,7 @@ describe('observe', () => {
       const masterCache = new ObservableCache<string, string>()
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
       const master = Leaf.create(masterFetch, available, masterCache)
-      const composition = Composition.create(master, s => s.length, slave)
+      const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
@@ -272,7 +272,7 @@ describe('observe', () => {
       const masterCache = new ObservableCache<string, string>()
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
       const master = Leaf.create(masterFetch, available, masterCache)
-      const composition = Composition.create(master, s => s.length, slave)
+      const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
         observable.bufferTime(20).take(1).subscribe(events => {
