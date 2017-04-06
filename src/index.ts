@@ -12,6 +12,7 @@ import { sequence } from 'fp-ts/lib/Traversable'
 import * as array from 'fp-ts/lib/Array'
 import * as option from 'fp-ts/lib/Option'
 import { StaticSetoid } from 'fp-ts/lib/Setoid'
+import * as t from 'io-ts'
 
 const sequenceOptions = sequence(option, array)
 
@@ -253,6 +254,8 @@ export interface ObservableFetch<A, P> {
 }
 
 export abstract class BaseObservableFetch<A, P> {
+  _A: A
+  _P: P
   private dependencies: Array<Dependency<A, P>> = []
   constructor(private readonly fetch: Fetch<A, P>) {}
   run(a: A, omit?: ObservableFetch<any, any>): Promise<P> {
@@ -277,8 +280,6 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
   static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: ObservableCache<A, P>): Leaf<A, P> {
     return new Leaf(fetch, strategy, cache)
   }
-  _A: A
-  _P: P
   private constructor(
     fetch: Fetch<A, P>,
     strategy: Strategy,
@@ -309,8 +310,6 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
   static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, slave: ObservableFetch<A2, P2>): (ptoa: (p1: P1, a1: A1) => A2) => Composition<A1, P1, A2, P2> {
     return ptoa => new Composition(master, ptoa, slave)
   }
-  _A: A1
-  _P: P2
   private constructor(
     private readonly master: ObservableFetch<A1, P1>,
     private readonly ptoa: (p1: P1, a1: A1) => A2,
@@ -360,7 +359,7 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
   }
 }
 
-export class Product<A extends Array<any>, P extends Array<any>>  extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
+export class Product<A extends Array<any>, P extends Array<any>> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
   // TODO more overloadings and maybe convert to normal constructor
   static create<A1, P1, A2, P2, A3, P3>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3]>
   static create<A1, P1, A2, P2>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]): Product<[A1, A2], [P1, P2]>
@@ -369,8 +368,6 @@ export class Product<A extends Array<any>, P extends Array<any>>  extends BaseOb
   static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>> {
     return new Product(fetches)
   }
-  _A: A
-  _P: P
   private constructor(private readonly fetches: Array<ObservableFetch<any, any>>) {
     super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))))
   }
@@ -420,13 +417,13 @@ export function _querySync<A, P>(fetch: ObservableFetch<A, P>, a: A): CacheEvent
   return fetch.getCacheEvent(a)
 }
 
-export type Queries = { [key: string]: ObservableFetch<any, any> }
+export type ObservableFetches = { [key: string]: ObservableFetch<any, any> }
 
-export type QueriesArguments<Q extends Queries> = { readonly [K in keyof Q]: Q[K]['_A'] }
+export type ObservableFetchesArguments<OF extends ObservableFetches> = { readonly [K in keyof OF]: OF[K]['_A'] }
 
-export type QueriesCacheEvents<Q extends Queries> = CacheEvent<{ readonly [K in keyof Q]: Q[K]['_P'] }>
+export type ObservableFetchesCacheEvents<OF extends ObservableFetches> = CacheEvent<{ readonly [K in keyof OF]: OF[K]['_P'] }>
 
-export function apply<Q extends Queries>(queries: Q, args: QueriesArguments<Q>): Observable<QueriesCacheEvents<Q>> {
+export function apply<Q extends ObservableFetches>(queries: Q, args: ObservableFetchesArguments<Q>): Observable<ObservableFetchesCacheEvents<Q>> {
   // unsafe code
   const itok = Object.keys(args)
   const fetches = itok.map(k => queries[k])
@@ -446,7 +443,7 @@ export function apply<Q extends Queries>(queries: Q, args: QueriesArguments<Q>):
   return x as any
 }
 
-export function applySync<Q extends Queries>(queries: Q, args: QueriesArguments<Q>): QueriesCacheEvents<Q> {
+export function applySync<Q extends ObservableFetches>(queries: Q, args: ObservableFetchesArguments<Q>): ObservableFetchesCacheEvents<Q> {
   // unsafe code
   const itok = Object.keys(args)
   const fetches = itok.map(k => queries[k])
@@ -464,4 +461,37 @@ export function applySync<Q extends Queries>(queries: Q, args: QueriesArguments<
       }
     }
   )
+}
+
+export interface QueryableFetch<A extends { [key: string]: any }, P> extends Fetch<A, P> {}
+
+// export const fare = Query({
+//   id: 'fare',
+//   cacheStrategy: new Expire(2000),
+//   params: { fareId: t.String },
+//   returnType: Fare,
+//   fetch: ({ fareId }) => API.fareController_read({
+//     query: {
+//       id: fareId
+//     }
+//   })
+// });
+
+export type Queries = { [key: string]: Query<any, any, any, any> }
+
+export type Types = { [key: string]: t.Any }
+
+export type TypesOf<FA extends Types> = { [P in keyof FA]: t.TypeOf<FA[P]> }
+
+export class Query<I extends string, FA extends Types, P, D extends Queries> extends BaseObservableFetch<{ [K in I]: { [K in keyof FA]: t.TypeOf<FA[K]> } } & { [K in keyof D]: { [P in keyof D[K]['_FA']]: t.TypeOf<D[K]['_FA'][P]> } }, P> {
+  _FA: FA
+  constructor(
+    id: I,
+    strategy: Strategy,
+    params: FA,
+    fetch: QueryableFetch<{ [K in keyof FA]: t.TypeOf<FA[K]> } & { [K in keyof D]: D[K]['_P'] }, P>,
+    dependencies: D
+  ) {
+    super(null as any)
+  }
 }
