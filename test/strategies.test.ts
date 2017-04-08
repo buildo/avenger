@@ -4,7 +4,9 @@ import { none, some } from 'fp-ts/lib/Option'
 import {
   Expire,
   refetch,
-  available
+  available,
+  CacheValue,
+  Done
 } from '../src'
 
 describe('strategies', () => {
@@ -16,8 +18,8 @@ describe('strategies', () => {
     })
 
     it('should approve a done if available', () => {
-      assert.equal(available.isAvailable({ done: none, promise: none }), false)
-      assert.equal(available.isAvailable({ done: some({ value: 2, timestamp: 0, promise: Promise.resolve(2) }), promise: none }), true)
+      assert.equal(available.isAvailable(new CacheValue(none, none)), false)
+      assert.equal(available.isAvailable(new CacheValue(some(new Done(2, 0, Promise.resolve(2))), none)), true)
     })
 
   })
@@ -30,8 +32,8 @@ describe('strategies', () => {
     })
 
     it('should not approve a done even if available', () => {
-      assert.equal(refetch.isAvailable({ done: none, promise: none }), false)
-      assert.equal(refetch.isAvailable({ done: some({ value: 2, timestamp: 0, promise: Promise.resolve(2) }), promise: none }), false)
+      assert.equal(refetch.isAvailable(new CacheValue(none, none)), false)
+      assert.equal(refetch.isAvailable(new CacheValue(some(new Done(2, 0, Promise.resolve(2))), none)), false)
     })
 
   })
@@ -47,8 +49,8 @@ describe('strategies', () => {
     })
 
     it('should approve a done if available', () => {
-      assert.equal(expire.isAvailable({ done: none, promise: none }), false)
-      assert.equal(expire.isAvailable({ done: some({ value: 2, timestamp: new Date().getTime(), promise: Promise.resolve(2) }), promise: none }), true)
+      assert.equal(expire.isAvailable(new CacheValue(none, none)), false)
+      assert.equal(expire.isAvailable(new CacheValue(some(new Done(2, Date.now(), Promise.resolve(2))), none)), true)
     })
 
   })

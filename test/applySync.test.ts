@@ -5,7 +5,8 @@ import {
   Leaf,
   ObservableCache,
   available,
-  applySync
+  applySync,
+  Done
 } from '../src'
 
 describe('applySync', () => {
@@ -38,8 +39,8 @@ describe('applySync', () => {
     const fetch2 = (a: string) => Promise.resolve(`hello ${a}`)
     const leaf2 = Leaf.create(fetch2, available, cache2)
 
-    cache1.storeDone(1, { value: 2, promise: Promise.resolve(2), timestamp: Date.now() })
-    cache2.storeDone('s', { value: 'hello s', promise: Promise.resolve('hello s'), timestamp: Date.now() })
+    cache1.storeDone(1, new Done(2, Date.now(), Promise.resolve(2)))
+    cache2.storeDone('s', new Done('hello s', Date.now(), Promise.resolve('hello s')))
 
     const dict = applySync({
       n: leaf1,

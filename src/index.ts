@@ -18,18 +18,23 @@ const sequenceOptions = sequence(option, array)
 
 export type Fetch<A, P> = (a: A) => Promise<P>
 
-export interface Done<P> {
-  /** il valore contenuto nella promise */
-  readonly value: P,
-  /** il momento in cui è stato valorizzato done */
-  readonly timestamp: number,
-  /** la promise che conteneva il done */
-  readonly promise: Promise<P>
+export class Done<P> {
+  constructor(
+    /** il valore restituito dalla promise contenuta nel campo `promise` una volta risolta */
+    public readonly value: P,
+    /** il momento in cui è stato valorizzato done */
+    public readonly timestamp: number,
+    /** la promise che conteneva il done */
+    public readonly promise: Promise<P>
+  ) {}
 }
 
-export interface CacheValue<P> {
-  readonly done: Option<Done<P>>,
-  readonly promise: Option<Promise<P>>
+export class CacheValue<P> {
+  static empty = new CacheValue<any>(none, none)
+  constructor(
+    public readonly done: Option<Done<P>>,
+    public readonly promise: Option<Promise<P>>
+  ) {}
 }
 
 export interface Strategy {
@@ -38,7 +43,9 @@ export interface Strategy {
 
 // questa strategia esegue una fetch se non c'è un done oppure se il done presente è scaduto
 export class Expire {
-  constructor(public delay: number) {}
+  constructor(
+    public delay: number
+  ) {}
   isExpired(time: number) {
     const delta = new Date().getTime() - time
     // prendo in considerazione tempi futuri
@@ -71,11 +78,6 @@ export const refetch = new Expire(-1)
 // questa strategia esegue una fetch solo se non c'è né un done né un blocked
 export const available = new Expire(Infinity)
 
-export const emptyCacheValue: CacheValue<any> = {
-  done: none,
-  promise: none
-}
-
 export type CacheOptions<A, P> = {
   name?: string
   map?: Map<string, CacheValue<P>>,
@@ -97,7 +99,7 @@ export class Cache<A, P> {
     return this.map.set(this.atok(a), value)
   }
   get(a: A): CacheValue<P> {
-    return this.map.get(this.atok(a)) || emptyCacheValue
+    return this.map.get(this.atok(a)) || CacheValue.empty
   }
   delete(a: A): boolean {
     this.log('delete(%o)', a)
@@ -142,31 +144,18 @@ export class Cache<A, P> {
     this.log('storing %o => %o (ts: %o)', a, p, timestamp)
     // se c'è una promise in flight la mantengo
     if (isSome(blocked) && blocked.value !== promise) {
-      this.set(a, {
-        done: some(done),
-        promise: blocked
-      })
+      this.set(a, new CacheValue(some(done), blocked))
     } else {
-      this.set(a, {
-        done: some(done),
-        promise: none
-      })
+      this.set(a, new CacheValue(some(done), none))
     }
   }
   storePromise(a: A, promise: Promise<P>): void {
     // quando la promise risolve immagazzino il nuovo payload
-    promise.then(value => this.storeDone(a, {
-      value,
-      timestamp: new Date().getTime(),
-      promise
-    }))
+    promise.then(value => this.storeDone(a, new Done(value, new Date().getTime(), promise)))
 
     // immagazzino il nuovo valore mantenendo il payload presente
     const { done } = this.get(a)
-    this.set(a, {
-      done,
-      promise: some(promise)
-    })
+    this.set(a, new CacheValue(done, some(promise)))
   }
 }
 
@@ -179,7 +168,10 @@ export function cacheFetch<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: 
  * - Setoid
  */
 export class CacheEvent<P> {
-  constructor(public readonly loading: boolean, public readonly data: Option<P>) {}
+  constructor(
+    public readonly loading: boolean,
+    public readonly data: Option<P>
+  ) {}
   map<B>(f: (a: P) => B): CacheEvent<B> {
     return new CacheEvent(this.loading, this.data.map(f))
   }
@@ -195,6 +187,10 @@ export class CacheEvent<P> {
 }
 
 const LOADING = new CacheEvent<any>(true, none)
+
+// INITIAL_LOADING, pur essendo identico come contenuto,
+// deve avere una reference diversa da LOADING per poter essere
+// distinguibile nella filter di observe
 const INITIAL_LOADING = new CacheEvent<any>(true, none)
 
 export class ObservableCache<A, P> extends Cache<A, P> {
@@ -257,7 +253,9 @@ export class BaseObservableFetch<A, P> {
   _A: A
   _P: P
   private dependencies: Array<Dependency<A, P>> = []
-  constructor(protected readonly fetch: Fetch<A, P>) {}
+  constructor(
+    protected readonly fetch: Fetch<A, P>
+  ) {}
   run(a: A, omit?: ObservableFetch<any, any>): Promise<P> {
     const promise = this.fetch(a)
     promise.then(p => {
@@ -368,7 +366,9 @@ export class Product<A extends Array<any>, P extends Array<any>> extends BaseObs
   static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>> {
     return new Product(fetches)
   }
-  private constructor(private readonly fetches: Array<ObservableFetch<any, any>>) {
+  private constructor(
+    private readonly fetches: Array<ObservableFetch<any, any>>
+    ) {
     super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))))
   }
   observe(a: A): Observable<CacheEvent<P>> {

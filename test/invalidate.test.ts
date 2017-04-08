@@ -7,7 +7,8 @@ import {
   Product,
   ObservableCache,
   available,
-  emptyCacheValue
+  CacheValue,
+  Done
 } from '../src'
 
 describe('invalidate', () => {
@@ -23,13 +24,13 @@ describe('invalidate', () => {
 
     const composition = Composition.create(master, slave)(s => s.length)
 
-    masterCache.storeDone('you', { value: 'hello you', timestamp: new Date().getTime(), promise: Promise.resolve('hello you') })
-    slaveCache.storeDone(9, { value: 18, timestamp: new Date().getTime(), promise: Promise.resolve(18) })
+    masterCache.storeDone('you', new Done('hello you', Date.now(), Promise.resolve('hello you')))
+    slaveCache.storeDone(9, new Done(18, Date.now(), Promise.resolve(18)))
 
     composition.invalidate('you')
 
-    assert.equal(masterCache.get('you'), emptyCacheValue)
-    assert.equal(slaveCache.get(9), emptyCacheValue)
+    assert.equal(masterCache.get('you'), CacheValue.empty)
+    assert.equal(slaveCache.get(9), CacheValue.empty)
   })
 
   it('should delete caches in a Product', () => {
@@ -43,13 +44,13 @@ describe('invalidate', () => {
 
     const product = Product.create([leaf1, leaf2])
 
-    cache1.storeDone(9, { value: 18, timestamp: new Date().getTime(), promise: Promise.resolve(18) })
-    cache2.storeDone('you', { value: 'hello you', timestamp: new Date().getTime(), promise: Promise.resolve('hello you') })
+    cache1.storeDone(9, new Done(18, Date.now(), Promise.resolve(18)))
+    cache2.storeDone('you', new Done('hello you', Date.now(), Promise.resolve('hello you')))
 
     product.invalidate([9, 'you'])
 
-    assert.equal(cache1.get(9), emptyCacheValue)
-    assert.equal(cache2.get('you'), emptyCacheValue)
+    assert.equal(cache1.get(9), CacheValue.empty)
+    assert.equal(cache2.get('you'), CacheValue.empty)
   })
 
   it('should delete caches in a Leaf', () => {
@@ -57,11 +58,11 @@ describe('invalidate', () => {
     const fetch = (a: number) => Promise.resolve(2 * a)
     const leaf = Leaf.create(fetch, available, cache)
 
-    cache.storeDone(9, { value: 18, timestamp: new Date().getTime(), promise: Promise.resolve(18) })
+    cache.storeDone(9, new Done(18, Date.now(), Promise.resolve(18)))
 
     leaf.invalidate(9)
 
-    assert.equal(cache.get(9), emptyCacheValue)
+    assert.equal(cache.get(9), CacheValue.empty)
   })
 
 })

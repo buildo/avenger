@@ -10,7 +10,8 @@ import {
   ObservableCache,
   available,
   refetch,
-  Fetch
+  Fetch,
+  Done
 } from '../src'
 
 // L = LOADING event
@@ -65,7 +66,7 @@ describe('observe', () => {
 
     it('should emit L + P events when strategy is refetch, even after a cache hit', () => {
       const cache = new ObservableCache<number, number>()
-      cache.storeDone(1, { value: 2, timestamp: new Date().getTime() - 100, promise: Promise.resolve(2) })
+      cache.storeDone(1, new Done(2, Date.now() - 100, Promise.resolve(2)))
       const fetch = (a: number) => Promise.resolve(2 * a)
       const leaf = Leaf.create(fetch, refetch, cache)
       const observable = leaf.observe(1)

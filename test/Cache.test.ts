@@ -6,7 +6,8 @@ import {
   Cache,
   Expire,
   refetch,
-  available
+  available,
+  Done
 } from '../src'
 
 const expire = new Expire(1000)
@@ -21,14 +22,14 @@ describe('Cache', () => {
       assert.strictEqual(cache.getAvailablePromise(1, refetch), undefined)
       assert.strictEqual(cache.getAvailablePromise(1, expire), undefined)
 
-      cache.storeDone(1, { value: 2, timestamp: 0, promise: Promise.resolve(2) })
+      cache.storeDone(1, new Done(2, 0, Promise.resolve(2)))
       assert.strictEqual(cache.getAvailablePromise(1, refetch), undefined)
       assert.strictEqual(cache.getAvailablePromise(1, expire), undefined)
     })
 
     it('should return done.promise if there is an available done', () => {
       const cache = new Cache<number, number>()
-      const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
+      const done = new Done(2, 0, Promise.resolve(2))
       cache.storeDone(1, done)
       assert.strictEqual(cache.getAvailablePromise(1, available), done.promise)
       cache.storePromise(1, Promise.resolve(2))
@@ -61,7 +62,7 @@ describe('Cache', () => {
     it('should fetch when there is no available promise (refetch)', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache<number, number>()
-      const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
+      const done = new Done(2, 0, Promise.resolve(2))
       cache.storeDone(1, done)
       return cache.getPromise(1, refetch, fetch).then(p => {
         assert.strictEqual(p, 2)
@@ -73,7 +74,7 @@ describe('Cache', () => {
     it('should fetch when there is no available promise (expire)', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache<number, number>()
-      const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
+      const done = new Done(2, 0, Promise.resolve(2))
       cache.storeDone(1, done)
       return cache.getPromise(1, expire, fetch).then(p => {
         assert.strictEqual(p, 2)
@@ -85,7 +86,7 @@ describe('Cache', () => {
     it('should not fetch when a cache hit occours (done)', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache<number, number>()
-      const done = { value: 2, timestamp: 0, promise: Promise.resolve(2) }
+      const done = new Done(2, 0, Promise.resolve(2))
       cache.storeDone(1, done)
       return cache.getPromise(1, available, fetch).then(p => {
         assert.strictEqual(p, 2)
