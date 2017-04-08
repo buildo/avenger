@@ -6,10 +6,10 @@ import {
   Leaf,
   ObservableCache,
   available,
-  apply
+  sequence
 } from '../src'
 
-describe('apply', () => {
+describe('sequence', () => {
 
   it('should return an observable of dictionaries', () => {
     const cache1 = new ObservableCache<number, number>()
@@ -20,7 +20,7 @@ describe('apply', () => {
     const fetch2 = (a: string) => Promise.resolve(`hello ${a}`)
     const leaf2 = Leaf.create(fetch2, available, cache2)
 
-    const observable = apply({
+    const observable = sequence({
       n: leaf1,
       s: leaf2
     }, {

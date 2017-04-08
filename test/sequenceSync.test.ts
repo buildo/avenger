@@ -5,11 +5,11 @@ import {
   Leaf,
   ObservableCache,
   available,
-  applySync,
+  sequenceSync,
   Done
 } from '../src'
 
-describe('applySync', () => {
+describe('sequenceSync', () => {
 
   it('should return a dictionary even if data is not available', () => {
     const cache1 = new ObservableCache<number, number>()
@@ -20,7 +20,7 @@ describe('applySync', () => {
     const fetch2 = (a: string) => Promise.resolve(`hello ${a}`)
     const leaf2 = Leaf.create(fetch2, available, cache2)
 
-    const dict = applySync({
+    const dict = sequenceSync({
       n: leaf1,
       s: leaf2
     }, {
@@ -42,7 +42,7 @@ describe('applySync', () => {
     cache1.storeDone(1, new Done(2, Date.now(), Promise.resolve(2)))
     cache2.storeDone('s', new Done('hello s', Date.now(), Promise.resolve('hello s')))
 
-    const dict = applySync({
+    const dict = sequenceSync({
       n: leaf1,
       s: leaf2
     }, {

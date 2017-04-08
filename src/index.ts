@@ -8,13 +8,13 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/distinctUntilChanged'
 import { Option, none, some, isSome } from 'fp-ts/lib/Option'
-import { sequence } from 'fp-ts/lib/Traversable'
+import * as traversable from 'fp-ts/lib/Traversable'
 import * as array from 'fp-ts/lib/Array'
 import * as option from 'fp-ts/lib/Option'
 import { identity } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 
-const sequenceOptions = sequence(option, array)
+const sequenceOptions = traversable.sequence(option, array)
 
 export type Fetch<A, P> = (a: A) => Promise<P>
 
@@ -22,9 +22,9 @@ export class Done<P> {
   constructor(
     /** il valore restituito dalla promise contenuta nel campo `promise` una volta risolta */
     public readonly value: P,
-    /** il momento in cui è stato valorizzato done */
+    /** il momento in cui è stato valorizzato value */
     public readonly timestamp: number,
-    /** la promise che conteneva il done */
+    /** la promise che conteneva il valore */
     public readonly promise: Promise<P>
   ) {}
 }
@@ -429,7 +429,7 @@ export class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implement
   }
 }
 
-function _query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
+function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
   const observable = fetch.observe(a)
   fetch.run(a)
   return observable
@@ -437,17 +437,16 @@ function _query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent
 
 export type ObservableFetchDictionary = { [key: string]: ObservableFetch<any, any> }
 
-export type ObservableFetchesArguments<OF extends ObservableFetchDictionary> = { readonly [K in keyof OF]: OF[K]['_A'] }
+export type ObservableFetchesArguments<D extends ObservableFetchDictionary> = { readonly [K in keyof D]: D[K]['_A'] }
 
-export type ObservableFetchesCacheEvents<OF extends ObservableFetchDictionary> = CacheEvent<{ readonly [K in keyof OF]: OF[K]['_P'] }>
+export type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = CacheEvent<{ readonly [K in keyof D]: D[K]['_P'] }>
 
-export function apply<Q extends ObservableFetchDictionary>(fetchDictionary: Q, argumentDictionary: ObservableFetchesArguments<Q>): Observable<ObservableFetchesCacheEvents<Q>> {
+/** Dato un dizionario di ObservableFetch restituisce un Observable del dizionario dei CacheEvent corrispondenti */
+export function sequence<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): Observable<ObservableFetchesCacheEvents<D>> {
   // unsafe code
-  const itok = Object.keys(argumentDictionary)
-  const fetches = itok.map(k => fetchDictionary[k])
-  const as = itok.map(k => argumentDictionary[k])
-  const product = Product.create(fetches)
-  const x = _query(product, as).map(({ loading, data }) => data.fold(
+  const itok = Object.keys(as)
+  const product = Product.create(itok.map(k => fetches[k]))
+  const observable = observeAndRun(product, itok.map(k => as[k])).map(({ loading, data }) => data.fold(
     () => LOADING,
     ps => {
       const outData: { [key: string]: any } = {}
@@ -455,16 +454,15 @@ export function apply<Q extends ObservableFetchDictionary>(fetchDictionary: Q, a
       return new CacheEvent(loading, some(outData))
     }
   ))
-  return x as any
+  return observable as any
 }
 
-export function applySync<Q extends ObservableFetchDictionary>(fetchDictionary: Q, argumentDictionary: ObservableFetchesArguments<Q>): ObservableFetchesCacheEvents<Q> {
+/** Dato un dizionario di ObservableFetch restituisce il dizionario dei CacheEvent corrispondenti */
+export function sequenceSync<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): ObservableFetchesCacheEvents<D> {
   // unsafe code
-  const itok = Object.keys(argumentDictionary)
-  const fetches = itok.map(k => fetchDictionary[k])
-  const as = itok.map(k => argumentDictionary[k])
-  const product = Product.create(fetches)
-  const { loading, data } = product.getCacheEvent(as)
+  const itok = Object.keys(as)
+  const product = Product.create(itok.map(k => fetches[k]))
+  const { loading, data } = product.getCacheEvent(itok.map(k => as[k]))
   return data.fold(
     () => LOADING,
     ps => {
@@ -479,12 +477,15 @@ export function applySync<Q extends ObservableFetchDictionary>(fetchDictionary: 
 // DSL -> ObservableFetch
 //
 
-export interface Query<Params extends t.Props, Deps extends { [key: string]: Query<any, any, any> }, P> extends ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_A'] }, P> {
+export type Queries = { [key: string]: Query<any, any, any> }
+
+export interface Query<Params extends t.Props, Deps extends Queries, P> extends ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_A'] }, P> {
   params: Params,
   dependencies: Deps
 }
 
-export function Query<Params extends t.Props, Deps extends { [key: string]: Query<any, any, any> }, P>(options: {
+/** Data una configurazione appartenente al DSL restituisce la ObservableFetch corrispondente */
+export function Query<Params extends t.Props, Deps extends Queries, P>(options: {
   cacheStrategy: Strategy,
   params: Params,
   fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,
@@ -496,7 +497,7 @@ export function Query<Params extends t.Props, P>(options: { // TODO togliere Par
   params: Params,
   fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> }, P>
 }): Query<Params, {}, P>
-export function Query<Params extends t.Props, Deps extends { [key: string]: Query<any, any, any> }, P>(options: {
+export function Query<Params extends t.Props, Deps extends Queries, P>(options: {
   cacheStrategy: Strategy,
   params: Params,
   fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,

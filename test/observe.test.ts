@@ -1,6 +1,5 @@
 import * as assert from 'assert'
 import 'rxjs'
-import * as sinon from 'sinon'
 
 import { none, some } from 'fp-ts/lib/Option'
 import {
@@ -10,16 +9,11 @@ import {
   ObservableCache,
   available,
   refetch,
-  Fetch,
   Done
 } from '../src'
 
 // L = LOADING event
 // P = PAYLOAD event
-
-function spy<A, P>(f: Fetch<A, P>): sinon.SinonSpy & Fetch<A, P> {
-  return sinon.spy(f) as any
-}
 
 describe('observe', () => {
 
@@ -245,25 +239,6 @@ describe('observe', () => {
     })
 
     it.skip('should not call slave twice', () => {
-      const slaveCache = new ObservableCache<number, number>()
-      const slaveFetch = spy((a: number) => Promise.resolve(2 * a))
-      const slave = Leaf.create(slaveFetch, refetch, slaveCache)
-      const masterCache = new ObservableCache<string, string>()
-      const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
-      const master = Leaf.create(masterFetch, available, masterCache)
-      const composition = Composition.create(master, slave)(s => s.length)
-      const observable = composition.observe('foo')
-      return new Promise((resolve, reject) => {
-        observable.bufferTime(10).take(1).subscribe(events => {
-          try {
-            assert.strictEqual(slaveFetch.callCount, 1)
-            resolve()
-          } catch (e) {
-            reject(e)
-          }
-        })
-        composition.run('foo')
-      })
     })
 
     it('should emit events calling slave', () => {
