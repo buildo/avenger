@@ -96,14 +96,17 @@ export class Cache<A, P> {
     this.atok = options.atok || JSON.stringify
   }
   private set(a: A, value: CacheValue<P>): Map<string, CacheValue<P>> {
-    return this.map.set(this.atok(a), value)
+    const k = this.atok(a)
+    this.log('set key `%s`', k)
+    return this.map.set(k, value)
   }
   get(a: A): CacheValue<P> {
     return this.map.get(this.atok(a)) || CacheValue.empty
   }
   delete(a: A): boolean {
-    this.log('delete(%o)', a)
-    return this.map.delete(this.atok(a))
+    const k = this.atok(a)
+    this.log('delete key `%s`', k)
+    return this.map.delete(k)
   }
   clear(): void {
     return this.map.clear()
@@ -432,10 +435,6 @@ function _query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent
   return observable
 }
 
-function _querySync<A, P>(fetch: ObservableFetch<A, P>, a: A): CacheEvent<P> {
-  return fetch.getCacheEvent(a)
-}
-
 export type ObservableFetchDictionary = { [key: string]: ObservableFetch<any, any> }
 
 export type ObservableFetchesArguments<OF extends ObservableFetchDictionary> = { readonly [K in keyof OF]: OF[K]['_A'] }
@@ -451,9 +450,9 @@ export function apply<Q extends ObservableFetchDictionary>(fetchDictionary: Q, a
   const x = _query(product, as).map(({ loading, data }) => data.fold(
     () => LOADING,
     ps => {
-      const dataMap: { [key: string]: any } = {}
-      itok.forEach((k, i) => { dataMap[k] = ps[i] })
-      return new CacheEvent(loading, some(dataMap))
+      const outData: { [key: string]: any } = {}
+      itok.forEach((k, i) => { outData[k] = ps[i] })
+      return new CacheEvent(loading, some(outData))
     }
   ))
   return x as any
@@ -465,13 +464,13 @@ export function applySync<Q extends ObservableFetchDictionary>(fetchDictionary: 
   const fetches = itok.map(k => fetchDictionary[k])
   const as = itok.map(k => argumentDictionary[k])
   const product = Product.create(fetches)
-  const { loading, data } = _querySync(product, as)
+  const { loading, data } = product.getCacheEvent(as)
   return data.fold(
     () => LOADING,
     ps => {
-      const dataMap: { [key: string]: any } = {}
-      itok.forEach((k, i) => { dataMap[k] = ps[i] })
-      return new CacheEvent(loading, some(dataMap))
+      const outData: { [key: string]: any } = {}
+      itok.forEach((k, i) => { outData[k] = ps[i] })
+      return new CacheEvent(loading, some(outData))
     }
   )
 }
@@ -480,61 +479,76 @@ export function applySync<Q extends ObservableFetchDictionary>(fetchDictionary: 
 // DSL -> ObservableFetch
 //
 
-export interface QueryableFetch<A extends { [key: string]: any }, P> extends Fetch<A, P> {}
-
-export interface QueryableObservableFetch<A extends { [key: string]: any }, P> extends ObservableFetch<A, P> {}
-
-export function Query<P, Params extends t.Props, Deps extends { [key: string]: QueryableObservableFetch<any, any> }>(options: {
-  cacheStrategy: Strategy,
+export interface Query<Params extends t.Props, Deps extends { [key: string]: Query<any, any, any> }, P> extends ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_A'] }, P> {
   params: Params,
-  fetch: QueryableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,
   dependencies: Deps
-}): ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [key: string]: any }, P>
+}
 
-export function Query<P, Params extends t.Props>(options: {
+export function Query<Params extends t.Props, Deps extends { [key: string]: Query<any, any, any> }, P>(options: {
   cacheStrategy: Strategy,
   params: Params,
-  fetch: QueryableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> }, P>,
-  dependencies: { [key: string]: never }
-}): ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> }, P>
-
-export function Query<P, A>(options: {
+  fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,
+  dependencies: Deps,
+  atok?: (x: { [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }) => string
+}): Query<Params, Deps, P>
+export function Query<Params extends t.Props, P>(options: { // TODO togliere Params?
   cacheStrategy: Strategy,
-  params: t.Props,
-  fetch: QueryableFetch<any, P>,
-  dependencies: { [key: string]: QueryableObservableFetch<any, any> }
-}): ObservableFetch<A, P> {
+  params: Params,
+  fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> }, P>
+}): Query<Params, {}, P>
+export function Query<Params extends t.Props, Deps extends { [key: string]: Query<any, any, any> }, P>(options: {
+  cacheStrategy: Strategy,
+  params: Params,
+  fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,
+  dependencies?: Deps,
+  atok?: (x: { [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }) => string
+}): Query<Params, Deps, P> {
 
-  const keys = Object.keys(options.dependencies)
+  const dependencies: Deps = options.dependencies || ({} as Deps)
+  const keys = Object.keys(dependencies)
   const keysLength = keys.length
-  const leaf = Leaf.create(options.fetch, options.cacheStrategy, new ObservableCache<A, P>())
-  if (keysLength === 0) {
-    return leaf
-  } else {
-    const fetches = keys.map(k => options.dependencies[k])
-    const params = options.params
-    const paramsLength = Object.keys(params).length
-    if (paramsLength > 0) {
-      const paramsFetch = Leaf.create(a => Promise.resolve(a), refetch, new ObservableCache<any, P>())
-      fetches.push(paramsFetch)
-    }
-    const product = Product.create(fetches)
-    const composition = Composition.create(
-      product,
-      leaf
-    )(p => {
-      const a: { [key: string]: any } = {}
-      keys.forEach((k, i) => {
-        a[k] = p[i]
-      })
+  const leaf = Leaf.create(options.fetch, options.cacheStrategy, new ObservableCache<any, P>({ atok: options.atok }))
+
+  const createQuery = () => {
+    if (keysLength === 0) {
+      return leaf
+    } else {
+      const fetches: ObservableFetch<any[], any[]>[] = keys.map(k => dependencies[k])
+      const params = options.params
+      const paramsLength = Object.keys(params).length
       if (paramsLength > 0) {
-        for (let k in params) {
-          a[k] = p[keysLength][k]
-        }
+        const paramsFetch = Leaf.create(a => Promise.resolve(a), refetch, new ObservableCache<any, P>())
+        fetches.push(paramsFetch)
       }
-      return a
-    })
-    const a2toa1 = (a2: A) => fetches.map(() => a2)
-    return new Bimap(composition, a2toa1, identity)
+      const product = Product.create(fetches)
+      const composition = Composition.create(
+        product,
+        leaf
+      )(p => {
+        const a: { [key: string]: any } = {}
+        keys.forEach((k, i) => {
+          a[k] = p[i]
+        })
+        if (paramsLength > 0) {
+          for (let k in params) {
+            a[k] = p[keysLength][k]
+          }
+        }
+        return a
+      })
+      const a2toa1 = (a2: any) => {
+        const a1 = keys.map(k => a2[k])
+        if (paramsLength > 0) {
+          a1.push(a2)
+        }
+        return a1
+      }
+      return new Bimap(composition, a2toa1, identity)
+    }
   }
+
+  const out: any = createQuery()
+  out.params = options.params
+  out.dependencies = dependencies
+  return out
 }

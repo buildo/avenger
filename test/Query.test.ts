@@ -10,23 +10,19 @@ import {
 describe('Query', () => {
 
   const q1 = Query({
-    // id: 'q1',
     cacheStrategy: available,
     params: {
       n: t.number
     },
-    fetch: a => Promise.resolve(a.n * 2),
-    dependencies: {}
+    fetch: a => Promise.resolve(a.n * 2)
   })
 
   const q2 = Query({
-    // id: 'q2',
     cacheStrategy: available,
     params: {
       s: t.string
     },
-    fetch: a => Promise.resolve(a.s.length),
-    dependencies: {}
+    fetch: a => Promise.resolve(a.s.length)
   })
 
   const q3 = Query({
@@ -40,7 +36,8 @@ describe('Query', () => {
     dependencies: {
       q1,
       q2
-    }
+    },
+    atok: a => String(a.b)
   })
 
   it('should handle no dependencies', () => {
@@ -50,7 +47,7 @@ describe('Query', () => {
   })
 
   it('should handle dependencies', () => {
-    return q3.run({ n: 1, s: 'hello', b: false }).then(p => {
+    return q3.run({ b: false, q1: { n: 1 }, q2: { s: 'hello' } }).then(p => {
       assert.strictEqual(p, 5)
     })
   })
@@ -64,7 +61,7 @@ describe('Query', () => {
         q3
       }
     })
-    return q4.run({ n: 1, s: 'hello', b: true }).then(p => {
+    return q4.run({ q3: { b: true, q1: { n: 1 }, q2: { s: 'hello' } } }).then(p => {
       assert.strictEqual(p, 2)
     })
   })
