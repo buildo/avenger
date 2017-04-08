@@ -426,27 +426,27 @@ export class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implement
   }
 }
 
-export function _query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
+function _query<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
   const observable = fetch.observe(a)
   fetch.run(a)
   return observable
 }
 
-export function _querySync<A, P>(fetch: ObservableFetch<A, P>, a: A): CacheEvent<P> {
+function _querySync<A, P>(fetch: ObservableFetch<A, P>, a: A): CacheEvent<P> {
   return fetch.getCacheEvent(a)
 }
 
-export type ObservableFetches = { [key: string]: ObservableFetch<any, any> }
+export type ObservableFetchDictionary = { [key: string]: ObservableFetch<any, any> }
 
-export type ObservableFetchesArguments<OF extends ObservableFetches> = { readonly [K in keyof OF]: OF[K]['_A'] }
+export type ObservableFetchesArguments<OF extends ObservableFetchDictionary> = { readonly [K in keyof OF]: OF[K]['_A'] }
 
-export type ObservableFetchesCacheEvents<OF extends ObservableFetches> = CacheEvent<{ readonly [K in keyof OF]: OF[K]['_P'] }>
+export type ObservableFetchesCacheEvents<OF extends ObservableFetchDictionary> = CacheEvent<{ readonly [K in keyof OF]: OF[K]['_P'] }>
 
-export function apply<Q extends ObservableFetches>(queries: Q, args: ObservableFetchesArguments<Q>): Observable<ObservableFetchesCacheEvents<Q>> {
+export function apply<Q extends ObservableFetchDictionary>(fetchDictionary: Q, argumentDictionary: ObservableFetchesArguments<Q>): Observable<ObservableFetchesCacheEvents<Q>> {
   // unsafe code
-  const itok = Object.keys(args)
-  const fetches = itok.map(k => queries[k])
-  const as = itok.map(k => args[k])
+  const itok = Object.keys(argumentDictionary)
+  const fetches = itok.map(k => fetchDictionary[k])
+  const as = itok.map(k => argumentDictionary[k])
   const product = Product.create(fetches)
   const x = _query(product, as).map(({ loading, data }) => data.fold(
     () => LOADING,
@@ -459,11 +459,11 @@ export function apply<Q extends ObservableFetches>(queries: Q, args: ObservableF
   return x as any
 }
 
-export function applySync<Q extends ObservableFetches>(queries: Q, args: ObservableFetchesArguments<Q>): ObservableFetchesCacheEvents<Q> {
+export function applySync<Q extends ObservableFetchDictionary>(fetchDictionary: Q, argumentDictionary: ObservableFetchesArguments<Q>): ObservableFetchesCacheEvents<Q> {
   // unsafe code
-  const itok = Object.keys(args)
-  const fetches = itok.map(k => queries[k])
-  const as = itok.map(k => args[k])
+  const itok = Object.keys(argumentDictionary)
+  const fetches = itok.map(k => fetchDictionary[k])
+  const as = itok.map(k => argumentDictionary[k])
   const product = Product.create(fetches)
   const { loading, data } = _querySync(product, as)
   return data.fold(
@@ -476,19 +476,33 @@ export function applySync<Q extends ObservableFetches>(queries: Q, args: Observa
   )
 }
 
+//
+// DSL -> ObservableFetch
+//
+
 export interface QueryableFetch<A extends { [key: string]: any }, P> extends Fetch<A, P> {}
 
 export interface QueryableObservableFetch<A extends { [key: string]: any }, P> extends ObservableFetch<A, P> {}
 
-export type QueryableObservableFetches = { [key: string]: QueryableObservableFetch<any, any> }
-
-export type Params = { [key: string]: t.Any }
-
-export function Query<A, P>(options: {
+export function Query<P, Params extends t.Props, Deps extends { [key: string]: QueryableObservableFetch<any, any> }>(options: {
   cacheStrategy: Strategy,
   params: Params,
+  fetch: QueryableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,
+  dependencies: Deps
+}): ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [key: string]: any }, P>
+
+export function Query<P, Params extends t.Props>(options: {
+  cacheStrategy: Strategy,
+  params: Params,
+  fetch: QueryableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> }, P>,
+  dependencies: { [key: string]: never }
+}): ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> }, P>
+
+export function Query<P, A>(options: {
+  cacheStrategy: Strategy,
+  params: t.Props,
   fetch: QueryableFetch<any, P>,
-  dependencies: QueryableObservableFetches
+  dependencies: { [key: string]: QueryableObservableFetch<any, any> }
 }): ObservableFetch<A, P> {
 
   const keys = Object.keys(options.dependencies)
