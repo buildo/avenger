@@ -4,6 +4,6 @@ dev/bundle.js
 dev/bundle.js.map
 dev/index.js
 server
-lib
+# lib
 lib-jsnext
 old
