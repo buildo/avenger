@@ -1,6 +1,6 @@
 {
   "name": "avenger",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "lint": "eslint src test",
@@ -10,7 +10,9 @@
     "prepublish": "npm run build",
     "mocha": "mocha -r ts-node/register test/**/*.test.ts"
   },
-  "main": "lib",
+  "main": "lib/index.js",
+  "jsnext:main": "lib-jsnext/index.js",
+  "typings": "lib/index.d.ts",
   "author": "",
   "license": "MIT",
   "dependencies": {
