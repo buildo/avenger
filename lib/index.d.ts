@@ -161,9 +161,9 @@ export declare type ObservableFetchDictionary = {
 export declare type ObservableFetchesArguments<D extends ObservableFetchDictionary> = {
     readonly [K in keyof D]: D[K]['_A'];
 };
-export declare type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = CacheEvent<{
-    readonly [K in keyof D]: D[K]['_P'];
-}>;
+export declare type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = {
+    readonly [K in keyof D]: CacheEvent<D[K]['_P']>;
+};
 /** Dato un dizionario di ObservableFetch restituisce un Observable del dizionario dei CacheEvent corrispondenti */
 export declare function sequence<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): Observable<ObservableFetchesCacheEvents<D>>;
 /** Dato un dizionario di ObservableFetch restituisce il dizionario dei CacheEvent corrispondenti */

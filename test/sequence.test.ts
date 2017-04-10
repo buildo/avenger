@@ -31,8 +31,18 @@ describe('sequence', () => {
       observable.bufferTime(10).take(1).subscribe(events => {
         try {
           assert.deepEqual(events, [
-            { loading: true, data: none },
-            { loading: false, data: some({ n: 2, s: 'hello s' }) }
+            {
+              n: { loading: true, data: none },
+              s: { loading: true, data: none }
+            },
+            {
+              n: { loading: false, data: some(2) },
+              s: { loading: true, data: none }
+            },
+            {
+              n: { loading: false, data: some(2) },
+              s: { loading: false, data: some('hello s') }
+            }
           ])
           resolve()
         } catch (e) {

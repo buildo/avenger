@@ -27,7 +27,10 @@ describe('sequenceSync', () => {
       n: 1,
       s: 's'
     })
-    assert.deepEqual(dict, { loading: true, data: none })
+    assert.deepEqual(dict, {
+      n: { loading: true, data: none },
+      s: { loading: true, data: none }
+    })
   })
 
   it('should return a dictionary with data if available', () => {
@@ -49,7 +52,10 @@ describe('sequenceSync', () => {
       n: 1,
       s: 's'
     })
-    assert.deepEqual(dict, { loading: false, data: some({ n: 2, s: 'hello s' }) })
+    assert.deepEqual(dict, {
+      n: { loading: false, data: some(2) },
+      s: { loading: false, data: some('hello s') }
+    })
   })
 
 })

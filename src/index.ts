@@ -439,38 +439,40 @@ export type ObservableFetchDictionary = { [key: string]: ObservableFetch<any, an
 
 export type ObservableFetchesArguments<D extends ObservableFetchDictionary> = { readonly [K in keyof D]: D[K]['_A'] }
 
-export type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = CacheEvent<{ readonly [K in keyof D]: D[K]['_P'] }>
+export type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = { readonly [K in keyof D]: CacheEvent<D[K]['_P']> }
 
 /** Dato un dizionario di ObservableFetch restituisce un Observable del dizionario dei CacheEvent corrispondenti */
 export function sequence<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): Observable<ObservableFetchesCacheEvents<D>> {
-  // unsafe code
   const itok = Object.keys(fetches)
-  const product = Product.create(itok.map(k => fetches[k]))
-  const observable = observeAndRun(product, itok.map(k => as[k])).map(({ loading, data }) => data.fold(
-    () => LOADING,
-    ps => {
-      const outData: { [key: string]: any } = {}
-      itok.forEach((k, i) => { outData[k] = ps[i] })
-      return new CacheEvent(loading, some(outData))
-    }
-  ))
-  return observable as any
+  const observables = itok.map(k => observeAndRun(fetches[k], as[k]))
+  return Observable.combineLatest(...observables, (...values) => {
+    const out: { [key: string]: CacheEvent<any> } = {}
+    itok.forEach((k, i) => {
+      out[k] = values[i]
+    })
+    return out as any
+  })
 }
 
 /** Dato un dizionario di ObservableFetch restituisce il dizionario dei CacheEvent corrispondenti */
 export function sequenceSync<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): ObservableFetchesCacheEvents<D> {
+  const out: { [key: string]: CacheEvent<any> } = {}
+  for (let k in fetches) {
+    out[k] = fetches[k].getCacheEvent(as[k])
+  }
+  return out as any
   // unsafe code
-  const itok = Object.keys(fetches)
-  const product = Product.create(itok.map(k => fetches[k]))
-  const { loading, data } = product.getCacheEvent(itok.map(k => as[k]))
-  return data.fold(
-    () => LOADING,
-    ps => {
-      const outData: { [key: string]: any } = {}
-      itok.forEach((k, i) => { outData[k] = ps[i] })
-      return new CacheEvent(loading, some(outData))
-    }
-  )
+  // const itok = Object.keys(fetches)
+  // const product = Product.create(itok.map(k => fetches[k]))
+  // const { loading, data } = product.getCacheEvent(itok.map(k => as[k]))
+  // return data.fold(
+  //   () => LOADING,
+  //   ps => {
+  //     const outData: { [key: string]: any } = {}
+  //     itok.forEach((k, i) => { outData[k] = ps[i] })
+  //     return new CacheEvent(loading, some(outData))
+  //   }
+  // )
 }
 
 //
