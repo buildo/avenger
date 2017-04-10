@@ -444,7 +444,7 @@ export type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = 
 /** Dato un dizionario di ObservableFetch restituisce un Observable del dizionario dei CacheEvent corrispondenti */
 export function sequence<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): Observable<ObservableFetchesCacheEvents<D>> {
   // unsafe code
-  const itok = Object.keys(as)
+  const itok = Object.keys(fetches)
   const product = Product.create(itok.map(k => fetches[k]))
   const observable = observeAndRun(product, itok.map(k => as[k])).map(({ loading, data }) => data.fold(
     () => LOADING,
@@ -460,7 +460,7 @@ export function sequence<D extends ObservableFetchDictionary>(fetches: D, as: Ob
 /** Dato un dizionario di ObservableFetch restituisce il dizionario dei CacheEvent corrispondenti */
 export function sequenceSync<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): ObservableFetchesCacheEvents<D> {
   // unsafe code
-  const itok = Object.keys(as)
+  const itok = Object.keys(fetches)
   const product = Product.create(itok.map(k => fetches[k]))
   const { loading, data } = product.getCacheEvent(itok.map(k => as[k]))
   return data.fold(
