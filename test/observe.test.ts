@@ -58,7 +58,7 @@ describe('observe', () => {
       })
     })
 
-    it('should emit L + P events when strategy is refetch, even after a cache hit', () => {
+    it('should emit L + L + P events when strategy is refetch, even after a cache hit', () => {
       const cache = new ObservableCache<number, number>()
       cache.storeDone(1, new Done(2, Date.now() - 100, Promise.resolve(2)))
       const fetch = (a: number) => Promise.resolve(2 * a)
@@ -85,7 +85,7 @@ describe('observe', () => {
 
   describe('Product', () => {
 
-    it('should emit L + L + P events for an empty cache', () => {
+    it('should emit L + P events for an empty cache', () => {
       const cache1 = new ObservableCache<number, number>()
       const fetch1 = (a: number) => Promise.resolve(2 * a)
       const leaf1 = Leaf.create(fetch1, available, cache1)
@@ -236,9 +236,6 @@ describe('observe', () => {
         })
         master.run('foo')
       })
-    })
-
-    it.skip('should not call slave twice', () => {
     })
 
     it('should emit events calling slave', () => {

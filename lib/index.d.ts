@@ -155,6 +155,16 @@ export declare class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> i
     hasObservers(a2: A2): boolean;
     invalidate(a2: A2): void;
 }
+export declare type Dictionary = {
+    [key: string]: any;
+};
+/** Concatenable observable fetch */
+export declare type COF<A extends Dictionary, P extends Dictionary> = ObservableFetch<A, P>;
+export declare type AnyCOF = COF<any, any>;
+export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF, F4 extends AnyCOF>(fetches: [F1, F2, F3, F4]): COF<F1['_A'] & F2['_A'] & F3['_A'] & F4['_A'], F1['_P'] & F2['_P'] & F3['_P'] & F4['_P']>;
+export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>;
+export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>;
+export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): COF<F1['_A'] & F2['_A'], F1['_P'] & F2['_P']>;
 export declare type ObservableFetchDictionary = {
     [key: string]: ObservableFetch<any, any>;
 };

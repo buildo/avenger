@@ -1,11 +1,11 @@
 import * as debug from 'debug'
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/combineLatest';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/map';
+import { BehaviorSubject } from 'rxjs/BehaviorSubject'
+import { Observable } from 'rxjs/Observable'
+import 'rxjs/add/observable/combineLatest'
+import 'rxjs/add/observable/of'
+import 'rxjs/add/operator/filter'
+import 'rxjs/add/operator/switchMap'
+import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/distinctUntilChanged'
 import { Option, none, some, isSome } from 'fp-ts/lib/Option'
 import * as traversable from 'fp-ts/lib/Traversable'
@@ -297,7 +297,7 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
     return this.cache.getSubject(a).value
   }
   getPayload(a: A): Option<P> {
-    return this.cache.get(a).done.map(done => done.value);
+    return this.cache.get(a).done.map(done => done.value)
   }
   hasObservers(a: A): boolean {
     return this.cache.getSubject(a).observers.length > 0
@@ -429,6 +429,33 @@ export class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implement
   }
 }
 
+export type Dictionary = { [key: string]: any }
+
+/** Concatenable observable fetch */
+export type COF<A extends Dictionary, P extends Dictionary> = ObservableFetch<A, P>
+
+export type AnyCOF = COF<any, any>
+
+// TODO more overloadings
+export function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF, F4 extends AnyCOF>(fetches: [F1, F2, F3, F4]): COF<F1['_A'] & F2['_A'] & F3['_A'] & F4['_A'], F1['_P'] & F2['_P'] & F3['_P'] & F4['_P']>
+export function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>
+export function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>
+export function concat<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): COF<F1['_A'] & F2['_A'], F1['_P'] & F2['_P']>
+export function concat(fetches: Array<AnyCOF>): AnyCOF {
+  // non c'è bisogno di fare un check sui conflitti perchè il tipo che ne risulta non è
+  // utilizzabile a valle quindi verrà sollevato un errore appena si prova ad utilizzare
+  // il risultato, a meno che tutti i tipi coincidano
+  return new Bimap(
+    Product.create(fetches),
+    a2 => fetches.map(() => a2),
+    ps => Object.assign.apply(null, [{}].concat(ps))
+  )
+}
+
+//
+// =========================
+//
+
 function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
   const observable = fetch.observe(a)
   fetch.run(a)
@@ -461,18 +488,6 @@ export function sequenceSync<D extends ObservableFetchDictionary>(fetches: D, as
     out[k] = fetches[k].getCacheEvent(as[k])
   }
   return out as any
-  // unsafe code
-  // const itok = Object.keys(fetches)
-  // const product = Product.create(itok.map(k => fetches[k]))
-  // const { loading, data } = product.getCacheEvent(itok.map(k => as[k]))
-  // return data.fold(
-  //   () => LOADING,
-  //   ps => {
-  //     const outData: { [key: string]: any } = {}
-  //     itok.forEach((k, i) => { outData[k] = ps[i] })
-  //     return new CacheEvent(loading, some(outData))
-  //   }
-  // )
 }
 
 //
