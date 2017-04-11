@@ -2,12 +2,14 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/observable/of';
+import 'rxjs/add/observable/merge';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/distinctUntilChanged';
+import 'rxjs/add/operator/startWith';
+import 'rxjs/add/operator/scan';
 import { Option } from 'fp-ts/lib/Option';
-import * as t from 'io-ts';
 export declare type Fetch<A, P> = (a: A) => Promise<P>;
 export declare class Done<P> {
     /** il valore restituito dalla promise contenuta nel campo `promise` una volta risolta */
@@ -135,8 +137,6 @@ export declare class Product<A extends Array<any>, P extends Array<any>> extends
     private readonly fetches;
     static create<A1, P1, A2, P2, A3, P3>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3]>;
     static create<A1, P1, A2, P2>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]): Product<[A1, A2], [P1, P2]>;
-    static create<A1, P1>(fetches: [ObservableFetch<A1, P1>]): Product<[A1], [P1]>;
-    static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>>;
     private constructor(fetches);
     observe(a: A): Observable<CacheEvent<P>>;
     getCacheEvent(a: A): CacheEvent<P>;
@@ -161,54 +161,12 @@ export declare type Dictionary = {
 /** Concatenable observable fetch */
 export declare type COF<A extends Dictionary, P extends Dictionary> = ObservableFetch<A, P>;
 export declare type AnyCOF = COF<any, any>;
-export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF, F4 extends AnyCOF>(fetches: [F1, F2, F3, F4]): COF<F1['_A'] & F2['_A'] & F3['_A'] & F4['_A'], F1['_P'] & F2['_P'] & F3['_P'] & F4['_P']>;
-export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>;
-export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>;
-export declare function concat<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): COF<F1['_A'] & F2['_A'], F1['_P'] & F2['_P']>;
-export declare type ObservableFetchDictionary = {
-    [key: string]: ObservableFetch<any, any>;
-};
-export declare type ObservableFetchesArguments<D extends ObservableFetchDictionary> = {
-    readonly [K in keyof D]: D[K]['_A'];
-};
-export declare type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = {
-    readonly [K in keyof D]: CacheEvent<D[K]['_P']>;
-};
-/** Dato un dizionario di ObservableFetch restituisce un Observable del dizionario dei CacheEvent corrispondenti */
-export declare function sequence<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): Observable<ObservableFetchesCacheEvents<D>>;
-/** Dato un dizionario di ObservableFetch restituisce il dizionario dei CacheEvent corrispondenti */
-export declare function sequenceSync<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): ObservableFetchesCacheEvents<D>;
-export declare type Queries = {
-    [key: string]: Query<any, any, any>;
-};
-export interface Query<Params extends t.Props, Deps extends Queries, P> extends ObservableFetch<{
-    [K in keyof Params]: t.TypeOf<Params[K]>;
-} & {
-    [K in keyof Deps]: Deps[K]['_A'];
-}, P> {
-    params: Params;
-    dependencies: Deps;
+export declare class Merge<A extends Dictionary, P extends Array<CacheEvent<any>>> {
+    private readonly fetches;
+    _A: A;
+    _P: P;
+    static create<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>;
+    static create<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
+    private constructor(fetches);
+    observe(as: A): Observable<P>;
 }
-/** Data una configurazione appartenente al DSL restituisce la ObservableFetch corrispondente */
-export declare function Query<Params extends t.Props, Deps extends Queries, P>(options: {
-    cacheStrategy: Strategy;
-    params: Params;
-    fetch: Fetch<{
-        [K in keyof Params]: t.TypeOf<Params[K]>;
-    } & {
-        [K in keyof Deps]: Deps[K]['_P'];
-    }, P>;
-    dependencies: Deps;
-    atok?: (x: {
-        [K in keyof Params]: t.TypeOf<Params[K]>;
-    } & {
-        [K in keyof Deps]: Deps[K]['_P'];
-    }) => string;
-}): Query<Params, Deps, P>;
-export declare function Query<Params extends t.Props, P>(options: {
-    cacheStrategy: Strategy;
-    params: Params;
-    fetch: Fetch<{
-        [K in keyof Params]: t.TypeOf<Params[K]>;
-    }, P>;
-}): Query<Params, {}, P>;
