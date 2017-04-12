@@ -14,11 +14,11 @@
 //   it('should return a dictionary even if data is not available', () => {
 //     const cache1 = new ObservableCache<number, number>()
 //     const fetch1 = (a: number) => Promise.resolve(2 * a)
-//     const leaf1 = Leaf.create(fetch1, available, cache1)
+//     const leaf1 = new Leaf(fetch1, available, cache1)
 
 //     const cache2 = new ObservableCache<string, string>()
 //     const fetch2 = (a: string) => Promise.resolve(`hello ${a}`)
-//     const leaf2 = Leaf.create(fetch2, available, cache2)
+//     const leaf2 = new Leaf(fetch2, available, cache2)
 
 //     const dict = sequenceSync({
 //       n: leaf1,
@@ -36,11 +36,11 @@
 //   it('should return a dictionary with data if available', () => {
 //     const cache1 = new ObservableCache<number, number>()
 //     const fetch1 = (a: number) => Promise.resolve(2 * a)
-//     const leaf1 = Leaf.create(fetch1, available, cache1)
+//     const leaf1 = new Leaf(fetch1, available, cache1)
 
 //     const cache2 = new ObservableCache<string, string>()
 //     const fetch2 = (a: string) => Promise.resolve(`hello ${a}`)
-//     const leaf2 = Leaf.create(fetch2, available, cache2)
+//     const leaf2 = new Leaf(fetch2, available, cache2)
 
 //     cache1.storeDone(1, new Done(2, Date.now(), Promise.resolve(2)))
 //     cache2.storeDone('s', new Done('hello s', Date.now(), Promise.resolve('hello s')))

@@ -6,9 +6,9 @@ import {
   Leaf,
   Product,
   Composition,
-  ObservableCache,
   available,
   refetch,
+  ObservableCache,
   Done
 } from '../src'
 
@@ -20,9 +20,8 @@ describe('observe', () => {
   describe('Leaf', () => {
 
     it('should not emit events for different inputs', () => {
-      const cache = new ObservableCache<number, number>()
       const fetch = (a: number) => Promise.resolve(2 * a)
-      const leaf = Leaf.create(fetch, available, cache)
+      const leaf = Leaf.create(fetch, available)
       const observable = leaf.observe(1)
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
@@ -38,9 +37,8 @@ describe('observe', () => {
     })
 
     it('should emit L + P events for an empty cache', () => {
-      const cache = new ObservableCache<number, number>()
       const fetch = (a: number) => Promise.resolve(2 * a)
-      const leaf = Leaf.create(fetch, available, cache)
+      const leaf = Leaf.create(fetch, available)
       const observable = leaf.observe(1)
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
@@ -86,12 +84,10 @@ describe('observe', () => {
   describe('Product', () => {
 
     it('should emit L + P events for an empty cache', () => {
-      const cache1 = new ObservableCache<number, number>()
       const fetch1 = (a: number) => Promise.resolve(2 * a)
-      const leaf1 = Leaf.create(fetch1, available, cache1)
-      const cache2 = new ObservableCache<string, string>()
+      const leaf1 = Leaf.create(fetch1, available)
       const fetch2 = (a: string) => Promise.resolve(`Hello ${a}`)
-      const leaf2 = Leaf.create(fetch2, available, cache2)
+      const leaf2 = Leaf.create(fetch2, available)
       const product = Product.create([leaf1, leaf2])
       const o = product.observe([1, 'foo'])
       return new Promise((resolve, reject) => {
@@ -115,12 +111,10 @@ describe('observe', () => {
   describe('Composition', () => {
 
     it('should emit L + P events for an empty cache', () => {
-      const slaveCache = new ObservableCache<number, number>()
       const slaveFetch = (a: number) => Promise.resolve(2 * a)
-      const slave = Leaf.create(slaveFetch, refetch, slaveCache)
-      const masterCache = new ObservableCache<string, string>()
+      const slave = Leaf.create(slaveFetch, refetch)
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
-      const master = Leaf.create(masterFetch, refetch, masterCache)
+      const master = Leaf.create(masterFetch, refetch)
       const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
@@ -141,15 +135,13 @@ describe('observe', () => {
 
     it('should emit L + P + L + P events when slave strategy is refetch', () => {
       let i = 1
-      const slaveCache = new ObservableCache<number, number>()
       const slaveFetch = (a: number) => {
         i++
         return Promise.resolve(i * a)
       }
-      const slave = Leaf.create(slaveFetch, refetch, slaveCache)
-      const masterCache = new ObservableCache<string, string>()
+      const slave = Leaf.create(slaveFetch, refetch)
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
-      const master = Leaf.create(masterFetch, refetch, masterCache)
+      const master = Leaf.create(masterFetch, refetch)
       const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
@@ -186,12 +178,10 @@ describe('observe', () => {
     })
 
     it('should emit L + P events when slave strategy is available', () => {
-      const slaveCache = new ObservableCache<number, number>()
       const slaveFetch = (a: number) => Promise.resolve(2 * a)
-      const slave = Leaf.create(slaveFetch, available, slaveCache)
-      const masterCache = new ObservableCache<string, string>()
+      const slave = Leaf.create(slaveFetch, available)
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
-      const master = Leaf.create(masterFetch, refetch, masterCache)
+      const master = Leaf.create(masterFetch, refetch)
       const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
@@ -214,12 +204,10 @@ describe('observe', () => {
     })
 
     it('should emit L + P calling master', () => {
-      const slaveCache = new ObservableCache<number, number>()
       const slaveFetch = (a: number) => Promise.resolve(2 * a)
-      const slave = Leaf.create(slaveFetch, available, slaveCache)
-      const masterCache = new ObservableCache<string, string>()
+      const slave = Leaf.create(slaveFetch, available)
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
-      const master = Leaf.create(masterFetch, available, masterCache)
+      const master = Leaf.create(masterFetch, available)
       const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {
@@ -239,12 +227,10 @@ describe('observe', () => {
     })
 
     it('should emit events calling slave', () => {
-      const slaveCache = new ObservableCache<number, number>()
       const slaveFetch = (a: number) => Promise.resolve(2 * a)
-      const slave = Leaf.create(slaveFetch, refetch, slaveCache)
-      const masterCache = new ObservableCache<string, string>()
+      const slave = Leaf.create(slaveFetch, refetch)
       const masterFetch = (a: string) => Promise.resolve(`Hello ${a}`)
-      const master = Leaf.create(masterFetch, available, masterCache)
+      const master = Leaf.create(masterFetch, available)
       const composition = Composition.create(master, slave)(s => s.length)
       const observable = composition.observe('foo')
       return new Promise((resolve, reject) => {

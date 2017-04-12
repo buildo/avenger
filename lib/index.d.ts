@@ -7,7 +7,6 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/distinctUntilChanged';
-import 'rxjs/add/operator/startWith';
 import 'rxjs/add/operator/scan';
 import { Option } from 'fp-ts/lib/Option';
 export declare type Fetch<A, P> = (a: A) => Promise<P>;
@@ -88,13 +87,13 @@ export declare class ObservableCache<A, P> extends Cache<A, P> {
     private emitPayloadEvent(a, p);
 }
 export declare type Dependency<A, P> = {
-    fetch: ObservableFetch<any, any>;
+    fetch: AnyObservableFetch;
     trigger: (p: P, a: A) => void;
 };
 export interface ObservableFetch<A, P> {
     _A: A;
     _P: P;
-    run(a: A, omit?: ObservableFetch<any, any>): Promise<P>;
+    run(a: A, omit?: AnyObservableFetch): Promise<P>;
     addDependency(d: Dependency<A, P>): void;
     observe(a: A): Observable<CacheEvent<P>>;
     getCacheEvent(a: A): CacheEvent<P>;
@@ -102,18 +101,19 @@ export interface ObservableFetch<A, P> {
     hasObservers(a: A): boolean;
     invalidate(a: A): void;
 }
+export declare type AnyObservableFetch = ObservableFetch<any, any>;
 export declare class BaseObservableFetch<A, P> {
     protected readonly fetch: Fetch<A, P>;
     _A: A;
     _P: P;
     private dependencies;
     constructor(fetch: Fetch<A, P>);
-    run(a: A, omit?: ObservableFetch<any, any>): Promise<P>;
+    run(a: A, omit?: AnyObservableFetch): Promise<P>;
     addDependency(d: Dependency<A, P>): void;
 }
 export declare class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
     private readonly cache;
-    static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: ObservableCache<A, P>): Leaf<A, P>;
+    static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache?: ObservableCache<A, P>): Leaf<A, P>;
     private constructor(fetch, strategy, cache);
     observe(a: A): Observable<CacheEvent<P>>;
     getCacheEvent(a: A): CacheEvent<P>;
@@ -155,18 +155,12 @@ export declare class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> i
     hasObservers(a2: A2): boolean;
     invalidate(a2: A2): void;
 }
-export declare type Dictionary = {
-    [key: string]: any;
-};
-/** Concatenable observable fetch */
-export declare type COF<A extends Dictionary, P extends Dictionary> = ObservableFetch<A, P>;
-export declare type AnyCOF = COF<any, any>;
-export declare class Merge<A extends Dictionary, P extends Array<CacheEvent<any>>> {
+export declare class Merge<A, P extends Array<CacheEvent<any>>> {
     private readonly fetches;
     _A: A;
     _P: P;
-    static create<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>;
-    static create<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
+    static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>;
+    static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
     private constructor(fetches);
     observe(as: A): Observable<P>;
 }

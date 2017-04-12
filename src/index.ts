@@ -8,7 +8,6 @@ import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/switchMap'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/distinctUntilChanged'
-import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/scan'
 import { Option, none, some, isSome } from 'fp-ts/lib/Option'
 import * as traversable from 'fp-ts/lib/Traversable'
@@ -236,14 +235,14 @@ export class ObservableCache<A, P> extends Cache<A, P> {
 }
 
 export type Dependency<A, P> = {
-  fetch: ObservableFetch<any, any>,
+  fetch: AnyObservableFetch,
   trigger: (p: P, a: A) => void
 }
 
 export interface ObservableFetch<A, P> {
   _A: A
   _P: P
-  run(a: A, omit?: ObservableFetch<any, any>): Promise<P>
+  run(a: A, omit?: AnyObservableFetch): Promise<P>
   addDependency(d: Dependency<A, P>): void
   observe(a: A): Observable<CacheEvent<P>>
   getCacheEvent(a: A): CacheEvent<P>
@@ -252,6 +251,8 @@ export interface ObservableFetch<A, P> {
   invalidate(a: A): void
 }
 
+export type AnyObservableFetch = ObservableFetch<any, any>
+
 export class BaseObservableFetch<A, P> {
   _A: A
   _P: P
@@ -259,7 +260,7 @@ export class BaseObservableFetch<A, P> {
   constructor(
     protected readonly fetch: Fetch<A, P>
   ) {}
-  run(a: A, omit?: ObservableFetch<any, any>): Promise<P> {
+  run(a: A, omit?: AnyObservableFetch): Promise<P> {
     const promise = this.fetch(a)
     promise.then(p => {
       this.dependencies.forEach(({ fetch, trigger }) => {
@@ -278,8 +279,8 @@ export class BaseObservableFetch<A, P> {
 }
 
 export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
-  static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: ObservableCache<A, P>): Leaf<A, P> {
-    return new Leaf(fetch, strategy, cache)
+  static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache?: ObservableCache<A, P>): Leaf<A, P> {
+    return new Leaf(fetch, strategy, cache || new ObservableCache<A, P>())
   }
   private constructor(
     fetch: Fetch<A, P>,
@@ -364,12 +365,10 @@ export class Product<A extends Array<any>, P extends Array<any>> extends BaseObs
   // TODO more overloadings
   static create<A1, P1, A2, P2, A3, P3>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3]>
   static create<A1, P1, A2, P2>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]): Product<[A1, A2], [P1, P2]>
-  static create(fetches: Array<ObservableFetch<any, any>>): Product<Array<any>, Array<any>> {
+  static create(fetches: Array<AnyObservableFetch>): Product<Array<any>, Array<any>> {
     return new Product(fetches)
   }
-  private constructor(
-    private readonly fetches: Array<ObservableFetch<any, any>>
-    ) {
+  private constructor(private readonly fetches: Array<AnyObservableFetch>) {
     super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))))
   }
   observe(a: A): Observable<CacheEvent<P>> {
@@ -433,32 +432,29 @@ function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<Cac
   return observable
 }
 
-export type Dictionary = { [key: string]: any }
-
-/** Concatenable observable fetch */
-export type COF<A extends Dictionary, P extends Dictionary> = ObservableFetch<A, P>
-
-export type AnyCOF = COF<any, any>
-
-export class Merge<A extends Dictionary, P extends Array<CacheEvent<any>>> {
+export class Merge<A, P extends Array<CacheEvent<any>>> {
   _A: A
   _P: P
   // TODO more overloadings
-  static create<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>
-  static create<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>
-  static create(fetches: Array<AnyCOF>): Merge<any, any> {
+  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>
+  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>
+  static create(fetches: Array<AnyObservableFetch>): Merge<any, any> {
     return new Merge(fetches)
   }
-  private constructor(private readonly fetches: Array<AnyCOF>) {}
+  private constructor(private readonly fetches: Array<AnyObservableFetch>) {}
   observe(as: A): Observable<P> {
     const observables = this.fetches.map((fetch, i) => observeAndRun(fetch, as).map(ce => ({ type: i, ce })))
     return Observable
       .merge(...observables)
       .scan((acc, x) => {
-        const acc2 = acc.slice()
-        acc2[x.type] = x.ce
-        return acc2
+        if (acc[x.type].loading !== x.ce.loading) {
+          const acc2 = acc.slice()
+          acc2[x.type] = x.ce
+          return acc2
+        }
+        return acc
       }, this.fetches.map(() => LOADING))
+      .distinctUntilChanged()
   }
 }
 
@@ -505,7 +501,7 @@ export function concat(fetches: Array<AnyCOF>): AnyCOF {
 import { identity } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 
-export type ObservableFetchDictionary = { [key: string]: ObservableFetch<any, any> }
+export type ObservableFetchDictionary = { [key: string]: AnyObservableFetch }
 
 export type ObservableFetchesArguments<D extends ObservableFetchDictionary> = { readonly [K in keyof D]: D[K]['_A'] }
 
