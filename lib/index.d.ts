@@ -161,6 +161,7 @@ export declare class Merge<A, P extends Array<CacheEvent<any>>> {
     _P: P;
     static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>;
     static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
+    static create<F1 extends AnyObservableFetch>(fetches: [F1]): Merge<F1['_A'], [CacheEvent<F1['_P']>]>;
     private constructor(fetches);
     observe(as: A): Observable<P>;
 }
