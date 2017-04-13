@@ -27,10 +27,12 @@
     "@types/debug": "0.0.29",
     "@types/mocha": "2.2.40",
     "@types/node": "7.0.8",
+    "@types/react": "^15.0.21",
     "@types/sinon": "1.16.35",
     "awesome-typescript-loader": "^3.0.0-beta.17",
     "mocha": "^3.2.0",
     "sinon": "1.17.4",
+    "ts-node": "^3.0.2",
     "typescript": "2.2.1"
   }
 }
