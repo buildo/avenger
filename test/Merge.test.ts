@@ -13,13 +13,13 @@ describe('Merge', () => {
   it('should merge inputs and reutrn an array of outputs', () => {
     let i = 0
     const fetch1 = (a: { a1: string }) => Promise.resolve({ p1: (2 * a.a1.length) + (i++) })
-    const leaf1 = Leaf.create(fetch1, available)
+    const leaf1 = new Leaf(fetch1, available)
 
     const fetch2 = (a: { a2: number }) => Promise.resolve({ p2: a.a2 > 0 })
-    const leaf2 = Leaf.create(fetch2, available)
+    const leaf2 = new Leaf(fetch2, available)
 
     const fetch3 = (a: { a3: number }) => Promise.resolve({ p3: a.a3 > 0 })
-    const leaf3 = Leaf.create(fetch3, available)
+    const leaf3 = new Leaf(fetch3, available)
 
     const observable = Merge.create([leaf1, leaf2, leaf3]).observe({ a1: 'hello', a2: 2, a3: 4 })
 

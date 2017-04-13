@@ -9,6 +9,7 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/scan';
 import { Option } from 'fp-ts/lib/Option';
+import * as t from 'io-ts';
 export declare type Fetch<A, P> = (a: A) => Promise<P>;
 export declare class Done<P> {
     /** il valore restituito dalla promise contenuta nel campo `promise` una volta risolta */
@@ -112,9 +113,19 @@ export declare class BaseObservableFetch<A, P> {
     addDependency(d: Dependency<A, P>): void;
 }
 export declare class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
+    static create<T extends {
+        [key: string]: t.Any;
+    }, P>(options: {
+        params: T;
+        fetch: Fetch<{
+            [K in keyof T]: t.TypeOf<T[K]>;
+        }, P>;
+        cacheStrategy?: Strategy;
+    }): Leaf<{
+        [K in keyof T]: t.TypeOf<T[K]>;
+    }, P>;
     private readonly cache;
-    static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache?: ObservableCache<A, P>): Leaf<A, P>;
-    private constructor(fetch, strategy, cache);
+    constructor(fetch: Fetch<A, P>, strategy: Strategy, cache?: ObservableCache<A, P>);
     observe(a: A): Observable<CacheEvent<P>>;
     getCacheEvent(a: A): CacheEvent<P>;
     getPayload(a: A): Option<P>;
@@ -163,5 +174,6 @@ export declare class Merge<A, P extends Array<CacheEvent<any>>> {
     static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
     static create<F1 extends AnyObservableFetch>(fetches: [F1]): Merge<F1['_A'], [CacheEvent<F1['_P']>]>;
     private constructor(fetches);
+    getCacheEvents(as: A): P;
     observe(as: A): Observable<P>;
 }

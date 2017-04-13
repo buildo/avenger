@@ -13,6 +13,7 @@ import { Option, none, some, isSome } from 'fp-ts/lib/Option'
 import * as traversable from 'fp-ts/lib/Traversable'
 import * as array from 'fp-ts/lib/Array'
 import * as option from 'fp-ts/lib/Option'
+import * as t from 'io-ts'
 
 const sequenceOptions = traversable.sequence(option, array)
 
@@ -125,6 +126,8 @@ export class Cache<A, P> {
     }
 
     this.log('getAvailablePromise(%o, %s): cache miss', a, String(strategy))
+
+    return
   }
   getPromise(a: A, strategy: Strategy, fetch: Fetch<A, P>): Promise<P> {
     const availablePromise = this.getAvailablePromise(a, strategy)
@@ -279,15 +282,27 @@ export class BaseObservableFetch<A, P> {
 }
 
 export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
-  static create<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache?: ObservableCache<A, P>): Leaf<A, P> {
-    return new Leaf(fetch, strategy, cache || new ObservableCache<A, P>())
+  static create<T extends { [key: string]: t.Any }, P>(options: { params: T, fetch: Fetch<{ [K in keyof T]: t.TypeOf<T[K]> }, P>, cacheStrategy?: Strategy }): Leaf<{ [K in keyof T]: t.TypeOf<T[K]> }, P> {
+    const strategy = options.cacheStrategy || refetch
+    const cache = new ObservableCache<{ [K in keyof T]: t.TypeOf<T[K]> }, P>({
+      atok: a => {
+        const o: { [key: string]: any } = {}
+        for (let k in options.params) {
+          o[k] = a[k]
+        }
+        return JSON.stringify(o)
+      }
+    })
+    return new Leaf<{ [K in keyof T]: t.TypeOf<T[K]> }, P>(options.fetch, strategy, cache)
   }
-  private constructor(
+  private readonly cache: ObservableCache<A, P>
+  constructor(
     fetch: Fetch<A, P>,
     strategy: Strategy,
-    private readonly cache: ObservableCache<A, P>
+    cache: ObservableCache<A, P> = new ObservableCache<A, P>()
   ) {
     super(cacheFetch(fetch, strategy, cache))
+    this.cache = cache
   }
   observe(a: A): Observable<CacheEvent<P>> {
     return this.cache.getSubject(a)
@@ -444,6 +459,9 @@ export class Merge<A, P extends Array<CacheEvent<any>>> {
     return new Merge(fetches)
   }
   private constructor(private readonly fetches: Array<AnyObservableFetch>) {}
+  getCacheEvents(as: A): P {
+    return this.fetches.map((fetch, i) => fetch.getCacheEvent(as)) as any
+  }
   observe(as: A): Observable<P> {
     const observables = this.fetches.map((fetch, i) => observeAndRun(fetch, as).map(ce => ({ type: i, ce })))
     return Observable
