@@ -8,16 +8,16 @@ export function connect<WP>(Component: React.ComponentClass<WP>): <S, OP>(f: (st
     return class ConnectWrapper extends React.Component<OP, WP> {
       static displayName = `ConnectWrapper(${Component.displayName})`
       static contextTypes = {
-        subject: React.PropTypes.object.isRequired
+        state: React.PropTypes.object.isRequired
       }
       context: ConnectContext<S>
       subscription: Subscription
       constructor(props: OP, context: ConnectContext<S>) {
         super(props, context)
-        this.state = f(context.subject.value, props)
+        this.state = f(context.state.value, props)
       }
       componentDidMount() {
-        this.subscription = this.context.subject
+        this.subscription = this.context.state
           .map(state => f(state, this.props))
           .subscribe(wp => this.setState(wp))
       }
@@ -25,7 +25,7 @@ export function connect<WP>(Component: React.ComponentClass<WP>): <S, OP>(f: (st
         this.subscription.unsubscribe()
       }
       componentWillReceiveProps(nextProps: OP) {
-        this.setState(f(this.context.subject.value, nextProps))
+        this.setState(f(this.context.state.value, nextProps))
       }
       render() {
         return <Component {...this.state} />
@@ -34,14 +34,14 @@ export function connect<WP>(Component: React.ComponentClass<WP>): <S, OP>(f: (st
   }
 }
 
-export type ConnectContext<S> = { subject: BehaviorSubject<S> }
+export type ConnectContext<S> = { state: BehaviorSubject<S> }
 
 export class Provider<S> extends React.Component<ConnectContext<S>, void> {
   static childContextTypes = {
-    subject: React.PropTypes.object.isRequired
+    state: React.PropTypes.object.isRequired
   }
   getChildContext(): ConnectContext<S> {
-    return { subject: this.props.subject }
+    return { state: this.props.state }
   }
   render() {
     return <div>{this.props.children}</div>

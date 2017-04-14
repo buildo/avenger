@@ -5,7 +5,7 @@ import 'rxjs/add/operator/debounceTime'
 import shallowEqual from './shallowEqual'
 
 export function queries<A, P extends Array<CacheEvent<any>>, WP>
-  (merge: Queries<A, P>, Component: React.ComponentClass<WP>):
+  (queries: Queries<A, P>, Component: React.ComponentClass<WP>):
     <OP>(f: (events: P, ownProps: OP) => WP) => React.ComponentClass<OP & A> {
 
   return function<OP>(f: (events: P, ownProps: OP) => WP) {
@@ -14,7 +14,7 @@ export function queries<A, P extends Array<CacheEvent<any>>, WP>
       private subscription?: Subscription
       constructor(props: OP & A) {
         super(props)
-        this.state = f(merge.getCacheEvents(props), props)
+        this.state = f(queries.getCacheEvents(props), props)
       }
       componentDidMount() {
         this.subscribe(this.props as any)
@@ -34,7 +34,7 @@ export function queries<A, P extends Array<CacheEvent<any>>, WP>
         if (this.subscription) {
           this.subscription.unsubscribe()
         }
-        this.subscription = merge.observe(props)
+        this.subscription = queries.observe(props)
           .debounceTime(5)
           .subscribe(events => this.setState(f(events, props)))
       }
