@@ -20,7 +20,10 @@ describe('Command', () => {
     const fetch2 = (a: { a2: number }) => Promise.resolve({ p2: a.a2 > 0 })
     const leaf2 = new Leaf(fetch2, available)
 
-    const command = Command.create(commandFetch, [leaf1, leaf2])
+    const command = Command.create({
+      run: commandFetch,
+      invalidates: [leaf1, leaf2]
+    })
 
     return command.run({ foo: 'bar', a1: 'baz', a2: 1 }).then(
       () => assert.ok(true)
@@ -46,8 +49,14 @@ describe('Commands', () => {
     const fetch2 = (a: { a2: number }) => Promise.resolve({ p2: a.a2 > 0 })
     const leaf2 = new Leaf(fetch2, available)
 
-    const command1 = Command.create(commandFetch1, [leaf1])
-    const command2 = Command.create(commandFetch2, [leaf2])
+    const command1 = Command.create({
+      run: commandFetch1,
+      invalidates: [leaf1]
+    })
+    const command2 = Command.create({
+      run: commandFetch2,
+      invalidates: [leaf2]
+    })
 
     const commands = Commands.create([command1, command2])
 

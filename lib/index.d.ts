@@ -112,18 +112,18 @@ export declare class BaseObservableFetch<A, P> {
     run(a: A, omit?: AnyObservableFetch): Promise<P>;
     addDependency(d: Dependency<A, P>): void;
 }
+export declare type TypeDictionary = {
+    [key: string]: t.Any;
+};
+export declare type TypesOf<D extends TypeDictionary> = {
+    [K in keyof D]: t.TypeOf<D[K]>;
+};
 export declare class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
-    static create<T extends {
-        [key: string]: t.Any;
-    }, P>(options: {
-        params: T;
-        fetch: Fetch<{
-            [K in keyof T]: t.TypeOf<T[K]>;
-        }, P>;
+    static create<D extends TypeDictionary, P>(options: {
+        params: D;
+        fetch: Fetch<TypesOf<D>, P>;
         cacheStrategy?: Strategy;
-    }): Leaf<{
-        [K in keyof T]: t.TypeOf<T[K]>;
-    }, P>;
+    }): Leaf<TypesOf<D>, P>;
     private readonly cache;
     constructor(fetch: Fetch<A, P>, strategy: Strategy, cache?: ObservableCache<A, P>);
     observe(a: A): Observable<CacheEvent<P>>;
@@ -181,9 +181,18 @@ export declare class Command<A> {
     private readonly fetch;
     private readonly invalidates;
     _A: A;
-    static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1, F2]): Command<A & F1['_A'] & F2['_A']>;
-    static create<A, F1 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1]): Command<A & F1['_A']>;
-    static create<A>(fetch: Fetch<A, void>, invalidates: Array<never>): Command<A>;
+    static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: {
+        run: Fetch<A, void>;
+        invalidates: [F1, F2];
+    }): Command<A & F1['_A'] & F2['_A']>;
+    static create<A, F1 extends AnyObservableFetch>(options: {
+        run: Fetch<A, void>;
+        invalidates: [F1];
+    }): Command<A & F1['_A']>;
+    static create<A>(options: {
+        run: Fetch<A, void>;
+        invalidates: Array<never>;
+    }): Command<A>;
     private constructor(fetch, invalidates);
     run(a: A): Promise<void>;
 }

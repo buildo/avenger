@@ -281,10 +281,14 @@ export class BaseObservableFetch<A, P> {
   }
 }
 
+export type TypeDictionary = { [key: string]: t.Any }
+
+export type TypesOf<D extends TypeDictionary> = { [K in keyof D]: t.TypeOf<D[K]> }
+
 export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
-  static create<T extends { [key: string]: t.Any }, P>(options: { params: T, fetch: Fetch<{ [K in keyof T]: t.TypeOf<T[K]> }, P>, cacheStrategy?: Strategy }): Leaf<{ [K in keyof T]: t.TypeOf<T[K]> }, P> {
+  static create<D extends TypeDictionary, P>(options: { params: D, fetch: Fetch<TypesOf<D>, P>, cacheStrategy?: Strategy }): Leaf<TypesOf<D>, P> {
     const strategy = options.cacheStrategy || refetch
-    const cache = new ObservableCache<{ [K in keyof T]: t.TypeOf<T[K]> }, P>({
+    const cache = new ObservableCache<TypesOf<D>, P>({
       atok: a => {
         const o: { [key: string]: any } = {}
         for (let k in options.params) {
@@ -293,7 +297,7 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
         return JSON.stringify(o)
       }
     })
-    return new Leaf<{ [K in keyof T]: t.TypeOf<T[K]> }, P>(options.fetch, strategy, cache)
+    return new Leaf<TypesOf<D>, P>(options.fetch, strategy, cache)
   }
   private readonly cache: ObservableCache<A, P>
   constructor(
@@ -480,11 +484,11 @@ export class Queries<A, P extends Array<CacheEvent<any>>> {
 export class Command<A> {
   _A: A
   // TODO more overloadings
-  static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1, F2]): Command<A & F1['_A'] & F2['_A']>
-  static create<A, F1 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1]): Command<A & F1['_A']>
-  static create<A>(fetch: Fetch<A, void>, invalidates: Array<never>): Command<A>
-  static create(fetch: Fetch<any, void>, invalidates: Array<AnyObservableFetch>): Command<any> {
-    return new Command(fetch, invalidates)
+  static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: { run: Fetch<A, void>, invalidates: [F1, F2] }): Command<A & F1['_A'] & F2['_A']>
+  static create<A, F1 extends AnyObservableFetch>(options: { run: Fetch<A, void>, invalidates: [F1] }): Command<A & F1['_A']>
+  static create<A>(options: { run: Fetch<A, void>, invalidates: Array<never> }): Command<A>
+  static create(options: { run: Fetch<any, void>, invalidates: Array<AnyObservableFetch> }): Command<any> {
+    return new Command(options.run, options.invalidates)
   }
   private constructor(
     private readonly fetch: Fetch<any, void>,
