@@ -453,7 +453,6 @@ export class Queries<A, P extends Array<CacheEvent<any>>> {
   // TODO more overloadings
   static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Queries<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>
   static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Queries<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>
-  // TODO si può eliminare questo ultimo overloading?
   static create<F1 extends AnyObservableFetch>(fetches: [F1]): Queries<F1['_A'], [CacheEvent<F1['_P']>]>
   static create(fetches: Array<AnyObservableFetch>): Queries<any, any> {
     return new Queries(fetches)
@@ -478,155 +477,43 @@ export class Queries<A, P extends Array<CacheEvent<any>>> {
   }
 }
 
-// export class Merge<A, P> {
-//   _A: A
-//   _P: P
-//   // TODO more overloadings
-//   static create<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>
-//   static create<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], F1['_P'] & F2['_P']>
-//   static create(fetches: Array<AnyCOF>): Merge<any, any> {
-//     return new Merge(fetches)
-//   }
-//   private constructor(private readonly fetches: Array<AnyCOF>) {}
-//   run(as: A): Observable<{ readonly [K in keyof P]?: P[K] }> {
-//     const observables = this.fetches.map((fetch, i) => observeAndRun(fetch, as))
-//     return Observable
-//       .merge(...observables)
-//       .filter(ce => !ce.loading)
-//       .startWith({})
-//       .scan((acc, ce: any) => {
-//         return Object.assign({}, acc, ce.data.value)
-//       })
-//   }
-// }
-
-/*
-
-// TODO more overloadings
-export function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF, F4 extends AnyCOF>(fetches: [F1, F2, F3, F4]): COF<F1['_A'] & F2['_A'] & F3['_A'] & F4['_A'], F1['_P'] & F2['_P'] & F3['_P'] & F4['_P']>
-export function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>
-export function concat<F1 extends AnyCOF, F2 extends AnyCOF, F3 extends AnyCOF>(fetches: [F1, F2, F3]): COF<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P']>
-export function concat<F1 extends AnyCOF, F2 extends AnyCOF>(fetches: [F1, F2]): COF<F1['_A'] & F2['_A'], F1['_P'] & F2['_P']>
-export function concat(fetches: Array<AnyCOF>): AnyCOF {
-  // non c'è bisogno di fare un check sui conflitti perchè il tipo che ne risulta non è
-  // utilizzabile a valle quindi verrà sollevato un errore appena si prova ad utilizzare
-  // il risultato, a meno che tutti i tipi coincidano
-  return new Bimap(
-    Product.create(fetches as any),
-    a2 => fetches.map(() => a2),
-    ps => Object.assign.apply(null, [{}].concat(ps))
-  )
-}
-
-import { identity } from 'fp-ts/lib/function'
-import * as t from 'io-ts'
-
-export type ObservableFetchDictionary = { [key: string]: AnyObservableFetch }
-
-export type ObservableFetchesArguments<D extends ObservableFetchDictionary> = { readonly [K in keyof D]: D[K]['_A'] }
-
-export type ObservableFetchesCacheEvents<D extends ObservableFetchDictionary> = { readonly [K in keyof D]: CacheEvent<D[K]['_P']> }
-
-// Dato un dizionario di ObservableFetch restituisce un Observable del dizionario dei CacheEvent corrispondenti
-export function sequence<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): Observable<ObservableFetchesCacheEvents<D>> {
-  const itok = Object.keys(fetches)
-  const observables = itok.map(k => observeAndRun(fetches[k], as[k]))
-  return Observable.combineLatest(...observables, (...values) => {
-    const out: { [key: string]: CacheEvent<any> } = {}
-    itok.forEach((k, i) => {
-      out[k] = values[i]
+export class Command<A> {
+  _A: A
+  // TODO more overloadings
+  static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1, F2]): Command<A & F1['_A'] & F2['_A']>
+  static create<A, F1 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1]): Command<A & F1['_A']>
+  static create<A>(fetch: Fetch<A, void>, invalidates: Array<never>): Command<A>
+  static create(fetch: Fetch<any, void>, invalidates: Array<AnyObservableFetch>): Command<any> {
+    return new Command(fetch, invalidates)
+  }
+  private constructor(
+    private readonly fetch: Fetch<any, void>,
+    private readonly invalidates: Array<AnyObservableFetch>
+  ) {}
+  run(a: A): Promise<void> {
+    return this.fetch(a).then(() => {
+      this.invalidates.forEach(f => f.run(a))
     })
-    return out as any
-  })
-}
-
-// Dato un dizionario di ObservableFetch restituisce il dizionario dei CacheEvent corrispondenti
-export function sequenceSync<D extends ObservableFetchDictionary>(fetches: D, as: ObservableFetchesArguments<D>): ObservableFetchesCacheEvents<D> {
-  const out: { [key: string]: CacheEvent<any> } = {}
-  for (let k in fetches) {
-    out[k] = fetches[k].getCacheEvent(as[k])
   }
-  return out as any
 }
 
-//
-// DSL -> ObservableFetch
-//
+export type AnyCommand = Command<any>
 
-export type Queries = { [key: string]: Query<any, any, any> }
-
-export interface Query<Params extends t.Props, Deps extends Queries, P> extends ObservableFetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_A'] }, P> {
-  params: Params,
-  dependencies: Deps
-}
-
-// Data una configurazione appartenente al DSL restituisce la ObservableFetch corrispondente
-export function Query<Params extends t.Props, Deps extends Queries, P>(options: {
-  cacheStrategy: Strategy,
-  params: Params,
-  fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,
-  dependencies: Deps,
-  atok?: (x: { [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }) => string
-}): Query<Params, Deps, P>
-export function Query<Params extends t.Props, P>(options: { // TODO togliere Params?
-  cacheStrategy: Strategy,
-  params: Params,
-  fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> }, P>
-}): Query<Params, {}, P>
-export function Query<Params extends t.Props, Deps extends Queries, P>(options: {
-  cacheStrategy: Strategy,
-  params: Params,
-  fetch: Fetch<{ [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }, P>,
-  dependencies?: Deps,
-  atok?: (x: { [K in keyof Params]: t.TypeOf<Params[K]> } & { [K in keyof Deps]: Deps[K]['_P'] }) => string
-}): Query<Params, Deps, P> {
-
-  const dependencies: Deps = options.dependencies || ({} as Deps)
-  const keys = Object.keys(dependencies)
-  const keysLength = keys.length
-  const leaf = Leaf.create(options.fetch, options.cacheStrategy, new ObservableCache<any, P>({ atok: options.atok }))
-
-  const createQuery = () => {
-    if (keysLength === 0) {
-      return leaf
-    } else {
-      const fetches: ObservableFetch<any[], any[]>[] = keys.map(k => dependencies[k])
-      const params = options.params
-      const paramsLength = Object.keys(params).length
-      if (paramsLength > 0) {
-        const paramsFetch = Leaf.create(a => Promise.resolve(a), refetch, new ObservableCache<any, P>())
-        fetches.push(paramsFetch)
-      }
-      const product = Product.create(fetches as any)
-      const composition = Composition.create(
-        product,
-        leaf
-      )((p: Array<any>) => {
-        const a: { [key: string]: any } = {}
-        keys.forEach((k, i) => {
-          a[k] = p[i]
-        })
-        if (paramsLength > 0) {
-          for (let k in params) {
-            a[k] = p[keysLength][k]
-          }
-        }
-        return a
-      })
-      const a2toa1 = (a2: any) => {
-        const a1 = keys.map(k => a2[k])
-        if (paramsLength > 0) {
-          a1.push(a2)
-        }
-        return a1
-      }
-      return new Bimap(composition, a2toa1, identity)
-    }
+export class Commands<A, C extends Array<AnyCommand>> {
+  _A: A
+  _C: C
+  // TODO more overloadings
+  static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(commands: [F1, F2, F3]): Commands<F1['_A'] & F2['_A'] & F3['_A'], typeof commands>
+  static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], typeof commands>
+  static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], typeof commands>
+  static create(commands: Array<AnyCommand>): Commands<any, any> {
+    return new Commands(commands)
   }
-
-  const out: any = createQuery()
-  out.params = options.params
-  out.dependencies = dependencies
-  return out
+  public readonly commands: C
+  private constructor(commands: C) {
+    this.commands = commands
+  }
+  run(a: A): Promise<void> {
+    return Promise.all(this.commands.map(command => command.run(a))).then(() => undefined)
+  }
 }
-*/

@@ -166,14 +166,35 @@ export declare class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> i
     hasObservers(a2: A2): boolean;
     invalidate(a2: A2): void;
 }
-export declare class Merge<A, P extends Array<CacheEvent<any>>> {
+export declare class Queries<A, P extends Array<CacheEvent<any>>> {
     private readonly fetches;
     _A: A;
     _P: P;
-    static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>;
-    static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
-    static create<F1 extends AnyObservableFetch>(fetches: [F1]): Merge<F1['_A'], [CacheEvent<F1['_P']>]>;
+    static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Queries<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>;
+    static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Queries<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
+    static create<F1 extends AnyObservableFetch>(fetches: [F1]): Queries<F1['_A'], [CacheEvent<F1['_P']>]>;
     private constructor(fetches);
     getCacheEvents(as: A): P;
     observe(as: A): Observable<P>;
+}
+export declare class Command<A> {
+    private readonly fetch;
+    private readonly invalidates;
+    _A: A;
+    static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1, F2]): Command<A & F1['_A'] & F2['_A']>;
+    static create<A, F1 extends AnyObservableFetch>(fetch: Fetch<A, void>, invalidates: [F1]): Command<A & F1['_A']>;
+    static create<A>(fetch: Fetch<A, void>, invalidates: Array<never>): Command<A>;
+    private constructor(fetch, invalidates);
+    run(a: A): Promise<void>;
+}
+export declare type AnyCommand = Command<any>;
+export declare class Commands<A, C extends Array<AnyCommand>> {
+    _A: A;
+    _C: C;
+    static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(commands: [F1, F2, F3]): Commands<F1['_A'] & F2['_A'] & F3['_A'], typeof commands>;
+    static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], typeof commands>;
+    static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], typeof commands>;
+    readonly commands: C;
+    private constructor(commands);
+    run(a: A): Promise<void>;
 }
