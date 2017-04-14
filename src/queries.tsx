@@ -1,10 +1,11 @@
 import * as React from 'react'
-import { Merge, CacheEvent } from './index'
+import { Queries, CacheEvent } from './index'
 import { Subscription } from 'rxjs/Subscription'
+import 'rxjs/add/operator/debounceTime'
 import shallowEqual from './shallowEqual'
 
 export function queries<A, P extends Array<CacheEvent<any>>, WP>
-  (merge: Merge<A, P>, Component: React.ComponentClass<WP>):
+  (merge: Queries<A, P>, Component: React.ComponentClass<WP>):
     <OP>(f: (events: P, ownProps: OP) => WP) => React.ComponentClass<OP & A> {
 
   return function<OP>(f: (events: P, ownProps: OP) => WP) {
@@ -34,6 +35,7 @@ export function queries<A, P extends Array<CacheEvent<any>>, WP>
           this.subscription.unsubscribe()
         }
         this.subscription = merge.observe(props)
+          .debounceTime(5)
           .subscribe(events => this.setState(f(events, props)))
       }
       private unsubscribe() {

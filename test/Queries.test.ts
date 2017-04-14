@@ -5,10 +5,10 @@ import { none, some } from 'fp-ts/lib/Option'
 import {
   Leaf,
   available,
-  Merge
+  Queries
 } from '../src'
 
-describe('Merge', () => {
+describe('Queries', () => {
 
   it('should merge inputs and reutrn an array of outputs', () => {
     let i = 0
@@ -21,7 +21,7 @@ describe('Merge', () => {
     const fetch3 = (a: { a3: number }) => Promise.resolve({ p3: a.a3 > 0 })
     const leaf3 = new Leaf(fetch3, available)
 
-    const observable = Merge.create([leaf1, leaf2, leaf3]).observe({ a1: 'hello', a2: 2, a3: 4 })
+    const observable = Queries.create([leaf1, leaf2, leaf3]).observe({ a1: 'hello', a2: 2, a3: 4 })
 
     return new Promise((resolve, reject) => {
       observable.bufferTime(10).take(1).subscribe(events => {

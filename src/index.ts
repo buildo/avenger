@@ -447,16 +447,16 @@ function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<Cac
   return observable
 }
 
-export class Merge<A, P extends Array<CacheEvent<any>>> {
+export class Queries<A, P extends Array<CacheEvent<any>>> {
   _A: A
   _P: P
   // TODO more overloadings
-  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Merge<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>
-  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Merge<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>
+  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Queries<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>
+  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Queries<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>
   // TODO si può eliminare questo ultimo overloading?
-  static create<F1 extends AnyObservableFetch>(fetches: [F1]): Merge<F1['_A'], [CacheEvent<F1['_P']>]>
-  static create(fetches: Array<AnyObservableFetch>): Merge<any, any> {
-    return new Merge(fetches)
+  static create<F1 extends AnyObservableFetch>(fetches: [F1]): Queries<F1['_A'], [CacheEvent<F1['_P']>]>
+  static create(fetches: Array<AnyObservableFetch>): Queries<any, any> {
+    return new Queries(fetches)
   }
   private constructor(private readonly fetches: Array<AnyObservableFetch>) {}
   getCacheEvents(as: A): P {

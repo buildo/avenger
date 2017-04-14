@@ -18,7 +18,7 @@ export function connect<WP>(Component: React.ComponentClass<WP>): <S, OP>(f: (st
       }
       componentDidMount() {
         this.subscription = this.context.subject
-          .map(appState => f(appState, this.props))
+          .map(state => f(state, this.props))
           .subscribe(wp => this.setState(wp))
       }
       componentWillUnmount() {
