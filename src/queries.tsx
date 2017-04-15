@@ -34,9 +34,13 @@ export function queries<A, P extends Array<CacheEvent<any>>, WP>
         if (this.subscription) {
           this.subscription.unsubscribe()
         }
-        this.subscription = queries.observe(props)
-          .debounceTime(5)
-          .subscribe(events => this.setState(f(events, props)))
+        try {
+          this.subscription = queries.observe(props)
+            .debounceTime(5)
+            .subscribe(events => this.setState(f(events, props)))
+        } catch (e) {
+          console.error(e.message)
+        }
       }
       private unsubscribe() {
         if (this.subscription) {
