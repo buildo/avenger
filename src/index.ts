@@ -496,7 +496,7 @@ export class Command<A> {
   ) {}
   run(a: A): Promise<void> {
     return this.fetch(a).then(() => {
-      this.invalidates.forEach(f => f.run(a))
+      this.invalidates.forEach(f => f.invalidate(a))
     })
   }
 }
