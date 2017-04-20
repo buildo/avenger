@@ -177,33 +177,35 @@ export declare class Queries<A, P extends Array<CacheEvent<any>>> {
     getCacheEvents(as: A): P;
     observe(as: A): Observable<P>;
 }
-export declare class Command<A> {
+export declare class Command<A, P> {
     private readonly fetch;
     private readonly invalidates;
     _A: A;
-    static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: {
-        run: Fetch<A, void>;
+    _P: P;
+    static create<A, P, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: {
+        run: Fetch<A, P>;
         invalidates: [F1, F2];
-    }): Command<A & F1['_A'] & F2['_A']>;
-    static create<A, F1 extends AnyObservableFetch>(options: {
-        run: Fetch<A, void>;
+    }): Command<A & F1['_A'] & F2['_A'], P>;
+    static create<A, P, F1 extends AnyObservableFetch>(options: {
+        run: Fetch<A, P>;
         invalidates: [F1];
-    }): Command<A & F1['_A']>;
-    static create<A>(options: {
-        run: Fetch<A, void>;
+    }): Command<A & F1['_A'], P>;
+    static create<A, P>(options: {
+        run: Fetch<A, P>;
         invalidates: Array<never>;
-    }): Command<A>;
+    }): Command<A, P>;
     private constructor(fetch, invalidates);
-    run(a: A): Promise<void>;
+    run(a: A): Promise<P>;
 }
-export declare type AnyCommand = Command<any>;
-export declare class Commands<A, C extends Array<AnyCommand>> {
+export declare type AnyCommand = Command<any, any>;
+export declare class Commands<A, P, C extends Array<AnyCommand>> {
     _A: A;
+    _P: P;
     _C: C;
-    static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(commands: [F1, F2, F3]): Commands<F1['_A'] & F2['_A'] & F3['_A'], typeof commands>;
-    static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], typeof commands>;
-    static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], typeof commands>;
+    static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(commands: [F1, F2, F3]): Commands<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P'], typeof commands>;
+    static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], F1['_P'] & F2['_P'], typeof commands>;
+    static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], F1['_P'], typeof commands>;
     readonly commands: C;
     private constructor(commands);
-    run(a: A): Promise<void>;
+    run(a: A): Promise<P>;
 }

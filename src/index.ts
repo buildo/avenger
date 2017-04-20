@@ -481,43 +481,50 @@ export class Queries<A, P extends Array<CacheEvent<any>>> {
   }
 }
 
-export class Command<A> {
+export class Command<A, P> {
   _A: A
+  _P: P
   // TODO more overloadings
-  static create<A, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: { run: Fetch<A, void>, invalidates: [F1, F2] }): Command<A & F1['_A'] & F2['_A']>
-  static create<A, F1 extends AnyObservableFetch>(options: { run: Fetch<A, void>, invalidates: [F1] }): Command<A & F1['_A']>
-  static create<A>(options: { run: Fetch<A, void>, invalidates: Array<never> }): Command<A>
-  static create(options: { run: Fetch<any, void>, invalidates: Array<AnyObservableFetch> }): Command<any> {
+  static create<A, P, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: { run: Fetch<A, P>, invalidates: [F1, F2] }): Command<A & F1['_A'] & F2['_A'], P>
+  static create<A, P, F1 extends AnyObservableFetch>(options: { run: Fetch<A, P>, invalidates: [F1] }): Command<A & F1['_A'], P>
+  static create<A, P>(options: { run: Fetch<A, P>, invalidates: Array<never> }): Command<A, P>
+  static create(options: { run: Fetch<any, any>, invalidates: Array<AnyObservableFetch> }): Command<any, any> {
     return new Command(options.run, options.invalidates)
   }
   private constructor(
-    private readonly fetch: Fetch<any, void>,
+    private readonly fetch: Fetch<A, P>,
     private readonly invalidates: Array<AnyObservableFetch>
   ) {}
-  run(a: A): Promise<void> {
-    return this.fetch(a).then(() => {
+  run(a: A): Promise<P> {
+    return this.fetch(a).then(p => {
       this.invalidates.forEach(f => f.invalidate(a))
+      return p
     })
   }
 }
 
-export type AnyCommand = Command<any>
+export type AnyCommand = Command<any, any>
 
-export class Commands<A, C extends Array<AnyCommand>> {
+export class Commands<A, P, C extends Array<AnyCommand>> {
   _A: A
+  _P: P
   _C: C
   // TODO more overloadings
-  static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(commands: [F1, F2, F3]): Commands<F1['_A'] & F2['_A'] & F3['_A'], typeof commands>
-  static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], typeof commands>
-  static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], typeof commands>
-  static create(commands: Array<AnyCommand>): Commands<any, any> {
+  static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(commands: [F1, F2, F3]): Commands<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P'], typeof commands>
+  static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], F1['_P'] & F2['_P'], typeof commands>
+  static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], F1['_P'], typeof commands>
+  static create(commands: Array<AnyCommand>): Commands<any, any, any> {
     return new Commands(commands)
   }
   public readonly commands: C
   private constructor(commands: C) {
     this.commands = commands
   }
-  run(a: A): Promise<void> {
-    return Promise.all(this.commands.map(command => command.run(a))).then(() => undefined)
+  run(a: A): Promise<P> {
+    return Promise.all(
+      this.commands
+        .map(command => command.run(a)))
+        .then(ps => Object.assign.apply(null, [{}].concat(ps))
+    )
   }
 }
