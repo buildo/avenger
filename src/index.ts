@@ -445,7 +445,7 @@ export class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implement
   }
 }
 
-function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
+export function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>> {
   const observable = fetch.observe(a)
   fetch.run(a)
   return observable

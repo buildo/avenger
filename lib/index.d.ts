@@ -166,6 +166,7 @@ export declare class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> i
     hasObservers(a2: A2): boolean;
     invalidate(a2: A2): void;
 }
+export declare function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observable<CacheEvent<P>>;
 export declare class Queries<A, P extends Array<CacheEvent<any>>> {
     private readonly fetches;
     _A: A;
