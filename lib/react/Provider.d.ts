@@ -6,6 +6,7 @@ export declare type Props<S> = ConnectContext<S> & TransitionContext<S>;
 export declare class Provider<S> extends React.Component<Props<S>, void> {
     static childContextTypes: {} & {
         state: React.Validator<any>;
+        transition: React.Validator<any>;
     } & {
         transition: React.Validator<any>;
     };
