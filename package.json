@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@types/debug": "0.0.29",
+    "@types/lodash": "^4.14.63",
     "@types/mocha": "2.2.40",
     "@types/node": "7.0.8",
     "@types/react": "^15.0.21",
