@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-export type Transition<S> = (setter: Partial<S> | ((s: S) => S)) => void
+export type Transition<S> = (setter: (s: S) => S) => void
 
 export type TransitionContext<S> = {
   transition: Transition<S>

@@ -1,6 +1,6 @@
 /// <reference types="react" />
 import * as React from 'react';
-export declare type Transition<S> = (setter: Partial<S> | ((s: S) => S)) => void;
+export declare type Transition<S> = (setter: (s: S) => S) => void;
 export declare type TransitionContext<S> = {
     transition: Transition<S>;
 };

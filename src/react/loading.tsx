@@ -14,25 +14,3 @@ export function loading<WP>(Component: React.ComponentClass<WP>, notReady: () =>
     }
   }
 }
-
-import { CacheEvent } from '../'
-
-export type OwnProps<P, WP> = {
-  data: CacheEvent<P>,
-  props: WP
-}
-
-export function loading2<WP>(Component: React.ComponentClass<WP>): <P>(notReady: () => JSX.Element | null, ready: (data: P, loading: boolean) => JSX.Element) => React.ComponentClass<OwnProps<P, WP>> {
-  return function <P>(notReady: () => JSX.Element | null, ready: (data: P, loading: boolean) => JSX.Element) {
-    return class LoadingWrapper extends React.Component<OwnProps<P, WP>, void> {
-      static displayName = `LoadingWrapper(${Component.displayName})`
-      render() {
-        const { data, loading } = this.props.data
-        return data.fold(
-          notReady,
-          p => ready(p, loading)
-        )
-      }
-    }
-  }
-}
