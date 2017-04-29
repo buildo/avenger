@@ -6,11 +6,13 @@ import { ConnectContext, ConnectContextTypes } from './connect'
 import { Any, TypeOf } from 'io-ts'
 import * as _ from 'lodash'
 
-export function local<WP, L extends { [k: string]: Any }, S extends { [k in keyof L]?: TypeOf<L[k]> }>(
+export type TypeOfMap<L extends { [k: string]: Any }> = { [k in keyof L]: TypeOf<L[k]> }
+
+export function local<WP, L extends { [k: string]: Any }>(
   Component: React.ComponentClass<WP>,
   locals: L
-): <OP>(f: (ownProps: OP, state: S, transition: Transition<S>) => WP) => React.ComponentClass<OP> {
-  return function<OP>(f: (ownProps: OP, state: S, transition: Transition<S>) => WP) {
+): <OP>(f: (ownProps: OP, state: Partial<TypeOfMap<L>>, transition: Transition<TypeOfMap<L>>) => WP) => React.ComponentClass<OP> {
+  return function<OP>(f: (ownProps: OP, state: Partial<TypeOfMap<L>>, transition: Transition<TypeOfMap<L>>) => WP) {
     return class LocalWrapper extends React.Component<OP, { props: WP }> {
       static displayName = `LocalWrapper(${Component.displayName})`
       static contextTypes = ConnectContextTypes
@@ -22,11 +24,11 @@ export function local<WP, L extends { [k: string]: Any }, S extends { [k in keyo
         super(props, context)
         this.state = { props: f(props, context.state.value, context.transition) }
       }
-      localizeGlobalState(state: any): S {
-        return _.get(state, ['__local', LocalWrapper.displayName, this.instanceNamespace], {}) as S
+      localizeGlobalState(state: any): Partial<TypeOfMap<L>> {
+        return _.get(state, ['__local', LocalWrapper.displayName, this.instanceNamespace], {}) as Partial<TypeOfMap<L>>
       }
-      transition(localPatch: S) {
-        const state = this.context.state.value as any
+      transition(localPatch: Partial<TypeOfMap<L>>) {
+        const state = this.context.state.value
         const p = _.get(state, ['__local', LocalWrapper.displayName, this.instanceNamespace], {})
         const pp = Object.assign({}, p, localPatch)
         for (const key in localPatch) {
@@ -35,7 +37,7 @@ export function local<WP, L extends { [k: string]: Any }, S extends { [k in keyo
           }
         }
         const patch = _.set(Object.assign({}, state), ['__local', LocalWrapper.displayName, this.instanceNamespace], pp)
-        return this.context.transition(patch as any)
+        this.context.transition(patch as any)
       }
       componentWillMount() {
         LocalWrapper.instanceCount += 1
