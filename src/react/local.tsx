@@ -5,14 +5,14 @@ import { Transition } from './transition'
 import { ConnectContext, ConnectContextTypes } from './connect'
 import { Any, TypeOf } from 'io-ts'
 import * as _ from 'lodash'
-import { Option, fromNullable, some } from 'fp-ts/lib/Option'
+import { fromNullable } from 'fp-ts/lib/Option'
 
 const GLOBAL_LOCAL_KEY = '__local'
 
-export function local<WP, L extends Any>(Component: React.ComponentClass<WP>, locals: L):
-  <OP>(f: (ownProps: OP, state: Option<TypeOf<L>>, transition: Transition<TypeOf<L>>) => WP) => React.ComponentClass<OP> {
+export function local<WP, L extends Any>(Component: React.ComponentClass<WP>, locals: L, defaultState: TypeOf<L>):
+  <OP>(f: (ownProps: OP, state: TypeOf<L>, transition: Transition<TypeOf<L>>) => WP) => React.ComponentClass<OP> {
 
-  return function<OP>(f: (ownProps: OP, state: Option<TypeOf<L>>, transition: Transition<TypeOf<L>>) => WP) {
+  return function<OP>(f: (ownProps: OP, state: TypeOf<L>, transition: Transition<TypeOf<L>>) => WP) {
     return class LocalWrapper extends React.Component<OP, { props: WP }> {
       static displayName = `LocalWrapper(${Component.displayName})`
       static contextTypes = ConnectContextTypes
@@ -21,21 +21,22 @@ export function local<WP, L extends Any>(Component: React.ComponentClass<WP>, lo
       private static instanceCount = 0
       private instanceNamespace: string
       private subscription: Subscription
-      private localState: Option<TypeOf<L>>
+      private localState: TypeOf<L>
       constructor(props: OP, context: ConnectContext<any>) {
         super(props, context)
         this.localState = this.read(context.state.value)
         this.state = this.getState(props)
         this.write = s => {
-          this.localState = some(s)
+          this.localState = s
           this.transition(s)
         }
       }
       private getState(props: OP) {
         return { props: f(props, this.localState, this.write) }
       }
-      private read(state: any): Option<TypeOf<L>> {
+      private read(state: any): TypeOf<L> {
         return fromNullable(_.get(state, [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], {}))
+          .getOrElse(() => defaultState)
       }
       private transition(s: TypeOf<L> | null) {
         this.context.transition(state => _.set(Object.assign({}, state), [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], s))
