@@ -57,7 +57,7 @@ export function local<WP, L extends Any>(Component: React.ComponentClass<WP>, lo
         this.transition(null)
       }
       render() {
-        return <Component {...this.state.props} />;
+        return <Component {...this.state.props as any} />;
       }
     }
   }

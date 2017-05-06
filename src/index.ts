@@ -420,7 +420,7 @@ export class Product<A extends Array<any>, P extends Array<any>> extends BaseObs
   }
 }
 
-export class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implements ObservableFetch<A2, P2> {
+export class Profunctor<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implements ObservableFetch<A2, P2> {
   constructor(
     private readonly observableFetch: ObservableFetch<A1, P1>,
     private readonly a2toa1: (a1: A2) => A1,

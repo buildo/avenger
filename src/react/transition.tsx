@@ -18,7 +18,7 @@ export function transition<S>(): <WP>(Component: React.ComponentClass<WP>) => <O
         static displayName = `TransitionWrapper(${Component.displayName})`
         context: TransitionContext<S>
         render() {
-          return <Component {...f(this.props, this.context.transition)} />
+          return <Component {...f(this.props, this.context.transition) as any} />
         }
       }
     }

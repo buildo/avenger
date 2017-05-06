@@ -8,7 +8,7 @@ export function loading<WP>(Component: React.ComponentClass<WP>, notReady: () =>
       render() {
         return f(this.props).fold(
           notReady,
-          props => <Component {...props} />
+          props => <Component {...props as any} />
         )
       }
     }

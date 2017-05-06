@@ -30,7 +30,7 @@ export function query<A, P, WP>
         }
       }
       render() {
-        return <Component {...this.state} />
+        return <Component {...this.state as any} />
       }
       private subscribe(props: OP & A) {
         if (this.subscription) {

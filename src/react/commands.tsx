@@ -9,7 +9,7 @@ export function commands<A, P, C extends Array<AnyCommand>, WP>
     return class CommandsWrapper extends React.PureComponent<OP & A, void> {
       static displayName = `CommandsWrapper(${Component.displayName})`
       render() {
-        return <Component {...f(this.props as Readonly<OP>, commands.commands)} />
+        return <Component {...f(this.props as Readonly<OP>, commands.commands) as any} />
       }
     }
   }

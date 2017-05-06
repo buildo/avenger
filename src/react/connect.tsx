@@ -39,7 +39,7 @@ export function connect<S>(): <WP>(Component: React.ComponentClass<WP>) => <OP>(
         render() {
           return this.state.option.fold(
             () => null,
-            wp => <Component {...wp} />
+            wp => <Component {...wp as any} />
           )
         }
       }

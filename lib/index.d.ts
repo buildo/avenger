@@ -155,7 +155,7 @@ export declare class Product<A extends Array<any>, P extends Array<any>> extends
     hasObservers(a: A): boolean;
     invalidate(a: A): void;
 }
-export declare class Bimap<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implements ObservableFetch<A2, P2> {
+export declare class Profunctor<A1, P1, A2, P2> extends BaseObservableFetch<A2, P2> implements ObservableFetch<A2, P2> {
     private readonly observableFetch;
     private readonly a2toa1;
     private readonly p1top2;
