@@ -7,6 +7,7 @@ function del(cache, a) {
 
 const NOT_DONE = {};
 
+// TODO?
 function extractDone(fetch, a) {
   if (fetch.type === 'product') {
     const productDone = fetch.fetches.map((f, i) => extractDone(f, a[i]))
