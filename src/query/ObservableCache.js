@@ -1,8 +1,14 @@
+import t from 'tcomb'
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import {
   Cache
 } from '../cache/Cache'
+
+const Done = t.interface({
+  value: t.Any,        // il valore contenuto nella promise
+  timestamp: t.Number  // il momento in cui è stato valorizzato done
+}, 'Done')
 
 export class ObservableCache extends Cache {
 
@@ -47,9 +53,10 @@ export class ObservableCache extends Cache {
   emitPayloadEvent(a, p) {
     this.log('emitting PAYLOAD event for %o (payload: %o)', a, p)
     const subject = this.getSubject(a)
+    const timestamp = new Date().getTime()
     subject.next({
       loading: false,
-      data: p
+      data: Done({ value: p, timestamp })
     })
   }
 

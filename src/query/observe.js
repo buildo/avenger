@@ -6,8 +6,19 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/observable/of';
 import { hasObservers } from './invalidate';
 
+function mapToPlainValue(subjectValue) {
+  return subjectValue.hasOwnProperty('data') ?
+    Object.assign({}, subjectValue, { data: subjectValue.data.value }) : subjectValue
+}
+
+export function extractSyncValue(cache, a) {
+  return mapToPlainValue(cache.getSubject(a).value)
+}
+
 function observeCache(cache, a) {
-  return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
+  return cache.getSubject(a)
+    .filter(e => e.hasOwnProperty('loading'))
+    .map(mapToPlainValue)
 }
 
 export function observe(fetch, a) {
@@ -31,7 +42,7 @@ export function observe(fetch, a) {
         if (loading) {
           return Observable.of({
             loading: true,
-            data: slave.cache.getSubject(a1).value.data
+            data: extractSyncValue(slave.cache, a1).data
           })
         }
 

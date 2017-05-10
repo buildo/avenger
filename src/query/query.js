@@ -20,7 +20,7 @@ function isEqual(a, b) {
 }
 
 import {
-  observe
+  observe, extractSyncValue
 } from './observe'
 
 export function query(fetch, a) {
@@ -56,13 +56,13 @@ export function querySync(fetch, a) {
       if (loading) {
         return {
           loading: true,
-          data: slave.cache.getSubject(a1).value.data
+          data: extractSyncValue(slave.cache, a1).data
         }
       }
-      return slave.cache.getSubject(a1).value
+      return extractSyncValue(slave.cache, a1)
     }
     return { loading: true }
   }
 
-  return fetch.cache.getSubject(a).value
+  return extractSyncValue(fetch.cache, a);
 }
