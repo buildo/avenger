@@ -2,13 +2,15 @@ import assert from 'assert'
 import 'rxjs'
 import { Query as Node } from '../../src/graph/QueryNode'
 import { make, invalidate, query } from '../../src/graph';
+import { refetch, available } from '../../src/cache/strategies';
 
 describe('graph/invalidate', () => {
 
-  const makeLeafNodes = Ps => Ps.reduce((ac, P) => ({
+  const makeLeafNodes = (Ps, cacheStrategy = refetch) => Ps.reduce((ac, P) => ({
     ...ac,
     ...Node({
       id: P,
+      cacheStrategy,
       params: { token: true },
       fetch: v => new Promise(resolve => {
         setTimeout(() => resolve(v))
@@ -34,6 +36,34 @@ describe('graph/invalidate', () => {
             { loading: true, data: { A: { loading: true } } },
             { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } },
             { loading: true, data: { A: { loading: true } } },
+            { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } }
+          ])
+          resolve()
+        } catch (e) {
+          reject(e);
+        }
+      })
+    })
+  })
+
+  it('should refetch a single available leaf node if it has observers', () => {
+
+    const graph = make(makeLeafNodes(['A', 'B'], available))
+
+    const q = query(graph, ['A'], { token: 'lol' })
+    q.subscribe(() => {}) // subscribe
+
+    setTimeout(() => { // invalidate later on
+      invalidate(graph, ['A'], { token: 'lol' })
+    }, 5)
+
+    return new Promise((resolve, reject) => {
+      q.bufferTime(10).take(1).subscribe(events => {
+        try {
+          assert.deepEqual(events, [
+            { loading: true, data: { A: { loading: true } } },
+            { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } },
+            { loading: true, data: { A: { loading: true, data: { token: 'lol' } } } },
             { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } }
           ])
           resolve()
