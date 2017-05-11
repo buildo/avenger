@@ -34,7 +34,7 @@
     "babel-preset-react": "^6.5.0",
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
-    "jest": "^18.1.0",
+    "jest": "20",
     "sinon": "1.17.4"
   }
 }
