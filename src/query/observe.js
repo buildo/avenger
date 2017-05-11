@@ -5,9 +5,22 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/observable/of';
 import { hasObservers } from './invalidate';
+import { refetch } from '../cache/strategies';
 
-function observeCache(cache, a) {
-  return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
+function mapRespectingStrategy(strategy) {
+  return subjectValue => {
+    if (strategy === refetch && subjectValue.loading) {
+      return { loading: subjectValue.loading }
+    }
+
+    return subjectValue
+  }
+}
+
+function observeCache(cache, a, strategy) {
+  return cache.getSubject(a)
+    .filter(e => e.hasOwnProperty('loading'))
+    .map(mapRespectingStrategy(strategy))
 }
 
 export function observe(fetch, a) {
@@ -42,10 +55,10 @@ export function observe(fetch, a) {
           }
         })
 
-        return observeCache(slave.cache, a1)
+        return observeCache(slave.cache, a1, slave.strategy)
       }
       return Observable.of({ loading: true })
     })
   }
-  return observeCache(fetch.cache, a)
+  return observeCache(fetch.cache, a, fetch.strategy)
 }

@@ -40,7 +40,7 @@ describe('cache', () => {
         assert.strictEqual(typeof cc, 'function')
       })
 
-      it('should fill the cache', () => {
+      xit('should fill the cache', () => {
         const catalog = () => Promise.resolve([1, 2, 3].map(a => 2 * a))
         const c = new Cache()
         const pcache = new Cache()
@@ -67,7 +67,7 @@ describe('cache', () => {
         assert.strictEqual(typeof cs, 'function')
       })
 
-      it('should fill the cache', () => {
+      xit('should fill the cache', () => {
         const star = (as) => Promise.resolve(as.map(a => 2 * a))
         const cache = new Cache()
         const pcache = new Cache()

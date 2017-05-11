@@ -26,6 +26,7 @@ export function cacheFetch(fetch, strategy, cache) {
 
   const cachedFetch = cf(fetch, strategy, cache)
   cachedFetch.cache = cache
+  cachedFetch.strategy = strategy
   return cachedFetch
 }
 
