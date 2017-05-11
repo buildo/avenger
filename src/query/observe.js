@@ -7,7 +7,11 @@ import 'rxjs/add/observable/of';
 import { hasObservers } from './invalidate';
 
 function observeCache(cache, a) {
-  return cache.getSubject(a).filter(e => e.hasOwnProperty('loading'))
+  return cache.getSubject(a)
+    .filter(e => e.hasOwnProperty('loading'))
+    .map(({ loading, data }) => {
+      return loading ? { loading } : { loading, data };
+    })
 }
 
 export function observe(fetch, a) {
