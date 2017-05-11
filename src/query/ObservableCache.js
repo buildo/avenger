@@ -56,7 +56,7 @@ export class ObservableCache extends Cache {
     const timestamp = new Date().getTime()
     subject.next({
       loading: false,
-      data: Done({ value: p, timestamp })
+      data: { done: Done({ value: p, timestamp }) }
     })
   }
 

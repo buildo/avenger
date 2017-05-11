@@ -8,7 +8,7 @@ import { hasObservers } from './invalidate';
 
 function mapToPlainValue(subjectValue) {
   return subjectValue.hasOwnProperty('data') ?
-    Object.assign({}, subjectValue, { data: subjectValue.data.value }) : subjectValue
+    Object.assign({}, subjectValue, { data: subjectValue.data.done.value }) : subjectValue
 }
 
 export function extractSyncValue(cache, a) {
