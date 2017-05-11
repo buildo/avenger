@@ -33,7 +33,7 @@ describe('graph/invalidate', () => {
           assert.deepEqual(events, [
             { loading: true, data: { A: { loading: true } } },
             { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } },
-            { loading: true, data: { A: { loading: true, data: { token: 'lol' } } } },
+            { loading: true, data: { A: { loading: true } } },
             { loading: false, data: { A: { loading: false, data: { token: 'lol' } } } }
           ])
           resolve()
@@ -92,13 +92,13 @@ describe('graph/invalidate', () => {
               A: { loading: false, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
             },
             { loading: true, data: {
-              A: { loading: true, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
+              A: { loading: true }, C: { loading: false, data: { token: 'lol' } } }
             },
             { loading: true, data: {
-              A: { loading: true, data: { token: 'lol' } }, C: { loading: true, data: { token: 'lol' } } }
+              A: { loading: true }, C: { loading: true } }
             },
             { loading: true, data: {
-              A: { loading: false, data: { token: 'lol' } }, C: { loading: true, data: { token: 'lol' } } }
+              A: { loading: false, data: { token: 'lol' } }, C: { loading: true } }
             },
             { loading: false, data: {
               A: { loading: false, data: { token: 'lol' } }, C: { loading: false, data: { token: 'lol' } } }
@@ -178,13 +178,13 @@ describe('graph/invalidate', () => {
               },
               // invalidate()
               { loading: true, data: {
-                A: { loading: true, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
+                A: { loading: true }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
               },
               { loading: true, data: {
-                A: { loading: true, data: { id: 1, token: 'lol' } }, B: { loading: true, data: { posts: ['p1'], token: 'lol' } } }
+                A: { loading: true }, B: { loading: true } }
               },
               { loading: true, data: {
-                A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: true, data: { posts: ['p1'], token: 'lol' } } }
+                A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: true } }
               },
               { loading: false, data: {
                 A: { loading: false, data: { id: 1, token: 'lol' } }, B: { loading: false, data: { posts: ['p1'], token: 'lol' } } }
@@ -239,28 +239,20 @@ describe('graph/invalidate', () => {
               },
               // invalidate()
               { loading: true, data: {
-                B: { loading: true, data: {
-                  posts: ['p1'], token: 'lol'
-                } },
+                B: { loading: true },
                 C: { loading: false, data: {
                   profile: 'p1', token: 'lol'
                 } } }
               },
               { loading: true, data: {
-                B: { loading: true, data: {
-                  posts: ['p1'], token: 'lol'
-                } },
-                C: { loading: true, data: {
-                  profile: 'p1', token: 'lol'
-                } } }
+                B: { loading: true },
+                C: { loading: true } }
               },
               { loading: true, data: {
                 B: { loading: false, data: {
                   posts: ['p1'], token: 'lol'
                 } },
-                C: { loading: true, data: {
-                  profile: 'p1', token: 'lol'
-                } } }
+                C: { loading: true } }
               },
               { loading: false, data: {
                 B: { loading: false, data: {
