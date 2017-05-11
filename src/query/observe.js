@@ -6,6 +6,16 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/observable/of';
 import { hasObservers } from './invalidate';
 
+function mapRespectingStrategy(strategy) {
+  return subjectValue => {
+    if (subjectValue.hasOwnProperty('data') && strategy.isAvailable(subjectValue.data)) {
+      return subjectValue
+    }
+
+    return { loading: subjectValue.loading }
+  }
+}
+
 function mapToPlainValue(subjectValue) {
   return subjectValue.hasOwnProperty('data') ?
     Object.assign({}, subjectValue, { data: subjectValue.data.done.value }) : subjectValue
@@ -15,9 +25,10 @@ export function extractSyncValue(cache, a) {
   return mapToPlainValue(cache.getSubject(a).value)
 }
 
-function observeCache(cache, a) {
+function observeCache(cache, a, strategy) {
   return cache.getSubject(a)
     .filter(e => e.hasOwnProperty('loading'))
+    .map(mapRespectingStrategy(strategy))
     .map(mapToPlainValue)
 }
 
@@ -53,10 +64,10 @@ export function observe(fetch, a) {
           }
         })
 
-        return observeCache(slave.cache, a1)
+        return observeCache(slave.cache, a1, slave.strategy)
       }
       return Observable.of({ loading: true })
     })
   }
-  return observeCache(fetch.cache, a)
+  return observeCache(fetch.cache, a, fetch.strategy)
 }

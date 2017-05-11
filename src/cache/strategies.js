@@ -4,6 +4,10 @@ import {
   CacheValue
 } from './Cache'
 
+import {
+  ObservableCacheValue
+} from '../query/ObservableCache'
+
 export const Strategy = t.interface({
   isAvailable: t.Function
 }, 'Strategy')
@@ -36,7 +40,7 @@ export class Expire {
 
   isAvailable(value) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheValue.is(value), () => 'Invalid argument value supplied to isAvailable (expected a CacheValue)')
+      t.assert(CacheValue.is(value) || ObservableCacheValue.is(value), () => 'Invalid argument value supplied to isAvailable (expected a CacheValue or ObservableCacheValue)')
     }
     return !t.Nil.is(value.done) && !this.isExpired(value.done.timestamp)
   }

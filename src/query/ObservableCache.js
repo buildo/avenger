@@ -10,6 +10,10 @@ const Done = t.interface({
   timestamp: t.Number  // il momento in cui è stato valorizzato done
 }, 'Done')
 
+export const ObservableCacheValue = t.interface({
+  done: Done
+});
+
 export class ObservableCache extends Cache {
 
   constructor(options) {
