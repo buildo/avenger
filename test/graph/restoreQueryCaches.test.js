@@ -2,7 +2,7 @@ import makeTestGraph from './makeBasicTestGraph';
 import { querySync, restoreQueryCaches } from '../../src/graph';
 
 const extractedCaches = {
-  master: [{
+  master: {
     a: { token: 'foo' },
     value: {
       bar: {
@@ -10,8 +10,8 @@ const extractedCaches = {
         token: 'foo'
       }
     }
-  }],
-  slave_finalFetch: [{
+  },
+  slave_finalFetch: {
     a: {
       master: {
         bar: {
@@ -24,11 +24,11 @@ const extractedCaches = {
       foo: 'foo',
       token: 'foo'
     }
-  }],
-  a: [{
+  },
+  a: {
     a: {},
     value: 'a'
-  }]
+  }
 };
 
 describe('extractQueryCaches', () => {
@@ -42,9 +42,9 @@ describe('extractQueryCaches', () => {
     ).toEqual({
       loading: false,
       data: {
-        master: { loading: false, data: extractedCaches.master[0].value },
-        slave: { loading: false, data: extractedCaches.slave_finalFetch[0].value },
-        a: { loading: false, data: extractedCaches.a[0].value }
+        master: { loading: false, data: extractedCaches.master.value },
+        slave: { loading: false, data: extractedCaches.slave_finalFetch.value },
+        a: { loading: false, data: extractedCaches.a.value }
       }
     });
   });

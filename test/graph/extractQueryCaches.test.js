@@ -19,12 +19,12 @@ describe('extractQueryCaches', () => {
       const caches = extractQueryCaches(graph, ['master', 'slave', 'a'], { token: 'foo' });
       try {
         expect(Object.keys(caches).length).toBe(3);
-        expect(caches.master.length).toBe(1);
-        expect(caches.master[0].value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
-        expect(caches.slave_finalFetch.length).toBe(1);
-        expect(caches.slave_finalFetch[0].value).toEqual({ foo: 'foo', token: 'foo' });
-        expect(caches.a.length).toBe(1);
-        expect(caches.a[0].value).toEqual('a');
+        expect(caches.master).toBeDefined();
+        expect(caches.master.value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
+        expect(caches.slave_finalFetch).toBeDefined();
+        expect(caches.slave_finalFetch.value).toEqual({ foo: 'foo', token: 'foo' });
+        expect(caches.a).toBeDefined();
+        expect(caches.a.value).toEqual('a');
         resolve();
       } catch (e) {
         reject(e);
@@ -41,12 +41,12 @@ describe('extractQueryCaches', () => {
       const caches = extractQueryCaches(graph, ['master', 'slave', 'a'], { token: 'foo' });
       try {
         expect(Object.keys(caches).length).toBe(3);
-        expect(caches.master.length).toBe(1);
-        expect(caches.master[0].value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
-        expect(caches.slave_finalFetch.length).toBe(1);
-        expect(caches.slave_finalFetch[0].value).toEqual({ foo: 'foo', token: 'foo' });
-        expect(caches.a.length).toBe(1);
-        expect(caches.a[0].value).toEqual('a');
+        expect(caches.master).toBeDefined();
+        expect(caches.master.value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
+        expect(caches.slave_finalFetch).toBeDefined();
+        expect(caches.slave_finalFetch.value).toEqual({ foo: 'foo', token: 'foo' });
+        expect(caches.a).toBeDefined();
+        expect(caches.a.value).toEqual('a');
         resolve();
       } catch (e) {
         reject(e);

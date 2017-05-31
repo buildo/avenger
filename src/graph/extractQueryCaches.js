@@ -7,7 +7,7 @@ const ExtractedQueryCache = t.interface({
   value: t.Any
 }, { strict: true, name: 'ExtractedQueryCache' });
 export const ExtractedQueryCaches = t.dict(
-  t.String, t.list(ExtractedQueryCache), 'ExtractedQueryCaches'
+  t.String, ExtractedQueryCache, 'ExtractedQueryCaches'
 );
 
 function extractQueryCache(graph, fetch, a) {
@@ -47,10 +47,7 @@ export function extractQueryCaches(graph, Ps, A) {
     qc.filter(
       ({ value }) => typeof value !== 'undefined'
     ).forEach(({ P, a, value }) => {
-      if (!caches[P]) {
-        caches[P] = [];
-      }
-      caches[P].push({ a, value });
+      caches[P] = { a, value };
     });
   });
   return ExtractedQueryCaches(caches);
