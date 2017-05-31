@@ -11,6 +11,10 @@ const extractedCaches = {
       }
     }
   },
+  slave_syncFetchA: {
+    a: { slaveToken: 'slaveFoo' },
+    value: ['slaveFoo']
+  },
   slave_finalFetch: {
     a: {
       master: {
@@ -18,11 +22,13 @@ const extractedCaches = {
           foo: 'foo',
           token: 'foo'
         }
-      }
+      },
+      slaveToken: 'slaveFoo'
     },
     value: {
       foo: 'foo',
-      token: 'foo'
+      token: 'foo',
+      slaveToken: 'slaveFoo'
     }
   },
   a: {
@@ -38,7 +44,7 @@ describe('restoreQueryCaches', () => {
 
     restoreQueryCaches(graph, extractedCaches);
     expect(
-      querySync(graph, ['master', 'slave', 'a'], { token: 'foo' })
+      querySync(graph, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' })
     ).toEqual({
       loading: false,
       data: {

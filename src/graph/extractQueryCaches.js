@@ -12,8 +12,8 @@ export const ExtractedQueryCaches = t.dict(
 
 function extractQueryCache(graph, fetch, a) {
   if (fetch.type === 'product') {
-    return fetch.fetches.map((fetch, i) =>
-      extractQueryCache(graph, fetch, a[i])
+    return fetch.fetches.map((f, i) =>
+      extractQueryCache(graph, f, a[i])
     );
   }
 

@@ -11,10 +11,11 @@ export default () => {
   const slave = Node({
     id: 'slave',
     strategy: available,
+    params: { slaveToken: 'slaveToken' },
     dependencies: {
       master: { query: master }
     },
-    fetch: ({ master: { bar } }) => Promise.resolve(bar)
+    fetch: ({ master: { bar }, slaveToken }) => Promise.resolve({ ...bar, slaveToken })
   });
   const a = Node({
     id: 'a',
