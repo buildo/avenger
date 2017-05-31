@@ -31,7 +31,7 @@ const extractedCaches = {
   }
 };
 
-describe('extractQueryCaches', () => {
+describe('restoreQueryCaches', () => {
 
   it('should work', () => {
     const graph = makeTestGraph()
