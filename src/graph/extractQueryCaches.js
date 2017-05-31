@@ -1,4 +1,5 @@
 import t from 'tcomb';
+import flatten from 'lodash/flatten';
 import { querySync } from '../query/query';
 import { queriesAndArgs, findP } from './util';
 
@@ -12,8 +13,10 @@ export const ExtractedQueryCaches = t.dict(
 
 function extractQueryCache(graph, fetch, a) {
   if (fetch.type === 'product') {
-    return fetch.fetches.map((f, i) =>
-      extractQueryCache(graph, f, a[i])
+    return flatten(
+      fetch.fetches.map((f, i) =>
+        extractQueryCache(graph, f, a[i])
+      )
     );
   }
 
@@ -46,8 +49,8 @@ export function extractQueryCaches(graph, Ps, A) {
     const qc = extractQueryCache(graph, graph[P].fetch, args[P]);
     qc.filter(
       ({ value }) => typeof value !== 'undefined'
-    ).forEach(({ P, a, value }) => {
-      caches[P] = { a, value };
+    ).forEach(({ P: p, a, value }) => {
+      caches[p] = { a, value };
     });
   });
   return ExtractedQueryCaches(caches);
