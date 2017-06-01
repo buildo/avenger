@@ -1,6 +1,7 @@
 import t from 'tcomb';
 import pick from 'lodash/pick';
 import assign from 'lodash/assign';
+import findKey from 'lodash/findKey';
 
 // given a flat `AA` object, e.g.
 //
@@ -35,4 +36,8 @@ export function queriesAndArgs(graph, Ps, A) {
     [P]: pickA(A, graph[P].A)
   }), {});
   return { queries, args };
+}
+
+export function findP(graph, fetch) {
+  return findKey(graph, { fetch });
 }
