@@ -2,20 +2,12 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { assertCacheValueDone } from './helpers'
 
-import {
-  Cache,
-  Expire,
-  refetch,
-  available,
-  Done
-} from '../src'
+import { Cache, Expire, refetch, available, Done } from '../src'
 
 const expire = new Expire(1000)
 
 describe('Cache', () => {
-
   describe('getAvailablePromise', () => {
-
     it('should return undefined if there is no available promise', () => {
       const cache = new Cache<number, number>()
       assert.strictEqual(cache.getAvailablePromise(1, available), undefined)
@@ -44,11 +36,9 @@ describe('Cache', () => {
       assert.strictEqual(cache.getAvailablePromise(1, refetch), promise)
       assert.strictEqual(cache.getAvailablePromise(1, expire), promise)
     })
-
   })
 
   describe('getPromise', () => {
-
     it('should fetch when a cache miss occours', () => {
       const fetch = sinon.spy((a: number) => Promise.resolve(2 * a))
       const cache = new Cache<number, number>()
@@ -103,7 +93,5 @@ describe('Cache', () => {
         assert.strictEqual(fetch.callCount, 0)
       })
     })
-
   })
-
 })

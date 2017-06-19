@@ -137,7 +137,7 @@ export declare class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1,
     private readonly ptoa;
     private readonly slave;
     static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, slave: ObservableFetch<A2, P2>): (ptoa: (p1: P1, a1: A1) => A2) => Composition<A1, P1, A2, P2>;
-    private constructor(master, ptoa, slave);
+    private constructor();
     observe(a1: A1): Observable<CacheEvent<P2>>;
     getCacheEvent(a1: A1): CacheEvent<P2>;
     getPayload(a1: A1): Option<P2>;
@@ -148,7 +148,7 @@ export declare class Product<A extends Array<any>, P extends Array<any>> extends
     private readonly fetches;
     static create<A1, P1, A2, P2, A3, P3>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3]>;
     static create<A1, P1, A2, P2>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]): Product<[A1, A2], [P1, P2]>;
-    private constructor(fetches);
+    private constructor();
     observe(a: A): Observable<CacheEvent<P>>;
     getCacheEvent(a: A): CacheEvent<P>;
     getPayload(a: A): Option<P>;
@@ -174,7 +174,7 @@ export declare class Queries<A, P extends Array<CacheEvent<any>>> {
     static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Queries<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>;
     static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Queries<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>;
     static create<F1 extends AnyObservableFetch>(fetches: [F1]): Queries<F1['_A'], [CacheEvent<F1['_P']>]>;
-    private constructor(fetches);
+    private constructor();
     getCacheEvents(as: A): P;
     observe(as: A): Observable<P>;
 }
@@ -195,7 +195,7 @@ export declare class Command<A, P> {
         run: Fetch<A, P>;
         invalidates: Array<never>;
     }): Command<A, P>;
-    private constructor(fetch, invalidates);
+    private constructor();
     run(a: A): Promise<P>;
 }
 export declare type AnyCommand = Command<any, any>;
@@ -207,6 +207,6 @@ export declare class Commands<A, P, C extends Array<AnyCommand>> {
     static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], F1['_P'] & F2['_P'], typeof commands>;
     static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], F1['_P'], typeof commands>;
     readonly commands: C;
-    private constructor(commands);
+    private constructor();
     run(a: A): Promise<P>;
 }

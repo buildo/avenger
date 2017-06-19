@@ -3,37 +3,40 @@
   "version": "2.0.0",
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
-    "lint": "eslint src test",
-    "test": "npm run mocha",
-    "build": "rm -rf lib/* && tsc && tsc -m es6 --outDir lib-jsnext",
-    "preversion": "npm run lint && npm test",
+    "lint": "tslint src/**/*.ts test/**/*.ts",
+    "test": "npm run prettier && npm run lint && npm run mocha",
+    "build": "rm -rf lib/* && tsc",
+    "preversion": "npm test",
     "prepublish": "npm run build",
+    "prettier": "prettier --no-semi --single-quote --print-width 120 --parser typescript --list-different \"{src,test}/**/*.ts\"",
     "mocha": "mocha -r ts-node/register test/**/*.test.ts"
   },
   "main": "lib/index.js",
-  "jsnext:main": "lib-jsnext/index.js",
   "typings": "lib/index.d.ts",
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "debug": "^2.6.3",
-    "fp-ts": "^0.2.0",
-    "io-ts": "^0.3.0",
-    "lodash": "^4.17.4",
-    "react": "^15.5.4",
-    "rxjs": "^5.2.0"
+    "debug": "2.6.8",
+    "fp-ts": "0.3.3",
+    "io-ts": "0.5.0",
+    "lodash": "4.17.4",
+    "react": "15.6.1",
+    "rxjs": "5.4.1"
   },
   "devDependencies": {
     "@types/debug": "0.0.29",
-    "@types/lodash": "^4.14.63",
-    "@types/mocha": "2.2.40",
+    "@types/lodash": "4.14.66",
+    "@types/mocha": "2.2.41",
     "@types/node": "7.0.8",
-    "@types/react": "^15.0.21",
+    "@types/react": "15.0.29",
     "@types/sinon": "1.16.35",
     "awesome-typescript-loader": "^3.0.0-beta.17",
-    "mocha": "^3.2.0",
+    "mocha": "3.4.2",
+    "prettier": "1.4.2",
     "sinon": "1.17.4",
-    "ts-node": "^3.0.2",
-    "typescript": "2.3.2"
+    "ts-node": "3.0.6",
+    "tslint": "4.4.2",
+    "tslint-config-standard": "4.0.0",
+    "typescript": "2.4.0"
   }
 }

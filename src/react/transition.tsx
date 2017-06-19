@@ -10,9 +10,11 @@ export const TransitionContextTypes = {
   transition: React.PropTypes.func.isRequired
 }
 
-export function transition<S>(): <WP>(Component: React.ComponentClass<WP>) => <OP>(f: (ownProps: OP, transition: Transition<S>) => WP) => React.ComponentClass<OP> {
+export function transition<S>(): <WP>(
+  Component: React.ComponentClass<WP>
+) => <OP>(f: (ownProps: OP, transition: Transition<S>) => WP) => React.ComponentClass<OP> {
   return function<WP>(Component: React.ComponentClass<WP>) {
-    return function <OP>(f: (ownProps: OP, transition: Transition<S>) => WP) {
+    return function<OP>(f: (ownProps: OP, transition: Transition<S>) => WP) {
       return class TransitionWrapper extends React.Component<OP, void> {
         static contextTypes = TransitionContextTypes
         static displayName = `TransitionWrapper(${Component.displayName})`

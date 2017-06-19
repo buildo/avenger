@@ -32,10 +32,7 @@ export class Done<P> {
 
 export class CacheValue<P> {
   static empty = new CacheValue<any>(none, none)
-  constructor(
-    public readonly done: Option<Done<P>>,
-    public readonly promise: Option<Promise<P>>
-  ) {}
+  constructor(public readonly done: Option<Done<P>>, public readonly promise: Option<Promise<P>>) {}
 }
 
 export interface Strategy {
@@ -44,9 +41,7 @@ export interface Strategy {
 
 // questa strategia esegue una fetch se non c'è un done oppure se il done presente è scaduto
 export class Expire {
-  constructor(
-    public delay: number
-  ) {}
+  constructor(public delay: number) {}
   isExpired(time: number) {
     const delta = new Date().getTime() - time
     // prendo in considerazione tempi futuri
@@ -56,10 +51,7 @@ export class Expire {
     return delta >= this.delay
   }
   isAvailable<P>(value: CacheValue<P>): boolean {
-    return value.done.fold(
-      () => false,
-      done => !this.isExpired(done.timestamp)
-    )
+    return value.done.fold(() => false, done => !this.isExpired(done.timestamp))
   }
   toString() {
     if (this.delay === -1) {
@@ -81,7 +73,7 @@ export const available = new Expire(Infinity)
 
 export type CacheOptions<A, P> = {
   name?: string
-  map?: Map<string, CacheValue<P>>,
+  map?: Map<string, CacheValue<P>>
   atok?: (x: A) => string
 }
 
@@ -141,11 +133,7 @@ export class Cache<A, P> {
     return promise
   }
   storeDone(a: A, done: Done<P>): void {
-    const {
-      value: p,
-      timestamp,
-      promise
-    } = done
+    const { value: p, timestamp, promise } = done
     const { promise: blocked } = this.get(a)
     this.log('storing %o => %o (ts: %o)', a, p, timestamp)
     // se c'è una promise in flight la mantengo
@@ -174,10 +162,7 @@ export function cacheFetch<A, P>(fetch: Fetch<A, P>, strategy: Strategy, cache: 
  * - Setoid
  */
 export class CacheEvent<P> {
-  constructor(
-    public readonly loading: boolean,
-    public readonly data: Option<P>
-  ) {}
+  constructor(public readonly loading: boolean, public readonly data: Option<P>) {}
   map<B>(f: (a: P) => B): CacheEvent<B> {
     return new CacheEvent(this.loading, this.data.map(f))
   }
@@ -238,7 +223,7 @@ export class ObservableCache<A, P> extends Cache<A, P> {
 }
 
 export type Dependency<A, P> = {
-  fetch: AnyObservableFetch,
+  fetch: AnyObservableFetch
   trigger: (p: P, a: A) => void
 }
 
@@ -260,9 +245,7 @@ export class BaseObservableFetch<A, P> {
   _A: A
   _P: P
   private dependencies: Array<Dependency<A, P>> = []
-  constructor(
-    protected readonly fetch: Fetch<A, P>
-  ) {}
+  constructor(protected readonly fetch: Fetch<A, P>) {}
   run(a: A, omit?: AnyObservableFetch): Promise<P> {
     const promise = this.fetch(a)
     promise.then(p => {
@@ -286,7 +269,13 @@ export type TypeDictionary = { [key: string]: t.Any }
 export type TypesOf<D extends TypeDictionary> = { [K in keyof D]: t.TypeOf<D[K]> }
 
 export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
-  static create<D extends TypeDictionary, P>(options: { params: D, fetch: Fetch<TypesOf<D>, P>, cacheStrategy?: Strategy }): Leaf<TypesOf<D>, P> {
+  static create<D extends TypeDictionary, P>(
+    options: {
+      params: D
+      fetch: Fetch<TypesOf<D>, P>
+      cacheStrategy?: Strategy
+    }
+  ): Leaf<TypesOf<D>, P> {
     const strategy = options.cacheStrategy || refetch
     const cache = new ObservableCache<TypesOf<D>, P>({
       atok: a => {
@@ -300,18 +289,12 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
     return new Leaf<TypesOf<D>, P>(options.fetch, strategy, cache)
   }
   private readonly cache: ObservableCache<A, P>
-  constructor(
-    fetch: Fetch<A, P>,
-    strategy: Strategy,
-    cache: ObservableCache<A, P> = new ObservableCache<A, P>()
-  ) {
+  constructor(fetch: Fetch<A, P>, strategy: Strategy, cache: ObservableCache<A, P> = new ObservableCache<A, P>()) {
     super(cacheFetch(fetch, strategy, cache))
     this.cache = cache
   }
   observe(a: A): Observable<CacheEvent<P>> {
-    return this.cache.getSubject(a)
-      .filter(e => e !== INITIAL_LOADING)
-      .distinctUntilChanged((x, y) => x.equals(y)) // TODO remove distinctUntilChanged?
+    return this.cache.getSubject(a).filter(e => e !== INITIAL_LOADING).distinctUntilChanged((x, y) => x.equals(y)) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a: A): CacheEvent<P> {
     return this.cache.getSubject(a).value
@@ -328,7 +311,10 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
 }
 
 export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> implements ObservableFetch<A1, P2> {
-  static create<A1, P1, A2, P2>(master: ObservableFetch<A1, P1>, slave: ObservableFetch<A2, P2>): (ptoa: (p1: P1, a1: A1) => A2) => Composition<A1, P1, A2, P2> {
+  static create<A1, P1, A2, P2>(
+    master: ObservableFetch<A1, P1>,
+    slave: ObservableFetch<A2, P2>
+  ): (ptoa: (p1: P1, a1: A1) => A2) => Composition<A1, P1, A2, P2> {
     return ptoa => new Composition(master, ptoa, slave)
   }
   private constructor(
@@ -339,7 +325,7 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
     super(a1 => this.master.run(a1, this.slave).then(p1 => this.slave.run(this.ptoa(p1, a1))))
     master.addDependency({
       fetch: this.slave,
-      trigger: (p1: P1, a1: A1) => { 
+      trigger: (p1: P1, a1: A1) => {
         const a2 = this.ptoa(p1, a1)
         if (this.slave.hasObservers(a2)) {
           this.slave.run(a2)
@@ -348,28 +334,21 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
     })
   }
   observe(a1: A1): Observable<CacheEvent<P2>> {
-    return this.master.observe(a1)
-      .switchMap<CacheEvent<P1>, CacheEvent<P2>>(cep1 => cep1.data.fold(
-        () => Observable.of(LOADING),
-        p1 => this.slave.observe(this.ptoa(p1, a1))
-      ))
+    return this.master
+      .observe(a1)
+      .switchMap<CacheEvent<P1>, CacheEvent<P2>>(cep1 =>
+        cep1.data.fold(() => Observable.of(LOADING), p1 => this.slave.observe(this.ptoa(p1, a1)))
+      )
       .distinctUntilChanged((x, y) => x.equals(y)) // TODO remove distinctUntilChanged?
   }
   getCacheEvent(a1: A1): CacheEvent<P2> {
-    return this.master.getCacheEvent(a1).data.fold(
-      () => LOADING,
-      p1 => this.slave.getCacheEvent(this.ptoa(p1, a1))
-    )
+    return this.master.getCacheEvent(a1).data.fold(() => LOADING, p1 => this.slave.getCacheEvent(this.ptoa(p1, a1)))
   }
   getPayload(a1: A1): Option<P2> {
-    return this.master.getPayload(a1)
-      .chain(p1 => this.slave.getPayload(this.ptoa(p1, a1)))
+    return this.master.getPayload(a1).chain(p1 => this.slave.getPayload(this.ptoa(p1, a1)))
   }
   hasObservers(a1: A1): boolean {
-    return this.master.getCacheEvent(a1).data.fold(
-      () => false,
-      p1 => this.slave.hasObservers(this.ptoa(p1, a1))
-    )
+    return this.master.getCacheEvent(a1).data.fold(() => false, p1 => this.slave.hasObservers(this.ptoa(p1, a1)))
   }
   invalidate(a1: A1): void {
     this.master.getPayload(a1).map(p1 => {
@@ -380,15 +359,20 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
   }
 }
 
-export class Product<A extends Array<any>, P extends Array<any>> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
+export class Product<A extends Array<any>, P extends Array<any>> extends BaseObservableFetch<A, P>
+  implements ObservableFetch<A, P> {
   // TODO more overloadings
-  static create<A1, P1, A2, P2, A3, P3>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]): Product<[A1, A2, A3], [P1, P2, P3]>
-  static create<A1, P1, A2, P2>(fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]): Product<[A1, A2], [P1, P2]>
+  static create<A1, P1, A2, P2, A3, P3>(
+    fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]
+  ): Product<[A1, A2, A3], [P1, P2, P3]>
+  static create<A1, P1, A2, P2>(
+    fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>]
+  ): Product<[A1, A2], [P1, P2]>
   static create(fetches: Array<AnyObservableFetch>): Product<Array<any>, Array<any>> {
     return new Product(fetches)
   }
   private constructor(private readonly fetches: Array<AnyObservableFetch>) {
-    super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))))
+    super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))) as Promise<P>)
   }
   observe(a: A): Observable<CacheEvent<P>> {
     return Observable.combineLatest(...this.fetches.map((fetch, i) => fetch.observe(a[i])), (...values) => {
@@ -451,12 +435,20 @@ export function observeAndRun<A, P>(fetch: ObservableFetch<A, P>, a: A): Observa
   return observable
 }
 
+function copyArray<A extends Array<any>>(as: A): A {
+  return as.slice() as A
+}
+
 export class Queries<A, P extends Array<CacheEvent<any>>> {
   _A: A
   _P: P
   // TODO more overloadings
-  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(fetches: [F1, F2, F3]): Queries<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>
-  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(fetches: [F1, F2]): Queries<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>
+  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(
+    fetches: [F1, F2, F3]
+  ): Queries<F1['_A'] & F2['_A'] & F3['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>, CacheEvent<F3['_P']>]>
+  static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(
+    fetches: [F1, F2]
+  ): Queries<F1['_A'] & F2['_A'], [CacheEvent<F1['_P']>, CacheEvent<F2['_P']>]>
   static create<F1 extends AnyObservableFetch>(fetches: [F1]): Queries<F1['_A'], [CacheEvent<F1['_P']>]>
   static create(fetches: Array<AnyObservableFetch>): Queries<any, any> {
     return new Queries(fetches)
@@ -467,16 +459,16 @@ export class Queries<A, P extends Array<CacheEvent<any>>> {
   }
   observe(as: A): Observable<P> {
     const observables = this.fetches.map((fetch, i) => observeAndRun(fetch, as).map(ce => ({ type: i, ce })))
-    return Observable
-      .merge(...observables)
+    const init = this.fetches.map(() => LOADING) as P
+    return Observable.merge(...observables)
       .scan((acc, x) => {
         if (acc[x.type].loading !== x.ce.loading) {
-          const acc2 = acc.slice()
+          const acc2 = copyArray(acc)
           acc2[x.type] = x.ce
           return acc2
         }
         return acc
-      }, this.fetches.map(() => LOADING))
+      }, init)
       .distinctUntilChanged()
   }
 }
@@ -485,16 +477,23 @@ export class Command<A, P> {
   _A: A
   _P: P
   // TODO more overloadings
-  static create<A, P, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: { run: Fetch<A, P>, invalidates: [F1, F2] }): Command<A & F1['_A'] & F2['_A'], P>
-  static create<A, P, F1 extends AnyObservableFetch>(options: { run: Fetch<A, P>, invalidates: [F1] }): Command<A & F1['_A'], P>
-  static create<A, P>(options: { run: Fetch<A, P>, invalidates: Array<never> }): Command<A, P>
-  static create(options: { run: Fetch<any, any>, invalidates: Array<AnyObservableFetch> }): Command<any, any> {
+  static create<A, P, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(
+    options: {
+      run: Fetch<A, P>
+      invalidates: [F1, F2]
+    }
+  ): Command<A & F1['_A'] & F2['_A'], P>
+  static create<A, P, F1 extends AnyObservableFetch>(
+    options: {
+      run: Fetch<A, P>
+      invalidates: [F1]
+    }
+  ): Command<A & F1['_A'], P>
+  static create<A, P>(options: { run: Fetch<A, P>; invalidates: Array<never> }): Command<A, P>
+  static create(options: { run: Fetch<any, any>; invalidates: Array<AnyObservableFetch> }): Command<any, any> {
     return new Command(options.run, options.invalidates)
   }
-  private constructor(
-    private readonly fetch: Fetch<A, P>,
-    private readonly invalidates: Array<AnyObservableFetch>
-  ) {}
+  private constructor(private readonly fetch: Fetch<A, P>, private readonly invalidates: Array<AnyObservableFetch>) {}
   run(a: A): Promise<P> {
     return this.fetch(a).then(p => {
       this.invalidates.forEach(f => f.invalidate(a))
@@ -510,8 +509,12 @@ export class Commands<A, P, C extends Array<AnyCommand>> {
   _P: P
   _C: C
   // TODO more overloadings
-  static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(commands: [F1, F2, F3]): Commands<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P'], typeof commands>
-  static create<F1 extends AnyCommand, F2 extends AnyCommand>(commands: [F1, F2]): Commands<F1['_A'] & F2['_A'], F1['_P'] & F2['_P'], typeof commands>
+  static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(
+    commands: [F1, F2, F3]
+  ): Commands<F1['_A'] & F2['_A'] & F3['_A'], F1['_P'] & F2['_P'] & F3['_P'], typeof commands>
+  static create<F1 extends AnyCommand, F2 extends AnyCommand>(
+    commands: [F1, F2]
+  ): Commands<F1['_A'] & F2['_A'], F1['_P'] & F2['_P'], typeof commands>
   static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], F1['_P'], typeof commands>
   static create(commands: Array<AnyCommand>): Commands<any, any, any> {
     return new Commands(commands)
@@ -521,10 +524,8 @@ export class Commands<A, P, C extends Array<AnyCommand>> {
     this.commands = commands
   }
   run(a: A): Promise<P> {
-    return Promise.all(
-      this.commands
-        .map(command => command.run(a)))
-        .then(ps => Object.assign.apply(null, [{}].concat(ps))
+    return Promise.all(this.commands.map(command => command.run(a))).then(ps =>
+      Object.assign.apply(null, [{}].concat(ps))
     )
   }
 }

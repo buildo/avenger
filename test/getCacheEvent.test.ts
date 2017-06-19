@@ -3,13 +3,9 @@ import 'rxjs'
 import * as t from 'io-ts'
 
 import { some } from 'fp-ts/lib/Option'
-import {
-  Leaf,
-  Done
-} from '../src'
+import { Leaf, Done } from '../src'
 
 describe('getCacheEvent', () => {
-
   it('should ignore additional arguments', () => {
     const fetch = (a: { a: string }) => Promise.resolve(`hello ${a.a}`)
     const params = {
@@ -25,5 +21,4 @@ describe('getCacheEvent', () => {
 
     assert.deepEqual(leaf.getCacheEvent({ a: 'a', b: 1 } as any).data, some('hello a'))
   })
-
 })

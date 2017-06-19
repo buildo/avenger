@@ -1,18 +1,9 @@
 import * as assert from 'assert'
 import 'rxjs'
 
-import {
-  Leaf,
-  Composition,
-  Product,
-  ObservableCache,
-  available,
-  CacheValue,
-  Done
-} from '../src'
+import { Leaf, Composition, Product, ObservableCache, available, CacheValue, Done } from '../src'
 
 describe('invalidate', () => {
-
   it('should delete caches in a Composition', () => {
     const slaveCache = new ObservableCache<number, number>()
     const slaveFetch = (a: number) => Promise.resolve(2 * a)
@@ -64,5 +55,4 @@ describe('invalidate', () => {
 
     assert.equal(cache.get(9), CacheValue.empty)
   })
-
 })

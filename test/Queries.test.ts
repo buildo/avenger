@@ -2,17 +2,12 @@ import * as assert from 'assert'
 import 'rxjs'
 
 import { none, some } from 'fp-ts/lib/Option'
-import {
-  Leaf,
-  available,
-  Queries
-} from '../src'
+import { Leaf, available, Queries } from '../src'
 
 describe('Queries', () => {
-
   it('should merge inputs and reutrn an array of outputs', () => {
     let i = 0
-    const fetch1 = (a: { a1: string }) => Promise.resolve({ p1: (2 * a.a1.length) + (i++) })
+    const fetch1 = (a: { a1: string }) => Promise.resolve({ p1: 2 * a.a1.length + i++ })
     const leaf1 = new Leaf(fetch1, available)
 
     const fetch2 = (a: { a2: number }) => Promise.resolve({ p2: a.a2 > 0 })
@@ -29,8 +24,16 @@ describe('Queries', () => {
           assert.deepEqual(events, [
             [{ loading: true, data: none }, { loading: true, data: none }, { loading: true, data: none }],
             [{ loading: false, data: some({ p1: 10 }) }, { loading: true, data: none }, { loading: true, data: none }],
-            [{ loading: false, data: some({ p1: 10 }) }, { loading: false, data: some({ p2: true }) }, { loading: true, data: none }],
-            [{ loading: false, data: some({ p1: 10 }) }, { loading: false, data: some({ p2: true }) }, { loading: false, data: some({ p3: true }) }]
+            [
+              { loading: false, data: some({ p1: 10 }) },
+              { loading: false, data: some({ p2: true }) },
+              { loading: true, data: none }
+            ],
+            [
+              { loading: false, data: some({ p1: 10 }) },
+              { loading: false, data: some({ p2: true }) },
+              { loading: false, data: some({ p3: true }) }
+            ]
           ])
           resolve()
         } catch (e) {
@@ -41,5 +44,4 @@ describe('Queries', () => {
       leaf1.run({ a1: 'hello' })
     })
   })
-
 })
