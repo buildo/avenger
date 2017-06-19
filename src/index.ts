@@ -88,11 +88,6 @@ export class Cache<A, P> {
     this.log = debug(`avenger:${this.name}`)
     this.atok = options.atok || JSON.stringify
   }
-  private set(a: A, value: CacheValue<P>): Map<string, CacheValue<P>> {
-    const k = this.atok(a)
-    this.log('set key `%s`', k)
-    return this.map.set(k, value)
-  }
   get(a: A): CacheValue<P> {
     return this.map.get(this.atok(a)) || CacheValue.empty
   }
@@ -150,6 +145,11 @@ export class Cache<A, P> {
     // immagazzino il nuovo valore mantenendo il payload presente
     const { done } = this.get(a)
     this.set(a, new CacheValue(done, some(promise)))
+  }
+  private set(a: A, value: CacheValue<P>): Map<string, CacheValue<P>> {
+    const k = this.atok(a)
+    this.log('set key `%s`', k)
+    return this.map.set(k, value)
   }
 }
 
@@ -269,6 +269,11 @@ export type TypeDictionary = { [key: string]: t.Any }
 export type TypesOf<D extends TypeDictionary> = { [K in keyof D]: t.TypeOf<D[K]> }
 
 export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableFetch<A, P> {
+  private readonly cache: ObservableCache<A, P>
+  constructor(fetch: Fetch<A, P>, strategy: Strategy, cache: ObservableCache<A, P> = new ObservableCache<A, P>()) {
+    super(cacheFetch(fetch, strategy, cache))
+    this.cache = cache
+  }
   static create<D extends TypeDictionary, P>(
     options: {
       params: D
@@ -288,11 +293,6 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
     })
     return new Leaf<TypesOf<D>, P>(options.fetch, strategy, cache)
   }
-  private readonly cache: ObservableCache<A, P>
-  constructor(fetch: Fetch<A, P>, strategy: Strategy, cache: ObservableCache<A, P> = new ObservableCache<A, P>()) {
-    super(cacheFetch(fetch, strategy, cache))
-    this.cache = cache
-  }
   observe(a: A): Observable<CacheEvent<P>> {
     return this.cache.getSubject(a).filter(e => e !== INITIAL_LOADING).distinctUntilChanged((x, y) => x.equals(y)) // TODO remove distinctUntilChanged?
   }
@@ -311,12 +311,6 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
 }
 
 export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> implements ObservableFetch<A1, P2> {
-  static create<A1, P1, A2, P2>(
-    master: ObservableFetch<A1, P1>,
-    slave: ObservableFetch<A2, P2>
-  ): (ptoa: (p1: P1, a1: A1) => A2) => Composition<A1, P1, A2, P2> {
-    return ptoa => new Composition(master, ptoa, slave)
-  }
   private constructor(
     private readonly master: ObservableFetch<A1, P1>,
     private readonly ptoa: (p1: P1, a1: A1) => A2,
@@ -332,6 +326,12 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
         }
       }
     })
+  }
+  static create<A1, P1, A2, P2>(
+    master: ObservableFetch<A1, P1>,
+    slave: ObservableFetch<A2, P2>
+  ): (ptoa: (p1: P1, a1: A1) => A2) => Composition<A1, P1, A2, P2> {
+    return ptoa => new Composition(master, ptoa, slave)
   }
   observe(a1: A1): Observable<CacheEvent<P2>> {
     return this.master
@@ -361,6 +361,9 @@ export class Composition<A1, P1, A2, P2> extends BaseObservableFetch<A1, P2> imp
 
 export class Product<A extends Array<any>, P extends Array<any>> extends BaseObservableFetch<A, P>
   implements ObservableFetch<A, P> {
+  private constructor(private readonly fetches: Array<AnyObservableFetch>) {
+    super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))) as Promise<P>)
+  }
   // TODO more overloadings
   static create<A1, P1, A2, P2, A3, P3>(
     fetches: [ObservableFetch<A1, P1>, ObservableFetch<A2, P2>, ObservableFetch<A3, P3>]
@@ -370,9 +373,6 @@ export class Product<A extends Array<any>, P extends Array<any>> extends BaseObs
   ): Product<[A1, A2], [P1, P2]>
   static create(fetches: Array<AnyObservableFetch>): Product<Array<any>, Array<any>> {
     return new Product(fetches)
-  }
-  private constructor(private readonly fetches: Array<AnyObservableFetch>) {
-    super(a => Promise.all(this.fetches.map((fetch, i) => fetch.run(a[i]))) as Promise<P>)
   }
   observe(a: A): Observable<CacheEvent<P>> {
     return Observable.combineLatest(...this.fetches.map((fetch, i) => fetch.observe(a[i])), (...values) => {
@@ -442,6 +442,7 @@ function copyArray<A extends Array<any>>(as: A): A {
 export class Queries<A, P extends Array<CacheEvent<any>>> {
   _A: A
   _P: P
+  private constructor(private readonly fetches: Array<AnyObservableFetch>) {}
   // TODO more overloadings
   static create<F1 extends AnyObservableFetch, F2 extends AnyObservableFetch, F3 extends AnyObservableFetch>(
     fetches: [F1, F2, F3]
@@ -453,7 +454,6 @@ export class Queries<A, P extends Array<CacheEvent<any>>> {
   static create(fetches: Array<AnyObservableFetch>): Queries<any, any> {
     return new Queries(fetches)
   }
-  private constructor(private readonly fetches: Array<AnyObservableFetch>) {}
   getCacheEvents(as: A): P {
     return this.fetches.map((fetch, i) => fetch.getCacheEvent(as)) as any
   }
@@ -476,6 +476,7 @@ export class Queries<A, P extends Array<CacheEvent<any>>> {
 export class Command<A, P> {
   _A: A
   _P: P
+  private constructor(private readonly fetch: Fetch<A, P>, private readonly invalidates: Array<AnyObservableFetch>) {}
   // TODO more overloadings
   static create<A, P, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(
     options: {
@@ -493,7 +494,6 @@ export class Command<A, P> {
   static create(options: { run: Fetch<any, any>; invalidates: Array<AnyObservableFetch> }): Command<any, any> {
     return new Command(options.run, options.invalidates)
   }
-  private constructor(private readonly fetch: Fetch<A, P>, private readonly invalidates: Array<AnyObservableFetch>) {}
   run(a: A): Promise<P> {
     return this.fetch(a).then(p => {
       this.invalidates.forEach(f => f.invalidate(a))
@@ -508,6 +508,10 @@ export class Commands<A, P, C extends Array<AnyCommand>> {
   _A: A
   _P: P
   _C: C
+  public readonly commands: C
+  private constructor(commands: C) {
+    this.commands = commands
+  }
   // TODO more overloadings
   static create<F1 extends AnyCommand, F2 extends AnyCommand, F3 extends AnyCommand>(
     commands: [F1, F2, F3]
@@ -518,10 +522,6 @@ export class Commands<A, P, C extends Array<AnyCommand>> {
   static create<F1 extends AnyCommand>(commands: [F1]): Commands<F1['_A'], F1['_P'], typeof commands>
   static create(commands: Array<AnyCommand>): Commands<any, any, any> {
     return new Commands(commands)
-  }
-  public readonly commands: C
-  private constructor(commands: C) {
-    this.commands = commands
   }
   run(a: A): Promise<P> {
     return Promise.all(this.commands.map(command => command.run(a))).then(ps =>
