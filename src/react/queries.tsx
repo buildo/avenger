@@ -4,10 +4,10 @@ import { Subscription } from 'rxjs/Subscription'
 import 'rxjs/add/operator/debounceTime'
 import shallowEqual from './shallowEqual'
 
-export function queries<A, P extends Array<CacheEvent<any>>, WP>
-  (queries: Queries<A, P>, Component: React.ComponentClass<WP>):
-    <OP>(f: (ownProps: OP, events: P) => WP) => React.ComponentClass<OP & A> {
-
+export function queries<A, P extends Array<CacheEvent<any>>, WP>(
+  queries: Queries<A, P>,
+  Component: React.ComponentClass<WP>
+): <OP>(f: (ownProps: OP, events: P) => WP) => React.ComponentClass<OP & A> {
   return function<OP>(f: (ownProps: OP, events: P) => WP) {
     return class QueriesWrapper extends React.Component<OP & A, WP> {
       static displayName = `QueriesWrapper(${Component.displayName})`
@@ -22,7 +22,7 @@ export function queries<A, P extends Array<CacheEvent<any>>, WP>
       componentWillUnmount() {
         this.unsubscribe()
       }
-      componentWillReceiveProps(nextProps: OP & A) {
+      componentWillReceiveProps(nextProps: Readonly<OP & A>) {
         if (!shallowEqual(this.props, nextProps)) {
           this.subscribe(nextProps)
         }
@@ -30,14 +30,16 @@ export function queries<A, P extends Array<CacheEvent<any>>, WP>
       render() {
         return <Component {...this.state as any} />
       }
-      private subscribe(props: OP & A) {
+      private subscribe(props: Readonly<OP & A>) {
+        const _props: OP & A = props as any
         if (this.subscription) {
           this.subscription.unsubscribe()
         }
         try {
-          this.subscription = queries.observe(props)
+          this.subscription = queries
+            .observe(_props)
             .debounceTime(5)
-            .subscribe(events => this.setState(f(props, events)))
+            .subscribe(events => this.setState(f(_props, events)))
         } catch (e) {
           console.error(e.message)
         }

@@ -6,10 +6,10 @@ import shallowEqual from './shallowEqual'
 
 export type Loading = () => JSX.Element
 
-export function query<A, P, WP>
-  (query: ObservableFetch<A, P>, Component: React.ComponentClass<WP>):
-    <OP>(f: (ownProps: OP, event: CacheEvent<P>) => WP) => React.ComponentClass<OP & A> {
-
+export function query<A, P, WP>(
+  query: ObservableFetch<A, P>,
+  Component: React.ComponentClass<WP>
+): <OP>(f: (ownProps: OP, event: CacheEvent<P>) => WP) => React.ComponentClass<OP & A> {
   return function<OP>(f: (ownProps: OP, event: CacheEvent<P>) => WP) {
     return class QueryWrapper extends React.Component<OP & A, WP> {
       static displayName = `QueryWrapper(${Component.displayName})`
@@ -19,12 +19,12 @@ export function query<A, P, WP>
         this.state = f(props, query.getCacheEvent(props))
       }
       componentDidMount() {
-        this.subscribe(this.props as any) // TODO
+        this.subscribe(this.props)
       }
       componentWillUnmount() {
         this.unsubscribe()
       }
-      componentWillReceiveProps(nextProps: OP & A) {
+      componentWillReceiveProps(nextProps: Readonly<OP & A>) {
         if (!shallowEqual(this.props, nextProps)) {
           this.subscribe(nextProps)
         }
@@ -32,14 +32,15 @@ export function query<A, P, WP>
       render() {
         return <Component {...this.state as any} />
       }
-      private subscribe(props: OP & A) {
+      private subscribe(props: Readonly<OP & A>) {
+        const _props: OP & A = props as any
         if (this.subscription) {
           this.subscription.unsubscribe()
         }
         try {
-          this.subscription = observeAndRun(query, props)
+          this.subscription = observeAndRun<A, P>(query, _props)
             .debounceTime(5)
-            .subscribe(event => this.setState(f(props, event)))
+            .subscribe(event => this.setState(f(_props, event)))
         } catch (e) {
           console.error(e.message)
         }

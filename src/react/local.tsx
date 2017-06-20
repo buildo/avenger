@@ -9,9 +9,11 @@ import { fromNullable } from 'fp-ts/lib/Option'
 
 const GLOBAL_LOCAL_KEY = '__local'
 
-export function local<WP, L extends Any>(Component: React.ComponentClass<WP>, locals: L, defaultState: TypeOf<L>):
-  <OP>(f: (ownProps: OP, state: TypeOf<L>, transition: Transition<TypeOf<L>>) => WP) => React.ComponentClass<OP> {
-
+export function local<WP, L extends Any>(
+  Component: React.ComponentClass<WP>,
+  locals: L,
+  defaultState: TypeOf<L>
+): <OP>(f: (ownProps: OP, state: TypeOf<L>, transition: Transition<TypeOf<L>>) => WP) => React.ComponentClass<OP> {
   return function<OP>(f: (ownProps: OP, state: TypeOf<L>, transition: Transition<TypeOf<L>>) => WP) {
     return class LocalWrapper extends React.Component<OP, { props: WP }> {
       static displayName = `LocalWrapper(${Component.displayName})`
@@ -35,19 +37,21 @@ export function local<WP, L extends Any>(Component: React.ComponentClass<WP>, lo
         return { props: f(props, this.localState, this.write) }
       }
       private read(state: any): TypeOf<L> {
-        return fromNullable(_.get(state, [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], {}))
-          .getOrElse(() => defaultState)
+        return fromNullable(
+          _.get(state, [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], {})
+        ).getOrElse(() => defaultState)
       }
       private transition(s: TypeOf<L> | null) {
-        this.context.transition(state => _.set(Object.assign({}, state), [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], s))
+        this.context.transition(state =>
+          _.set(Object.assign({}, state), [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], s)
+        )
       }
       componentWillMount() {
         LocalWrapper.instanceCount += 1
         this.instanceNamespace = `instance-${LocalWrapper.instanceCount}`
       }
       componentDidMount() {
-        this.subscription = this.context.state
-          .subscribe(() => this.setState(this.getState(this.props)))
+        this.subscription = this.context.state.subscribe(() => this.setState(this.getState(this.props)))
       }
       componentWillReceiveProps(nextProps: OP) {
         this.setState(this.getState(this.props))
@@ -57,7 +61,7 @@ export function local<WP, L extends Any>(Component: React.ComponentClass<WP>, lo
         this.transition(null)
       }
       render() {
-        return <Component {...this.state.props as any} />;
+        return <Component {...this.state.props as any} />
       }
     }
   }

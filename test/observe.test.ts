@@ -2,23 +2,13 @@ import * as assert from 'assert'
 import 'rxjs'
 
 import { none, some } from 'fp-ts/lib/Option'
-import {
-  Leaf,
-  Product,
-  Composition,
-  available,
-  refetch,
-  ObservableCache,
-  Done
-} from '../src'
+import { Leaf, Product, Composition, available, refetch, ObservableCache, Done } from '../src'
 
 // L = LOADING event
 // P = PAYLOAD event
 
 describe('observe', () => {
-
   describe('Leaf', () => {
-
     it('should not emit events for different inputs', () => {
       const fetch = (a: number) => Promise.resolve(2 * a)
       const leaf = new Leaf(fetch, available)
@@ -43,10 +33,7 @@ describe('observe', () => {
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
-            assert.deepEqual(events, [
-              { loading: true, data: none },
-              { loading: false, data: some(2) }
-            ])
+            assert.deepEqual(events, [{ loading: true, data: none }, { loading: false, data: some(2) }])
             resolve()
           } catch (e) {
             reject(e)
@@ -78,11 +65,9 @@ describe('observe', () => {
         leaf.run(1)
       })
     })
-
   })
 
   describe('Product', () => {
-
     it('should emit L + P events for an empty cache', () => {
       const fetch1 = (a: number) => Promise.resolve(2 * a)
       const leaf1 = new Leaf(fetch1, available)
@@ -93,10 +78,7 @@ describe('observe', () => {
       return new Promise((resolve, reject) => {
         o.bufferTime(10).take(1).subscribe(events => {
           try {
-            assert.deepEqual(events, [
-              { loading: true, data: none },
-              { loading: false, data: some([2, 'Hello foo']) }
-            ])
+            assert.deepEqual(events, [{ loading: true, data: none }, { loading: false, data: some([2, 'Hello foo']) }])
             resolve()
           } catch (e) {
             reject(e)
@@ -105,11 +87,9 @@ describe('observe', () => {
         product.run([1, 'foo'])
       })
     })
-
   })
 
   describe('Composition', () => {
-
     it('should emit L + P events for an empty cache', () => {
       const slaveFetch = (a: number) => Promise.resolve(2 * a)
       const slave = new Leaf(slaveFetch, refetch)
@@ -120,10 +100,7 @@ describe('observe', () => {
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
-            assert.deepEqual(events, [
-              { loading: true, data: none },
-              { loading: false, data: some(18) }
-            ])
+            assert.deepEqual(events, [{ loading: true, data: none }, { loading: false, data: some(18) }])
             resolve()
           } catch (e) {
             reject(e)
@@ -149,20 +126,20 @@ describe('observe', () => {
           try {
             assert.deepEqual(events, [
               {
-                "loading": true,
-                "data": none
+                loading: true,
+                data: none
               },
               {
-                "data": some(18),
-                "loading": false
+                data: some(18),
+                loading: false
               },
               {
-                "data": some(18),
-                "loading": true
+                data: some(18),
+                loading: true
               },
               {
-                "data": some(27),
-                "loading": false
+                data: some(27),
+                loading: false
               }
             ])
             resolve()
@@ -187,10 +164,7 @@ describe('observe', () => {
       return new Promise((resolve, reject) => {
         observable.bufferTime(30).take(1).subscribe(events => {
           try {
-            assert.deepEqual(events, [
-              { loading: true, data: none },
-              { loading: false, data: some(18) }
-            ])
+            assert.deepEqual(events, [{ loading: true, data: none }, { loading: false, data: some(18) }])
             resolve()
           } catch (e) {
             reject(e)
@@ -213,10 +187,7 @@ describe('observe', () => {
       return new Promise((resolve, reject) => {
         observable.bufferTime(10).take(1).subscribe(events => {
           try {
-            assert.deepEqual(events, [
-              { loading: true, data: none },
-              { loading: false, data: some(18) }
-            ])
+            assert.deepEqual(events, [{ loading: true, data: none }, { loading: false, data: some(18) }])
             resolve()
           } catch (e) {
             reject(e)
@@ -253,7 +224,5 @@ describe('observe', () => {
         }, 10)
       })
     })
-
   })
-
 })

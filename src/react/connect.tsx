@@ -14,7 +14,9 @@ export const ConnectContextTypes = {
   transition: TransitionContextTypes.transition
 }
 
-export function connect<S>(): <WP>(Component: React.ComponentClass<WP>) => <OP>(f: (ownProps: OP, state: S, transition: Transition<S>) => Option<WP>) => React.ComponentClass<OP> {
+export function connect<S>(): <WP>(
+  Component: React.ComponentClass<WP>
+) => <OP>(f: (ownProps: OP, state: S, transition: Transition<S>) => Option<WP>) => React.ComponentClass<OP> {
   return function<WP>(Component: React.ComponentClass<WP>) {
     return function<OP>(f: (ownProps: OP, state: S, transition: Transition<S>) => Option<WP>) {
       return class ConnectWrapper extends React.Component<OP, { option: Option<WP> }> {
@@ -27,8 +29,9 @@ export function connect<S>(): <WP>(Component: React.ComponentClass<WP>) => <OP>(
           this.state = { option: f(props, context.state.value, context.transition) }
         }
         componentDidMount() {
-          this.subscription = this.context.state
-            .subscribe(state => this.setState(() => ({ option: f(this.props, state, this.context.transition) })))
+          this.subscription = this.context.state.subscribe(state =>
+            this.setState(() => ({ option: f(this.props, state, this.context.transition) }))
+          )
         }
         componentWillUnmount() {
           this.subscription.unsubscribe()
@@ -37,10 +40,7 @@ export function connect<S>(): <WP>(Component: React.ComponentClass<WP>) => <OP>(
           this.setState(() => ({ option: f(nextProps, this.context.state.value, this.context.transition) }))
         }
         render() {
-          return this.state.option.fold(
-            () => null,
-            wp => <Component {...wp as any} />
-          )
+          return this.state.option.fold(() => null, wp => <Component {...wp as any} />)
         }
       }
     }

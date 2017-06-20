@@ -1,4 +1,4 @@
-const tsc = require('typescript');
+const tsc = require('typescript')
 
 const compilerOptions = {
   module: 'commonjs'
@@ -6,11 +6,6 @@ const compilerOptions = {
 
 module.exports = {
   process(src, path) {
-    return tsc.transpile(
-      src,
-      compilerOptions,
-      path,
-      []
-    );
+    return tsc.transpile(src, compilerOptions, path, [])
   }
-};
+}

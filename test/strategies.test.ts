@@ -1,18 +1,10 @@
 import * as assert from 'assert'
 
 import { none, some } from 'fp-ts/lib/Option'
-import {
-  Expire,
-  refetch,
-  available,
-  CacheValue,
-  Done
-} from '../src'
+import { Expire, refetch, available, CacheValue, Done } from '../src'
 
 describe('strategies', () => {
-
   describe('available', () => {
-
     it('should never expire', () => {
       assert.equal(available.isExpired(-10000000000000000000), false)
     })
@@ -21,11 +13,9 @@ describe('strategies', () => {
       assert.equal(available.isAvailable(new CacheValue(none, none)), false)
       assert.equal(available.isAvailable(new CacheValue(some(new Done(2, 0, Promise.resolve(2))), none)), true)
     })
-
   })
 
   describe('refetch', () => {
-
     it('should always expire', () => {
       assert.equal(refetch.isExpired(new Date().getTime()), true)
       assert.equal(refetch.isExpired(10000000000000000000), false)
@@ -35,11 +25,9 @@ describe('strategies', () => {
       assert.equal(refetch.isAvailable(new CacheValue(none, none)), false)
       assert.equal(refetch.isAvailable(new CacheValue(some(new Done(2, 0, Promise.resolve(2))), none)), false)
     })
-
   })
 
   describe('Expire', () => {
-
     const expire = new Expire(1000)
 
     it('should expire', () => {
@@ -52,7 +40,5 @@ describe('strategies', () => {
       assert.equal(expire.isAvailable(new CacheValue(none, none)), false)
       assert.equal(expire.isAvailable(new CacheValue(some(new Done(2, Date.now(), Promise.resolve(2))), none)), true)
     })
-
   })
-
 })

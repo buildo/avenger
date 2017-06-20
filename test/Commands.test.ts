@@ -2,15 +2,9 @@ import * as assert from 'assert'
 import 'rxjs'
 
 // import { none, some } from 'fp-ts/lib/Option'
-import {
-  Command,
-  Leaf,
-  available,
-  Commands
-} from '../src'
+import { Command, Leaf, available, Commands } from '../src'
 
 describe('Command', () => {
-
   it('should merge arguments', () => {
     const commandFetch = (a: { foo: string }) => Promise.resolve(undefined)
 
@@ -25,19 +19,15 @@ describe('Command', () => {
       invalidates: [leaf1, leaf2]
     })
 
-    return command.run({ foo: 'bar', a1: 'baz', a2: 1 }).then(
-      () => assert.ok(true)
-    )
+    return command.run({ foo: 'bar', a1: 'baz', a2: 1 }).then(() => assert.ok(true))
   })
 
   it.skip('should invalidate caches', () => {
     assert.ok(false)
   })
-
 })
 
 describe('Commands', () => {
-
   it('should merge arguments', () => {
     const commandFetch1 = (a: { foo: string }) => Promise.resolve(undefined)
 
@@ -60,9 +50,6 @@ describe('Commands', () => {
 
     const commands = Commands.create([command1, command2])
 
-    return commands.run({ foo: 'bar', a1: 'baz', bar: 2, a2: 1 }).then(
-      () => assert.ok(true)
-    )
+    return commands.run({ foo: 'bar', a1: 'baz', bar: 2, a2: 1 }).then(() => assert.ok(true))
   })
-
 })

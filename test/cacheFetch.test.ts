@@ -1,22 +1,15 @@
 import * as assert from 'assert'
 
-import {
-  cacheFetch,
-  Cache,
-  available
-} from '../src'
+import { cacheFetch, Cache, available } from '../src'
 
 describe('cacheFetch', () => {
-
   it('should return a fetch', () => {
     const fetch = (a: number) => Promise.resolve(2 * a)
     const c = new Cache()
     const cf = cacheFetch(fetch, available, c)
     assert.strictEqual(typeof cf, 'function')
   })
-
 })
-
 
 /*
 describe('cacheCatalog', () => {
