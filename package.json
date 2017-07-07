@@ -18,7 +18,7 @@
   "dependencies": {
     "debug": "^2.2.0",
     "lodash": "^4.13.1",
-    "rxjs": "^5.0.3",
+    "rxjs": "^5.4.2",
     "tcomb": "^3.1.0"
   },
   "devDependencies": {
