@@ -279,6 +279,50 @@ describe('graph/invalidate', () => {
       })
     })
 
+    it('should invalidate respecting dependency order 1', () => new Promise((resolve, reject) => {
+      const graph = makeTestGraph()
+
+      query(graph, ['A', 'B'], { token: 'lol' })
+
+      setTimeout(() => {
+        try {
+          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(graph.A.fetch.cache.map.size).toBe(1);
+
+          invalidate(graph, ['B', 'A'], { token: 'lol' }) // invalidate
+
+          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(graph.A.fetch.cache.map.size).toBe(0);
+
+          resolve()
+        } catch (err) {
+          reject(err)
+        }
+      }, 5)
+    }))
+
+    it('should invalidate respecting dependency order 2', () => new Promise((resolve, reject) => {
+      const graph = makeTestGraph()
+
+      query(graph, ['A', 'B'], { token: 'lol' })
+
+      setTimeout(() => {
+        try {
+          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(graph.A.fetch.cache.map.size).toBe(1);
+
+          invalidate(graph, ['A', 'B'], { token: 'lol' }) // invalidate
+
+          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(graph.A.fetch.cache.map.size).toBe(0);
+
+          resolve()
+        } catch (err) {
+          reject(err)
+        }
+      }, 5)
+    }))
+
   })
 
 })
