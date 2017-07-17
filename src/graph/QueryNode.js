@@ -29,8 +29,9 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const A = Object.keys(q.params || {});
     const cache = new ObservableCache({ name: compound });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
+    const depth = 0;
     return {
-      [compound]: { fetch, A, compound, upsetParams, cachePToK }
+      [compound]: { fetch, A, compound, upsetParams, cachePToK, depth }
     };
   } else {
     const paramKeys = Object.keys(q.params || {});
@@ -51,6 +52,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       undefined;
     const cache = new ObservableCache({ name: compound, atok });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
+    const depth = Math.max(...depsKeys.map(k => _compound(q.dependencies[k].query).depth)) + 1;
 
     if (depsOnly) {
       // a query with dependencies only (no params)
@@ -84,7 +86,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
         compound,
         upsetParams,
-        cachePToK
+        cachePToK,
+        depth
       };
 
       return {
@@ -141,7 +144,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
         ),
         compound,
         upsetParams,
-        cachePToK
+        cachePToK,
+        depth
       };
 
       return {
