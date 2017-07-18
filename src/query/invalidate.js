@@ -19,7 +19,7 @@ function extractDone(fetch, a) {
   }
   const cache = fetch.cache
   const value = cache && cache.get(a)
-  return value && value.done && value.done.hasOwnProperty('done') ? value.done.value : NOT_DONE
+  return value && value.done && value.done.hasOwnProperty('value') ? value.done.value : NOT_DONE
 }
 
 export function invalidate(fetch, a) {
