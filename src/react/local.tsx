@@ -18,9 +18,9 @@ export function local<WP, L extends Any>(
     return class LocalWrapper extends React.Component<OP, { props: WP }> {
       static displayName = `LocalWrapper(${Component.displayName})`
       static contextTypes = ConnectContextTypes
+      private static instanceCount = 0
       context: ConnectContext<any>
       write: (s: TypeOf<L>) => void
-      private static instanceCount = 0
       private instanceNamespace: string
       private subscription: Subscription
       private localState: TypeOf<L>
@@ -32,19 +32,6 @@ export function local<WP, L extends Any>(
           this.localState = s
           this.transition(s)
         }
-      }
-      private getState(props: OP) {
-        return { props: f(props, this.localState, this.write) }
-      }
-      private read(state: any): TypeOf<L> {
-        return fromNullable(
-          _.get(state, [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], {})
-        ).getOrElse(() => defaultState)
-      }
-      private transition(s: TypeOf<L> | null) {
-        this.context.transition(state =>
-          _.set(Object.assign({}, state), [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], s)
-        )
       }
       componentWillMount() {
         LocalWrapper.instanceCount += 1
@@ -62,6 +49,19 @@ export function local<WP, L extends Any>(
       }
       render() {
         return <Component {...this.state.props as any} />
+      }
+      private getState(props: OP) {
+        return { props: f(props, this.localState, this.write) }
+      }
+      private read(state: any): TypeOf<L> {
+        return fromNullable(
+          _.get(state, [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], {})
+        ).getOrElse(() => defaultState)
+      }
+      private transition(s: TypeOf<L> | null) {
+        this.context.transition(state =>
+          _.set(Object.assign({}, state), [GLOBAL_LOCAL_KEY, LocalWrapper.displayName, this.instanceNamespace], s)
+        )
       }
     }
   }

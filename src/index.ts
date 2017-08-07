@@ -274,13 +274,11 @@ export class Leaf<A, P> extends BaseObservableFetch<A, P> implements ObservableF
     super(cacheFetch(fetch, strategy, cache))
     this.cache = cache
   }
-  static create<D extends TypeDictionary, P>(
-    options: {
-      params: D
-      fetch: Fetch<TypesOf<D>, P>
-      cacheStrategy?: Strategy
-    }
-  ): Leaf<TypesOf<D>, P> {
+  static create<D extends TypeDictionary, P>(options: {
+    params: D
+    fetch: Fetch<TypesOf<D>, P>
+    cacheStrategy?: Strategy
+  }): Leaf<TypesOf<D>, P> {
     const strategy = options.cacheStrategy || refetch
     const cache = new ObservableCache<TypesOf<D>, P>({
       atok: a => {
@@ -478,18 +476,14 @@ export class Command<A, P> {
   _P: P
   private constructor(private readonly fetch: Fetch<A, P>, private readonly invalidates: Array<AnyObservableFetch>) {}
   // TODO more overloadings
-  static create<A, P, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(
-    options: {
-      run: Fetch<A, P>
-      invalidates: [F1, F2]
-    }
-  ): Command<A & F1['_A'] & F2['_A'], P>
-  static create<A, P, F1 extends AnyObservableFetch>(
-    options: {
-      run: Fetch<A, P>
-      invalidates: [F1]
-    }
-  ): Command<A & F1['_A'], P>
+  static create<A, P, F1 extends AnyObservableFetch, F2 extends AnyObservableFetch>(options: {
+    run: Fetch<A, P>
+    invalidates: [F1, F2]
+  }): Command<A & F1['_A'] & F2['_A'], P>
+  static create<A, P, F1 extends AnyObservableFetch>(options: {
+    run: Fetch<A, P>
+    invalidates: [F1]
+  }): Command<A & F1['_A'], P>
   static create<A, P>(options: { run: Fetch<A, P>; invalidates: Array<never> }): Command<A, P>
   static create(options: { run: Fetch<any, any>; invalidates: Array<AnyObservableFetch> }): Command<any, any> {
     return new Command(options.run, options.invalidates)
