@@ -1,4 +1,5 @@
-import t from 'tcomb'
+import * as t from 'io-ts'
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 import 'rxjs/add/operator/distinctUntilChanged'
 
 // avoid as much as possible deep comparisons
@@ -25,7 +26,7 @@ import {
 
 export function query(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to query (expected a function)')
+    ThrowReporter.report(t.validate(fetch, t.Function))
   }
 
   const observer = observe(fetch, a).distinctUntilChanged(isEqual)
@@ -37,7 +38,7 @@ export function query(fetch, a) {
 
 export function querySync(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to querySync (expected a function)')
+    ThrowReporter.report(t.validate(fetch, t.Function))
   }
 
   if (fetch.type === 'product') {

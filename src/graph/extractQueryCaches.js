@@ -1,14 +1,14 @@
-import t from 'tcomb';
+import * as t from 'io-ts';
 import flatten from 'lodash/flatten';
 import { querySync } from '../query/query';
 import { queriesAndArgs, findP } from './util';
 
-const ExtractedQueryCache = t.interface({
-  a: t.Object,
-  value: t.Any
-}, { strict: true, name: 'ExtractedQueryCache' });
-export const ExtractedQueryCaches = t.dict(
-  t.String, ExtractedQueryCache, 'ExtractedQueryCaches'
+const ExtractedQueryCache = t.strict({
+  a: t.object,
+  value: t.any
+});
+export const ExtractedQueryCaches = t.dictionary(
+  t.string, ExtractedQueryCache
 );
 
 function extractQueryCache(graph, fetch, a) {
@@ -53,5 +53,5 @@ export function extractQueryCaches(graph, Ps, A) {
       caches[p] = { a, value };
     });
   });
-  return ExtractedQueryCaches(caches);
+  return caches;
 }

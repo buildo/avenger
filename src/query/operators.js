@@ -1,5 +1,3 @@
-import t from 'tcomb'
-
 import {
   cacheFetch as cf,
   cacheCatalog as cc,
@@ -21,7 +19,9 @@ function removeEntriesByPredicate(cache, predicate) {
 
 export function cacheFetch(fetch, strategy, cache) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(cache instanceof ObservableCache, () => 'Invalid argument cache supplied to cache (expected a ObservableCache)')
+    if (!(cache instanceof ObservableCache)) {
+      throw new Error('Invalid argument cache supplied to cache (expected a ObservableCache)')
+    }
   }
 
   const cachedFetch = cf(fetch, strategy, cache)

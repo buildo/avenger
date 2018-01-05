@@ -1,4 +1,5 @@
-import t from 'tcomb'
+import * as t from 'io-ts'
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 
 import {
   CacheValue
@@ -8,22 +9,22 @@ export const Strategy = t.interface({
   isAvailable: t.Function
 }, 'Strategy')
 
-const PositiveInfinity = t.irreducible('PositiveInfinity', x => x === Infinity)
-const Delay = t.union([t.Number, PositiveInfinity], 'Delay')
+const Delay = t.number
+const Nil = t.union([t.undefined, t.null])
 
 // questa strategia esegue una fetch se non c'è un done oppure se il done presente è troppo vecchio
 export class Expire {
 
   constructor(delay) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(Delay.is(delay), () => 'Invalid argument delay supplied to Expire constructor (expected a Delay)')
+      ThrowReporter.report(t.validate(delay, Delay))
     }
     this.delay = delay
   }
 
   isExpired(time) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(t.Number.is(time), () => 'Invalid argument time supplied to isExpired (expected a number)')
+      ThrowReporter.report(t.validate(time, t.number))
     }
 
     const delta = new Date().getTime() - time
@@ -36,9 +37,9 @@ export class Expire {
 
   isAvailable(value) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheValue.is(value), () => 'Invalid argument value supplied to isAvailable (expected a CacheValue)')
+      ThrowReporter.report(t.validate(value, CacheValue))
     }
-    return !t.Nil.is(value.done) && !this.isExpired(value.done.timestamp)
+    return !Nil.is(value.done) && !this.isExpired(value.done.timestamp)
   }
 
   toString() {
