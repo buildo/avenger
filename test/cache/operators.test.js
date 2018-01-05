@@ -45,13 +45,13 @@ describe('cache', () => {
         const c = new Cache()
         const pcache = new Cache()
         const cc = cacheCatalog(catalog, available, c, pcache, (p) => p / 2)
-        cc([1, 2, 3]).then(ps => {
+        return cc([1, 2, 3]).then(ps => {
           // controllo il payload
           assert.deepEqual(ps, [2, 4, 6])
           // controllo la cache
-          assert.strictEqual(c.get(1).done.value, 2)
-          assert.strictEqual(c.get(2).done.value, 4)
-          assert.strictEqual(c.get(3).done.value, 6)
+          assert.strictEqual(pcache.get(1).done.value, 2)
+          assert.strictEqual(pcache.get(2).done.value, 4)
+          assert.strictEqual(pcache.get(3).done.value, 6)
         })
       })
 
@@ -68,15 +68,15 @@ describe('cache', () => {
       })
 
       it('should fill the cache', () => {
-        const star = (as) => Promise.resolve(as.map(a => 2 * a))
+        const star = jest.fn((as) => Promise.resolve(as.map(a => 2 * a)))
         const cache = new Cache()
         const pcache = new Cache()
         const cs = cacheStar(star, available, cache, pcache)
-        cs([1, 2, 3]).then(ps => {
+        return cs([1, 2, 3]).then(ps => {
           // controllo il payload
           assert.deepEqual(ps, [2, 4, 6])
           // controllo che la star sia stata chiamata
-          assert.strictEqual(star.callCount, 1)
+          assert.strictEqual(star.mock.calls.length, 1)
           // controllo le cache
           assert.deepEqual(cache.get([1, 2, 3]).done.value, [2, 4, 6])
           assert.strictEqual(pcache.get(1).done.value, 2)
