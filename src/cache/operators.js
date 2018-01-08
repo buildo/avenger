@@ -14,7 +14,7 @@ export function cacheFetch(fetch, strategy, cache) {
     ThrowReporter.report(t.validate(fetch, t.Function))
     ThrowReporter.report(t.validate(strategy, Strategy))
     if (!(cache instanceof Cache)) {
-      throw new Error(`invalida value cache=${cache} provided to cacheFetch, it should be a Cache`)
+      throw new Error(`invalid value cache=${cache} provided to cacheFetch, it should be a Cache`)
     }
   }
 
@@ -27,11 +27,11 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
   if (process.env.NODE_ENV !== 'production') {
     ThrowReporter.report(t.validate(catalog, t.Function))
     if (!(cache instanceof Cache)) {
-      throw new Error(`invalida value cache=${cache} provided to cacheCatalog, it should be a Cache`)
+      throw new Error(`invalid value cache=${cache} provided to cacheCatalog, it should be a Cache`)
     }
     ThrowReporter.report(t.validate(strategy, Strategy))
     if (!(pcache instanceof Cache)) {
-      throw new Error(`invalida value pcache=${pcache} provided to cacheCatalog, it should be a Cache`)
+      throw new Error(`invalid value pcache=${pcache} provided to cacheCatalog, it should be a Cache`)
     }
     ThrowReporter.report(t.validate(ptoa, t.Function))
   }
@@ -58,10 +58,10 @@ export function cacheStar(star, strategy, cache, pcache) {
     ThrowReporter.report(t.validate(star, t.Function))
     ThrowReporter.report(t.validate(strategy, Strategy))
     if (!(cache instanceof Cache)) {
-      throw new Error(`invalida value cache=${cache} provided to cacheStar, it should be a Cache`)
+      throw new Error(`invalid value cache=${cache} provided to cacheStar, it should be a Cache`)
     }
     if (!(cache instanceof Cache)) {
-      throw new Error(`invalida value pcache=${pcache} provided to cacheStar, it should be a Cache`)
+      throw new Error(`invalid value pcache=${pcache} provided to cacheStar, it should be a Cache`)
     }
   }
 
