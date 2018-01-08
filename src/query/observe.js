@@ -1,4 +1,5 @@
-import t from 'tcomb'
+import * as t from 'io-ts';
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/operator/filter';
@@ -12,7 +13,7 @@ function observeCache(cache, a) {
 
 export function observe(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to observe (expected a function)')
+    ThrowReporter.report(t.validate(fetch, t.Function))
   }
 
   if (fetch.type === 'product') {

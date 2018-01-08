@@ -1,4 +1,4 @@
-import t from 'tcomb';
+import * as t from 'io-ts';
 import pick from 'lodash/pick';
 import assign from 'lodash/assign';
 import findKey from 'lodash/findKey';
@@ -18,9 +18,9 @@ import sortBy from 'lodash/sortBy';
 //   [{ a: 3 }, { foo: 'asd', bar: true }]
 //
 function pickA(AA, A) {
-  if (t.list(t.String).is(A)) { // ['foo', 'bar']
+  if (t.array(t.string).is(A)) {  // ['foo', 'bar']
     return pick(AA, A);
-  } else {                      // [['foo', 'bar'], ['foo']]
+  } else {                        // [['foo', 'bar'], ['foo']]
     return A.map(a => pickA(AA, a));
   }
 }

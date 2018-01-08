@@ -1,18 +1,19 @@
-import t from 'tcomb'
+import * as t from 'io-ts'
+import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 import debug from 'debug'
 import {
   Strategy
 } from './strategies'
 
 const Done = t.interface({
-  value: t.Any,         // il valore contenuto nella promise
-  timestamp: t.Number,  // il momento in cui è stato valorizzato done
-  promise: Promise      // la promise che conteneva il done
+  value: t.any,         // il valore contenuto nella promise
+  timestamp: t.number,  // il momento in cui è stato valorizzato done
+  promise: t.any        // la promise che conteneva il done
 }, 'Done')
 
 export const CacheValue = t.interface({
-  done: t.maybe(Done),
-  blocked: t.maybe(Promise)
+  done: t.union([Done, t.undefined]),
+  blocked: t.any
 }, 'CacheValue')
 
 export const empty = Object.freeze({})
@@ -32,7 +33,7 @@ export class Cache {
 
   set(a, value) {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(CacheValue.is(value), () => 'Invalid argument value supplied to set (expected a CacheValue)')
+      ThrowReporter.report(t.validate(value, CacheValue))
     }
     return this.map.set(this.atok(a), value)
   }
@@ -48,7 +49,7 @@ export class Cache {
 
   getAvailablePromise(a, strategy) /* Maybe[Promise[P]] */ {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to getPromise (expected a Strategy)')
+      ThrowReporter.report(t.validate(strategy, Strategy))
     }
 
     const value = this.get(a)
@@ -70,8 +71,8 @@ export class Cache {
 
   getPromise(a, strategy, fetch) /* Promise[P] */ {
     if (process.env.NODE_ENV !== 'production') {
-      t.assert(Strategy.is(strategy), () => 'Invalid argument strategy supplied to getPromise (expected a Strategy)')
-      t.assert(t.Function.is(fetch), () => 'Invalid argument fetch supplied to getPromise (expected a function)')
+      ThrowReporter.report(t.validate(strategy, Strategy))
+      ThrowReporter.report(t.validate(fetch, t.Function))
     }
 
     const availablePromise = this.getAvailablePromise(a, strategy)
