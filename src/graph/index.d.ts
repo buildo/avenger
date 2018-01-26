@@ -12,17 +12,21 @@ export type Dependencies = { [k: string]: QueryReturn<any, any> };
 
 type DepA<D extends Dependencies> = {[k in keyof D]: D[k]['_A']}[keyof D];
 
+type IOTSParams = { [k: string]: t.Type<any, any> }
+
+type IOTSDictToType<O extends IOTSParams> = { [k in keyof O]: t.TypeOf<O[k]> };
+
 export type QueryArgs<
-  A extends { },
+  A extends IOTSParams,
   P,
   D extends Dependencies
 > = {
   id: string,
   cacheStrategy: Strategy,
   returnType: t.Type<any, any>,
-  params: { [k in keyof A]: t.Type<any, any> },
-  dependencies ?: { [k in keyof D]: { query: D[k] } },
-  fetch: QueryFetch < A & { [k in keyof D]: D[k]['_P'] }, P >
+  params: A,
+  dependencies?: { [k in keyof D]: { query: D[k] } },
+  fetch: QueryFetch <IOTSDictToType<A> & { [k in keyof D]: D[k]['_P'] }, P>
 };
 
 export function Query<A extends {}, P>(args: QueryArgs<A, P, {}>): QueryReturn<A, P>
