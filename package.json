@@ -33,5 +33,9 @@
     "eslint-config-buildo": "github:buildo/eslint-config",
     "jest": "^22.0.4",
     "sinon": "1.17.4"
-  }
+  },
+  "files": [
+    "lib",
+    "typings"
+  ]
 }
