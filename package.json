@@ -19,7 +19,8 @@
     "debug": "^2.2.0",
     "io-ts": "^0.9.8",
     "lodash": "^4.13.1",
-    "rxjs": "^5.4.2"
+    "rxjs": "^5.4.2",
+    "typelevel-ts": "^0.2.3"
   },
   "devDependencies": {
     "babel-cli": "6.8.0",
