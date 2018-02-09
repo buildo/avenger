@@ -24,7 +24,7 @@ export type QueryArgs<
   id: string,
   cacheStrategy: Strategy,
   returnType: t.Type<any, any>,
-  params: A,
+  params?: A,
   dependencies?: { [k in keyof D]: { query: D[k] } },
   fetch: QueryFetch <IOTSDictToType<A> & { [k in keyof D]: D[k]['_P'] }, P>
 };
