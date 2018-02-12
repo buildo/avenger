@@ -36,7 +36,6 @@
     "sinon": "1.17.4"
   },
   "files": [
-    "lib",
-    "typings"
+    "lib"
   ]
 }
