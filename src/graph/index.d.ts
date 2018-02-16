@@ -9,6 +9,10 @@ export type QueryReturn<A, P> = {
 
 export type QueryFetch<A, P> = (a: A) => Promise<P>;
 
+export type Queries = { [k: string]: QueryReturn<any, any> }
+
+export function make(graph: Queries): Queries
+
 type IOTSParams = { [k: string]: t.Type<any, any> }
 
 type IOTSDictToType<O extends IOTSParams> = {[k in keyof O]: t.TypeOf<O[k]> };
@@ -37,35 +41,36 @@ export type QueryArgs<
   }>;
 
 export function Query<A extends IOTSParams, P>(args: QueryArgsNoDeps<A, P>): QueryReturn<IOTSDictToType<A>, P>
-// TODO: probably a single overload is enough (e.g. with just D1)? TS seems to be magic here (see smarterAvenger.ts)
+
 export function Query<A extends IOTSParams, P, D1 extends Dependencies>(args: QueryArgs<A, P, D1>): QueryReturn<IOTSDictToType<A> & DepA<D1>, P>
 
-type Invalidations = Dependencies;
-type InvA<I extends Invalidations> = DepA<I>;
+export type CommandRun<A, P> = (a: A) => Promise<P>;
 
-type CommandRun<A extends {}, R = void> = (args: A) => Promise<R>;
-
-type CommandArgs<A extends {}, R = void> = {
-  id: string,
-  params?: {[k in keyof A]: t.Type<any, any> },
-  run: CommandRun<A, R>
+export type CommandReturn<A, P> = {
+  _A: A,
+  _P: P
 };
-type CommandArgsWithInvalidations<
-  A extends {},
-  I1 extends Invalidations = {},
-  I2 extends Invalidations = {},
-  I3 extends Invalidations = {},
-  R = void
-  > = CommandArgs<A & InvA<I1> & InvA<I2> & InvA<I3>, R> & {
-    invalidates?: I1 & I2 & I3
-  }
 
-type CommandReturn<A extends {}, R = void> = CommandRun<A, R> & { _A: A, _R: R };
+export type CommandArgsNoInvs<A extends IOTSParams, R> = {
+  id: string,
+  params: A,
+  run: CommandRun<IOTSDictToType<A>, R>,
+  invalidates?: never
+};
 
-export function Command<A extends {}, R = void>(args: CommandArgs<A, R>): CommandReturn<A, R>
-export function Command<A extends {},
-  I1 extends Invalidations, R = void>(args: CommandArgsWithInvalidations<A, I1, {}, {}, R>): CommandReturn<A, R>
-export function Command<A extends {},
-  I1 extends Invalidations, I2 extends Invalidations, R = void>(args: CommandArgsWithInvalidations<A, I1, I2, {}, R>): CommandReturn<A, R>
-export function Command<A extends {},
-  I1 extends Invalidations, I2 extends Invalidations, I3 extends Invalidations, R = void>(args: CommandArgsWithInvalidations<A, I1, I2, I3, R>): CommandReturn<A, R>
+export type Invalidates = { [k: string]: QueryReturn<any, any> };
+
+export type InvA<I extends Invalidates> = { [k in keyof I]: I[k]['_A'] }[keyof I];
+
+export type CommandArgs<A extends IOTSParams, I extends Invalidates, R> = (
+  ObjectOverwrite<CommandArgsNoInvs<A, R>, {
+    run: CommandRun<IOTSDictToType<A> & {[k in keyof I]: I[k]['_A']}, R>,
+    invalidates: I
+  }>
+);
+
+export function Command<A extends IOTSParams, R>(args: CommandArgsNoInvs<A, R>): CommandReturn<IOTSDictToType<A>, R>;
+
+export function Command<A extends IOTSParams, R, I1 extends Invalidates>(
+  args: CommandArgs<A, I1, R>
+): CommandReturn<IOTSDictToType<A> & InvA<I1>, R>;
