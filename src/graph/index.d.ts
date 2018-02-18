@@ -73,6 +73,7 @@ export function Command<A extends IOTSParams, R, I1 extends Invalidates>(
 
 
 export type Queries = { [k: string]: QueryReturn<any, any> }
+export type Commands = { [k: string]: CommandReturn<any, any> };
 
 export function make(graph: Queries): Queries
 
