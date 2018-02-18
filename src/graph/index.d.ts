@@ -2,10 +2,10 @@ import * as t from 'io-ts';
 import { Strategy } from '../cache/strategies';
 import { ObjectOverwrite } from 'typelevel-ts';
 
-export type QueryReturn<A, P> = {
+export interface QueryReturn<A, P> {
   _A: A,
   _P: P
-};
+}
 
 export type QueryFetch<A, P> = (a: A) => Promise<P>;
 
@@ -46,10 +46,10 @@ export function Query<A extends IOTSParams, P, D1 extends Dependencies>(args: Qu
 
 export type CommandRun<A, P> = (a: A) => Promise<P>;
 
-export type CommandReturn<A, P> = {
+export interface CommandReturn<A, P> {
   _A: A,
   _P: P
-};
+}
 
 export type CommandArgsNoInvs<A extends IOTSParams, R> = {
   id: string,
