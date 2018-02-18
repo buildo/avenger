@@ -18,7 +18,7 @@ export type QueryArgsNoDeps<
   P
   > = {
     id: string,
-    cacheStrategy: Strategy,
+    cacheStrategy?: Strategy,
     params: A,
     fetch: QueryFetch<IOTSDictToType<A>, P>,
     dependencies?: never
