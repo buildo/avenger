@@ -9,10 +9,6 @@ export interface QueryReturn<A, P> {
 
 export type QueryFetch<A, P> = (a: A) => Promise<P>;
 
-export type Queries = { [k: string]: QueryReturn<any, any> }
-
-export function make(graph: Queries): Queries
-
 type IOTSParams = { [k: string]: t.Type<any, any> }
 
 type IOTSDictToType<O extends IOTSParams> = {[k in keyof O]: t.TypeOf<O[k]> };
@@ -74,3 +70,12 @@ export function Command<A extends IOTSParams, R>(args: CommandArgsNoInvs<A, R>):
 export function Command<A extends IOTSParams, R, I1 extends Invalidates>(
   args: CommandArgs<A, I1, R>
 ): CommandReturn<IOTSDictToType<A> & InvA<I1>, R>;
+
+
+export type Queries = { [k: string]: QueryReturn<any, any> }
+
+export function make(graph: Queries): Queries
+
+export function query(...args: any[]): any
+export function runCommand<R>(graph: Queries, command: CommandReturn<any, R>, params: {}): Promise<R>
+export function invalidate(graph: Queries, Ps: (keyof Queries)[], params: {}): void
