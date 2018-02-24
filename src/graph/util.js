@@ -10,7 +10,7 @@ export function findP(graph, fetch) {
 
 function derivateA(graph, P) {
   const node = graph[P];
-  return node.A || (() => {
+  node.A = node.A || (() => {
     switch (node.fetch.type) {
       case 'composition':
         // in a composition, the "total A" is the master's A
@@ -27,6 +27,7 @@ function derivateA(graph, P) {
         throw new Error(`missing A for naked '${P}'`);
     }
   })();
+  return node.A;
 }
 
 // given a flat `AA` object, e.g.
