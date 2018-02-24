@@ -1,11 +1,5 @@
-import findKey from 'lodash/findKey';
 import assign from 'lodash/assign';
-
-// find a node key (P) by `fetch`
-function findP(graph, f) {
-  // returns the `P` (aka `key` of `inputOrGraph` holding the given `f` as `fetch`)
-  return findKey(graph, ({ fetch }) => fetch === f);
-}
+import { findP } from './util';
 
 function derivateA(graph, P) {
   const node = graph[P];
