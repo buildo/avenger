@@ -1,7 +1,7 @@
 import assert from 'assert'
 import 'rxjs'
 import { Query as Node } from '../../src/graph/QueryNode'
-import { make, invalidate, query } from '../../src/graph';
+import { invalidate, query } from '../../src/graph';
 
 describe('graph/invalidate', () => {
 
@@ -18,7 +18,7 @@ describe('graph/invalidate', () => {
 
   it('should refetch a single leaf node if it has observers', () => {
 
-    const graph = make(makeLeafNodes(['A', 'B']))
+    const graph = makeLeafNodes(['A', 'B'])
 
     const q = query(graph, ['A'], { token: 'lol' })
     q.subscribe(() => {}) // subscribe
@@ -46,7 +46,7 @@ describe('graph/invalidate', () => {
 
   it('should not refetch a single leaf node if it has no observers', () => {
 
-    const graph = make(makeLeafNodes(['A', 'B']))
+    const graph = makeLeafNodes(['A', 'B'])
 
     const q = query(graph, ['A'], { token: 'lol' })
 
@@ -69,7 +69,7 @@ describe('graph/invalidate', () => {
 
   it('should refetch multiple leaf nodes if they have observers', () => {
 
-    const graph = make(makeLeafNodes(['A', 'B', 'C']))
+    const graph = makeLeafNodes(['A', 'B', 'C'])
 
     const q = query(graph, ['A', 'C'], { token: 'lol' })
     q.subscribe(() => {})
@@ -143,7 +143,7 @@ describe('graph/invalidate', () => {
         })
       })
 
-      return make({ ...A, ...B, ...C })
+      return { ...A, ...B, ...C }
     }
 
     it('should refetch observed nodes', () => {

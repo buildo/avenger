@@ -1,6 +1,6 @@
 import 'rxjs'
 import assert from 'assert'
-import { make, invalidate, query } from '../../src/graph';
+import { invalidate, query } from '../../src/graph';
 import { Expire, available } from '../../src/cache/strategies';
 import { Query as Node } from '../../src/graph/QueryNode'
 
@@ -30,7 +30,7 @@ const makeTestGraph = () => {
     }
   })
 
-  return make({ ...master, ...slave });
+  return { ...master, ...slave };
 }
 
 describe('graph/deps', () => {

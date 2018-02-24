@@ -312,19 +312,13 @@ compose(
 
 # Graph
 
-## make
-
-signature: `make(<graph description>: GraphDescription): Graph`
-
-*TODO*
-
 ## query
 
 signature: `query(graph: Graph, Ps: List[string], A: Dict[string,any]): Observable<>`
 
 `query` accepts the `P`s to query and the `A`s to use as arguments:
 
-- `graph` is the entire graph description obtained with `make()`
+- `graph` is the entire graph description
 
 - `Ps` is an array of strings corresponding to compound node ids, e.g. `['A', 'C']`
 
@@ -338,7 +332,7 @@ signature: `invalidate(graph: Graph, invalidatePs: List[string], A: Dict[string,
 
 `invalidate` accepts all the `P`s that should be invalidated, for the given `A`s:
 
-- `graph` is the entire graph description obtained with `make()`
+- `graph` is the entire graph description
 
 - `invalidatePs` is an array of strings corresponding to compound node ids, e.g. `['A', 'C']`
 
@@ -397,7 +391,7 @@ In other words:
 
 To simplify things, let's assume every node holds a fetch cached as `refetch` (that is: multiple semi-concurrent requests will reuse a single async request, but requesting the fetch again later on will cause a new refetch).
 
-We'll describe what happens in terms of calls to `query` and `invalidate`, assuming we already have the graph described above obtained with `make()`. We thus omit passing the first argument `graph` in these calls.
+We'll describe what happens in terms of calls to `query` and `invalidate`. We thus omit passing the first argument `graph` in these calls.
 
 We'll also assume that every fetch is performing an async authenticated request to a web server, and thus it needs a `token`.
 `B` and `C` also need something more (they have a dependency on `A` after all): we can imagine this to be whatever, for example:

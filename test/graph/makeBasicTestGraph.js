@@ -1,6 +1,5 @@
 import { Query as Node } from '../../src/graph/QueryNode';
 import { available } from '../../src/cache/strategies';
-import { make } from '../../src/graph';
 
 export default () => {
   const master = Node({
@@ -23,5 +22,5 @@ export default () => {
     fetch: () => Promise.resolve('a')
   });
 
-  return make({ ...master, ...slave, ...a });
+  return { ...master, ...slave, ...a };
 }

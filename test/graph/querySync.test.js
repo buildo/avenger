@@ -1,5 +1,5 @@
 import 'rxjs'
-import { make, query, querySync } from '../../src/graph';
+import { query, querySync } from '../../src/graph';
 import { available } from '../../src/cache/strategies';
 import { Query as Node } from '../../src/graph/QueryNode'
 
@@ -28,7 +28,7 @@ const makeTestGraph = () => {
     fetch: () => Promise.resolve('b')
   })
 
-  return make({ ...master, ...slave, ...a, ...b });
+  return { ...master, ...slave, ...a, ...b };
 }
 
 describe('queriesSync', () => {
