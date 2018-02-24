@@ -7,16 +7,11 @@ import { compose, product } from '../fetch/operators';
 import { cacheFetch } from '../query/operators';
 import { ObservableCache } from '../query/ObservableCache';
 
-const _compound = qObj => {
-  const compoundP = qObj[Object.keys(qObj)[0]].compound;
-  return qObj[compoundP];
-};
-
 export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cachePToK, ...q }) => {
   const compound = q.id;
   const upsetParams = {
     ...Object.keys(q.dependencies || {}).reduce((ac, k) => ({
-      ...ac, ..._compound(q.dependencies[k].query).upsetParams
+      ...ac, ...q.dependencies[k].query.upsetParams
     }), {}),
     ...(q.params || {})
   };
@@ -30,9 +25,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const cache = new ObservableCache({ name: compound });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
-    return {
-      [compound]: { fetch, A, compound, upsetParams, cachePToK, depth }
-    };
+    return { fetch, A, compound, upsetParams, cachePToK, depth };
   } else {
     const paramKeys = Object.keys(q.params || {});
     const depsKeys = Object.keys(q.dependencies);
@@ -41,7 +34,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
 
     const depsPToK = {};
     depsKeys.forEach(depK => {
-      const depPToK = _compound(q.dependencies[depK].query).cachePToK;
+      const depPToK = q.dependencies[depK].query.cachePToK;
       if (depPToK) {
         depsPToK[depK] = depPToK;
       }
@@ -52,7 +45,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       undefined;
     const cache = new ObservableCache({ name: compound, atok });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
-    const depth = Math.max(...depsKeys.map(k => _compound(q.dependencies[k].query).depth)) + 1;
+    const depth = Math.max(...depsKeys.map(k => q.dependencies[k].query.depth)) + 1;
 
     if (depsOnly) {
       // a query with dependencies only (no params)
@@ -68,7 +61,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       //
 
       const depsProduct = {
-        fetch: product(depsKeys.map(k => _compound(q.dependencies[k].query).fetch)),
+        fetch: product(depsKeys.map(k => q.dependencies[k].query.fetch)),
         compound
       };
 
@@ -82,18 +75,17 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
         ...ac,
         [k]: (q.dependencies[k].map || identity)(ps[i])
       }), {});
-      const compoundRoot = {
+
+      return {
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
         compound,
         upsetParams,
         cachePToK,
-        depth
-      };
-
-      return {
-        [`${compound}_depsProduct`]: depsProduct,
-        [`${compound}_finalFetch`]: finalFetch,
-        [compound]: compoundRoot
+        depth,
+        childNodes: {
+          [`${compound}_depsProduct`]: depsProduct,
+          [`${compound}_finalFetch`]: finalFetch
+        }
       };
     } else {
       // a query with both dependencies
@@ -119,7 +111,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       };
 
       const depsAndA = {
-        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => _compound(q.dependencies[k].query).fetch))),
+        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].query.fetch))),
         compound
       };
 
@@ -129,7 +121,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
         compound
       };
 
-      const compoundRoot = {
+      return {
         fetch: compose(
           depsAndA.fetch,
           ([syncFetchAPs, ...prodPs]) => ({
@@ -145,14 +137,12 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
         compound,
         upsetParams,
         cachePToK,
-        depth
-      };
-
-      return {
-        [`${compound}_syncFetchA`]: syncFetchA,
-        [`${compound}_depsAndA`]: depsAndA,
-        [`${compound}_finalFetch`]: finalFetch,
-        [compound]: compoundRoot
+        depth,
+        childNodes: {
+          [`${compound}_syncFetchA`]: syncFetchA,
+          [`${compound}_depsAndA`]: depsAndA,
+          [`${compound}_finalFetch`]: finalFetch
+        }
       };
     }
   }

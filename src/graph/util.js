@@ -4,6 +4,14 @@ import assign from 'lodash/assign';
 import findKey from 'lodash/findKey';
 import sortBy from 'lodash/sortBy';
 
+export function flatGraph(graph) {
+  return Object.keys(graph).reduce((g, k) => ({
+    ...g,
+    [k]: graph[k],
+    ...(graph[k].childNodes || {})
+  }), {});
+}
+
 export function findP(graph, fetch) {
   return findKey(graph, { fetch });
 }

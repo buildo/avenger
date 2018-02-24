@@ -7,7 +7,7 @@ describe('graph/invalidate', () => {
 
   const makeLeafNodes = Ps => Ps.reduce((ac, P) => ({
     ...ac,
-    ...Node({
+    [P]: Node({
       id: P,
       params: { token: true },
       fetch: v => new Promise(resolve => {
@@ -143,7 +143,7 @@ describe('graph/invalidate', () => {
         })
       })
 
-      return { ...A, ...B, ...C }
+      return { A, B, C }
     }
 
     it('should refetch observed nodes', () => {
@@ -286,12 +286,12 @@ describe('graph/invalidate', () => {
 
       setTimeout(() => {
         try {
-          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
           expect(graph.A.fetch.cache.map.size).toBe(1);
 
           invalidate(graph, ['B', 'A'], { token: 'lol' }) // invalidate
 
-          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
           expect(graph.A.fetch.cache.map.size).toBe(0);
 
           resolve()
@@ -308,12 +308,12 @@ describe('graph/invalidate', () => {
 
       setTimeout(() => {
         try {
-          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
           expect(graph.A.fetch.cache.map.size).toBe(1);
 
           invalidate(graph, ['A', 'B'], { token: 'lol' }) // invalidate
 
-          expect(graph.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
           expect(graph.A.fetch.cache.map.size).toBe(0);
 
           resolve()

@@ -22,5 +22,5 @@ export default () => {
     fetch: () => Promise.resolve('a')
   });
 
-  return { ...master, ...slave, ...a };
+  return { master, slave, a };
 }

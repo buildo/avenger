@@ -1,8 +1,9 @@
 import { invalidate as _invalidate, hasObservers } from '../query/invalidate';
-import { queriesAndArgs, topoSorted } from './util';
+import { queriesAndArgs, topoSorted, flatGraph } from './util';
 
 // invalidate (and refetch accordingly) `invalidatePs` for the given `A` arguments object
-export function invalidate(graph, _invalidatePs, A) {
+export function invalidate(_graph, _invalidatePs, A) {
+  const graph = flatGraph(_graph);
   // sorting is needed to ensure that a query is always
   // invalidated before each one of its dependencies
   // (otherwise we'd loose the data needed to invalidate the

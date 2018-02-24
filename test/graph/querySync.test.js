@@ -28,7 +28,7 @@ const makeTestGraph = () => {
     fetch: () => Promise.resolve('b')
   })
 
-  return { ...master, ...slave, ...a, ...b };
+  return { master, slave, a, b };
 }
 
 describe('queriesSync', () => {

@@ -30,7 +30,7 @@ const makeTestGraph = () => {
     }
   })
 
-  return { ...master, ...slave };
+  return { master, slave };
 }
 
 describe('graph/deps', () => {
