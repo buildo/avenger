@@ -8,13 +8,6 @@ import { cacheFetch } from '../query/operators';
 import { ObservableCache } from '../query/ObservableCache';
 
 export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cachePToK, id, ...q }) => {
-  const upsetParams = {
-    ...Object.keys(q.dependencies || {}).reduce((ac, k) => ({
-      ...ac, ...q.dependencies[k].query.upsetParams
-    }), {}),
-    ...(q.params || {})
-  };
-
   if (!q.dependencies) {
     // atom / no dependencies (can have params)
     //
@@ -25,7 +18,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
     return {
-      fetch, A, upsetParams, cachePToK, depth
+      fetch, A, cachePToK, depth
     };
   } else {
     const paramKeys = Object.keys(q.params || {});
@@ -79,7 +72,6 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       return {
         A: depsProduct.A,
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
-        upsetParams,
         cachePToK,
         depth,
         childNodes: {
@@ -133,7 +125,6 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
           }),
           finalFetch.fetch
         ),
-        upsetParams,
         cachePToK,
         depth,
         childNodes: {
