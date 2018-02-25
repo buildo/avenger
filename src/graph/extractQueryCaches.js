@@ -1,7 +1,8 @@
 import * as t from 'io-ts';
 import flatten from 'lodash/flatten';
+import pick from 'lodash/pick';
 import { querySync } from '../query/query';
-import { queriesAndArgs, findP, flatGraph } from './util';
+import { distributeParams, findP, flatGraph } from './util';
 
 const ExtractedQueryCache = t.strict({
   a: t.object,
@@ -44,7 +45,7 @@ function extractQueryCache(graph, fetch, a) {
 
 export function extractQueryCaches(_graph, Ps, A) {
   const graph = flatGraph(_graph);
-  const { args } = queriesAndArgs(graph, Ps, A);
+  const args = distributeParams(pick(graph, Ps), A);
   const caches = {};
   Ps.forEach(P => {
     const qc = extractQueryCache(graph, graph[P].fetch, args[P]);

@@ -1,5 +1,6 @@
 import { invalidate as _invalidate, hasObservers } from '../query/invalidate';
-import { queriesAndArgs, topoSorted, flatGraph } from './util';
+import { distributeParams, topoSorted, flatGraph } from './util';
+import pick from 'lodash/pick';
 
 // invalidate (and refetch accordingly) `invalidatePs` for the given `A` arguments object
 export function invalidate(_graph, _invalidatePs, A) {
@@ -11,7 +12,7 @@ export function invalidate(_graph, _invalidatePs, A) {
   const invalidatePs = topoSorted(graph, _invalidatePs);
   // distribute the arguments following graph edges
   // i.e. produce `args` for each `P` that are valid for the lower level `invalidate` signature
-  const { args: invalidateArgs } = queriesAndArgs(graph, invalidatePs, A);
+  const invalidateArgs = distributeParams(pick(graph, invalidatePs), A);
   // actually invalidate
   invalidatePs.forEach(P => _invalidate(graph[P].fetch, invalidateArgs[P]));
   // actually refetch()

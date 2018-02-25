@@ -41,14 +41,10 @@ function pickA(AA, A) {
 // and an object of arguments `A`
 // returns the same information rearranged to match the
 // lower level `apply` signature expectations
-export function queriesAndArgs(graph, Ps, A) {
-  const queries = Ps.reduce((qs, P) => assign(qs, {
-    [P]: graph[P].cachedFetch || graph[P].fetch // non-atoms are not cached, we return the naked fetch
+export function distributeParams(queries, flatParams) {
+  return Object.keys(queries).reduce((argz, P) => assign(argz, {
+    [P]: pickA(flatParams, queries[P].A)
   }), {});
-  const args = Ps.reduce((argz, P) => assign(argz, {
-    [P]: pickA(A, graph[P].A)
-  }), {});
-  return { queries, args };
 }
 
 // e.g. if `C` depends on `B` depends on `A`

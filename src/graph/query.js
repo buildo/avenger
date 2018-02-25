@@ -1,5 +1,7 @@
 import { apply, applySync } from '../query/apply';
-import { queriesAndArgs, flatGraph } from './util';
+import { distributeParams, flatGraph } from './util';
+import pick from 'lodash/pick';
+import mapValues from 'lodash/mapValues';
 
 // query the `graph`
 // request `Ps` queries, e.g:
@@ -12,12 +14,14 @@ import { queriesAndArgs, flatGraph } from './util';
 //
 export function query(_graph, Ps, A) {
   const graph = flatGraph(_graph);
-  const { queries, args } = queriesAndArgs(graph, Ps, A);
-  return apply(queries, args);
+  const queries = pick(graph, Ps);
+  const args = distributeParams(queries, A);
+  return apply(mapValues(queries, n => n.cachedFetch || n.fetch), args);
 }
 
 export function querySync(_graph, Ps, A) {
   const graph = flatGraph(_graph);
-  const { queries, args } = queriesAndArgs(graph, Ps, A);
-  return applySync(queries, args);
+  const queries = pick(graph, Ps);
+  const args = distributeParams(queries, A);
+  return applySync(mapValues(queries, n => n.cachedFetch || n.fetch), args);
 }
