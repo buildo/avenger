@@ -21,9 +21,7 @@ const makeTestGraph = () => {
   const slave = Node({
     id: 'slave',
     strategy: available,
-    dependencies: {
-      master: { query: master }
-    },
+    dependencies: { master },
     fetch: ({ master: { bar } }) => {
       state.slaveFetchCount = state.slaveFetchCount + 1;
       return Promise.resolve(bar);

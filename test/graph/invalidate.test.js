@@ -125,9 +125,7 @@ describe('graph/invalidate', () => {
       const B = Node({
         id: 'B',
         params: { token: true },
-        dependencies: {
-          user: { query: A }
-        },
+        dependencies: { user: A },
         fetch: ({ token, user }) => new Promise(resolve => {
           setTimeout(() => resolve({ posts: [`p${user.id}`], token }))
         })
@@ -136,7 +134,7 @@ describe('graph/invalidate', () => {
         id: 'C',
         params: { token: true },
         dependencies: {
-          user: { query: A }
+          user: A
         },
         fetch: ({ token, user }) => new Promise(resolve => {
           setTimeout(() => resolve({ profile: `p${user.id}`, token }))

@@ -27,7 +27,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
 
     const cache = new ObservableCache({ name: id });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
-    const depth = Math.max(...depsKeys.map(k => q.dependencies[k].query.depth)) + 1;
+    const depth = Math.max(...depsKeys.map(k => q.dependencies[k].depth)) + 1;
 
     if (depsOnly) {
       // a query with dependencies only (no params)
@@ -43,8 +43,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
       //
 
       const depsProduct = {
-        A: depsKeys.map(k => q.dependencies[k].query.A),
-        fetch: product(depsKeys.map(k => q.dependencies[k].query.fetch))
+        A: depsKeys.map(k => q.dependencies[k].A),
+        fetch: product(depsKeys.map(k => q.dependencies[k].fetch))
       };
 
       const finalFetch = {
@@ -89,8 +89,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
       };
 
       const depsAndA = {
-        A: [syncFetchA.A].concat(depsKeys.map(k => q.dependencies[k].query.A)),
-        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].query.fetch)))
+        A: [syncFetchA.A].concat(depsKeys.map(k => q.dependencies[k].A)),
+        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].fetch)))
       };
 
       const finalFetch = {

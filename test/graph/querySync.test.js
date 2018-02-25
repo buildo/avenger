@@ -12,9 +12,7 @@ const makeTestGraph = () => {
   const slave = Node({
     id: 'slave',
     strategy: available,
-    dependencies: {
-      master: { query: master }
-    },
+    dependencies: { master },
     fetch: ({ master: { bar } }) => Promise.resolve(bar)
   })
   const a = Node({

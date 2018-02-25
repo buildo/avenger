@@ -24,15 +24,15 @@ export type QueryArgsNoDeps<
     dependencies?: never
   };
 
-export type Dependencies = { [k: string]: { query: QueryReturn<any, any> } };
-type DepA<D extends Dependencies> = {[k in keyof D]: D[k]['query']['_A']}[keyof D];
+export type Dependencies = { [k: string]: QueryReturn<any, any> };
+type DepA<D extends Dependencies> = {[k in keyof D]: D[k]['_A']}[keyof D];
 
 export type QueryArgs<
   A extends IOTSParams,
   P,
   D extends Dependencies
   > = ObjectOverwrite<QueryArgsNoDeps<A, P>, {
-    fetch: QueryFetch<IOTSDictToType<A> & {[k in keyof D]: D[k]['query']['_P']}, P>,
+    fetch: QueryFetch<IOTSDictToType<A> & {[k in keyof D]: D[k]['_P']}, P>,
     dependencies: D
   }>;
 
