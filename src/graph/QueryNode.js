@@ -1,13 +1,12 @@
 import difference from 'lodash/difference';
 import uniq from 'lodash/uniq';
 import identity from 'lodash/identity';
-import mapValues from 'lodash/mapValues';
 import { refetch } from '../cache/strategies';
 import { compose, product } from '../fetch/operators';
 import { cacheFetch } from '../query/operators';
 import { ObservableCache } from '../query/ObservableCache';
 
-export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cachePToK, id, ...q }) => {
+export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
   if (!q.dependencies) {
     // atom / no dependencies (can have params)
     //
@@ -18,7 +17,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
     return {
-      fetch, A, cachePToK, depth
+      fetch, A, depth
     };
   } else {
     const paramKeys = Object.keys(q.params || {});
@@ -26,18 +25,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const fromAKeys = difference(paramKeys, depsKeys);
     const depsOnly = fromAKeys.length === 0;
 
-    const depsPToK = {};
-    depsKeys.forEach(depK => {
-      const depPToK = q.dependencies[depK].query.cachePToK;
-      if (depPToK) {
-        depsPToK[depK] = depPToK;
-      }
-    });
-    const depsPToKLen = Object.keys(depsPToK).length;
-    const atok = depsPToKLen > 0 ?
-      obj => JSON.stringify(mapValues(obj, (v, k) => (depsPToK[k] || identity)(v))) :
-      undefined;
-    const cache = new ObservableCache({ name: id, atok });
+    const cache = new ObservableCache({ name: id });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = Math.max(...depsKeys.map(k => q.dependencies[k].query.depth)) + 1;
 
@@ -72,7 +60,6 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       return {
         A: depsProduct.A,
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
-        cachePToK,
         depth,
         childNodes: {
           [`${id}_depsProduct`]: depsProduct,
@@ -125,7 +112,6 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
           }),
           finalFetch.fetch
         ),
-        cachePToK,
         depth,
         childNodes: {
           [`${id}_syncFetchA`]: syncFetchA,
