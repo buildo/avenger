@@ -24,7 +24,9 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const cache = new ObservableCache({ name: id });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
-    return { fetch, A, upsetParams, cachePToK, depth };
+    return {
+      fetch, A, upsetParams, cachePToK, depth
+    };
   } else {
     const paramKeys = Object.keys(q.params || {});
     const depsKeys = Object.keys(q.dependencies);
@@ -60,6 +62,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       //
 
       const depsProduct = {
+        A: depsKeys.map(k => q.dependencies[k].query.A),
         fetch: product(depsKeys.map(k => q.dependencies[k].query.fetch))
       };
 
@@ -74,6 +77,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       }), {});
 
       return {
+        A: depsProduct.A,
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
         upsetParams,
         cachePToK,
@@ -106,6 +110,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       };
 
       const depsAndA = {
+        A: [syncFetchA.A].concat(depsKeys.map(k => q.dependencies[k].query.A)),
         fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].query.fetch)))
       };
 
@@ -115,6 +120,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       };
 
       return {
+        A: depsAndA.A,
         fetch: compose(
           depsAndA.fetch,
           ([syncFetchAPs, ...prodPs]) => ({

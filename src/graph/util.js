@@ -18,23 +18,6 @@ export function findP(graph, fetch) {
 
 function derivateA(graph, P) {
   const node = graph[P];
-  node.A = node.A || (() => {
-    switch (node.fetch.type) {
-      case 'composition':
-        // in a composition, the "total A" is the master's A
-        // https://github.com/buildo/avenger#composition
-        return derivateA(graph, findP(graph, node.fetch.master));
-      case 'product':
-        // in a product, "total A" is [A1, ..., An]
-        // https://github.com/buildo/avenger#product
-        // In practice, given the "deep" array, we can easily pick and redistribute
-        // the correct pieces of A when given a flat A values object
-        return node.fetch.fetches.map(f => derivateA(graph, findP(graph, f)));
-      default:
-        // a fetch that is neither a composition or a product, **must** carry A information
-        throw new Error(`missing A for naked '${P}'`);
-    }
-  })();
   return node.A;
 }
 
