@@ -314,13 +314,11 @@ compose(
 
 ## query
 
-signature: `query(graph: Graph, Ps: List[string], A: Dict[string,any]): Observable<>`
+signature: `query(queryNodes: Dict[string,Query], A: Dict[string,any]): Observable<>`
 
-`query` accepts the `P`s to query and the `A`s to use as arguments:
+`query` accepts the nodes to query and the `A`s to use as arguments:
 
-- `graph` is the entire graph description
-
-- `Ps` is an array of strings corresponding to compound node ids, e.g. `['A', 'C']`
+- `queryNodes` is a dictionary of query nodes
 
 - `A` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible `A`s any fetch we are requesting could need to run
 
@@ -328,13 +326,12 @@ signature: `query(graph: Graph, Ps: List[string], A: Dict[string,any]): Observab
 
 ## invalidate
 
-signature: `invalidate(graph: Graph, invalidatePs: List[string], A: Dict[string,any])`
+signature: `invalidate(invalidateQueryNodes: Dict[string,Query], A: Dict[string,any])`
 
-`invalidate` accepts all the `P`s that should be invalidated, for the given `A`s:
+`invalidate` accepts all the nodes that should be invalidated, for the given `A`s:
 
-- `graph` is the entire graph description
 
-- `invalidatePs` is an array of strings corresponding to compound node ids, e.g. `['A', 'C']`
+- `invalidateQueryNodes` is a dictionary of query nodes
 
 - `A` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible `A`s any fetch we are invalidating could need to run
 
@@ -402,23 +399,23 @@ We'll also assume that every fetch is performing an async authenticated request 
 
 Our story goes as follows:
 
-1. `subscription1 = query(['A', 'B'], { token: 'foo' })`
+1. `subscription1 = query({ A, B }, { token: 'foo' })`
 
   - `A` and `B` are run, respecting the `B -> A` dependency, and the `subscription1` observer is notified accordingly
 
-2. `invalidate(['A'], { token: 'foo' })`
+2. `invalidate({ A }, { token: 'foo' })`
 
   - "invalidate" phase: `A` and all its dependents (`B`, `C`) are invalidated. Since `C` was never fetched (and thus never fetched for `token='foo'`), there's nothing to delete there. `A(token='foo')` and its dependent `B` have been fetched instead, so both `A` and `B` instances for `token='foo'` are removed from cache.
 
   - "refetch" phase: `A` and all its dependents are evaluated as "refetchable" candidates. `B` is thus fetched, but since `C` has no observers, its `fetch` is not run. Since `A` and `B` both have `strategy=refetch`, they will both run "for real".
 
-3. `subscription2 = query(['C'], { token: 'foo' })`
+3. `subscription2 = query({ C }, { token: 'foo' })`
 
   - `C` is run, and the `subscription2` observer is notified accordingly
 
   - since every node has `strategy=refetch`, and `C` needs `A` to complete, `A` is re-fetched as well, and the `subscription1` listener notified accordingly
 
-4. `invalidate(['A'], { token: 'foo' })`
+4. `invalidate({ A }, { token: 'foo' })`
 
   - "invalidate" phase: `A` and all its dependents (`B`, `C`) are invalidated. `A(token='foo')` and all its dependents (`B` and `C`) have been fetched this time, so all three instances for `token='foo'` are deleted from cache.
 

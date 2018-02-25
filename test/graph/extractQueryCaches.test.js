@@ -12,11 +12,11 @@ describe('extractQueryCaches', () => {
   });
 
   it('should extract cache values', () => new Promise((resolve, reject) => {
-    const graph = makeTestGraph()
+    const { master, slave, a } = makeTestGraph()
 
-    query(graph, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
+    query({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
     setTimeout(() => {
-      const caches = extractQueryCaches(graph, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
+      const caches = extractQueryCaches({ master, slave, a }, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
       try {
         expect(Object.keys(caches).length).toBe(4);
         expect(caches.master).toBeDefined();
@@ -35,12 +35,12 @@ describe('extractQueryCaches', () => {
   }));
 
   it('should extract only requested cache values', () => new Promise((resolve, reject) => {
-    const graph = makeTestGraph()
+    const { master, slave, a } = makeTestGraph();
 
-    query(graph, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
-    query(graph, ['master', 'slave', 'a'], { token: 'bar', slaveToken: 'slaveBar' });
+    query({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
+    query({ master, slave, a }, { token: 'bar', slaveToken: 'slaveBar' });
     setTimeout(() => {
-      const caches = extractQueryCaches(graph, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
+      const caches = extractQueryCaches({ master, slave, a }, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
       try {
         expect(Object.keys(caches).length).toBe(4);
         expect(caches.master).toBeDefined();

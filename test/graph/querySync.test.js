@@ -34,49 +34,49 @@ const makeTestGraph = () => {
 describe('queriesSync', () => {
 
   it('should return complete structure even when no value is available', () => {
-    const graph = makeTestGraph()
+    const { master, slave, a, b } = makeTestGraph();
 
-    const master = querySync(graph, ['master'], { token: 'token' })
-    const slave = querySync(graph, ['slave'], { token: 'token' })
-    const product = querySync(graph, ['a', 'b'], { token: 'token' })
+    const masterSync = querySync({ master }, { token: 'token' })
+    const slaveSync = querySync({ slave }, { token: 'token' })
+    const productSync = querySync({ a, b }, { token: 'token' })
 
-    expect(master).toEqual({ data: { master: { loading: false } }, loading: false })
-    expect(slave).toEqual({ data: { slave: { loading: true } }, loading: true })
-    expect(product).toEqual({ data: { a: { loading: false }, b: { loading: false } }, loading: false })
+    expect(masterSync).toEqual({ data: { master: { loading: false } }, loading: false })
+    expect(slaveSync).toEqual({ data: { slave: { loading: true } }, loading: true })
+    expect(productSync).toEqual({ data: { a: { loading: false }, b: { loading: false } }, loading: false })
   });
 
   it('should return "loading: true" when queries are loading', () => {
-    const graph = makeTestGraph()
+    const { master, slave, a, b } = makeTestGraph()
 
-    query(graph, ['master'], { token: 'token' })
-    query(graph, ['slave'], { token: 'token' })
-    query(graph, ['a', 'b'], { token: 'token' })
+    query({ master }, { token: 'token' })
+    query({ slave }, { token: 'token' })
+    query({ a, b }, { token: 'token' })
 
-    const master = querySync(graph, ['master'], { token: 'token' })
-    const slave = querySync(graph, ['slave'], { token: 'token' })
-    const product = querySync(graph, ['a', 'b'], { token: 'token' })
+    const masterSync = querySync({ master }, { token: 'token' })
+    const slaveSync = querySync({ slave }, { token: 'token' })
+    const productSync = querySync({ a, b }, { token: 'token' })
 
-    expect(master).toEqual({ data: { master: { loading: true } }, loading: true })
-    expect(slave).toEqual({ data: { slave: { loading: true } }, loading: true })
-    expect(product).toEqual({ data: { a: { loading: true }, b: { loading: true } }, loading: true })
+    expect(masterSync).toEqual({ data: { master: { loading: true } }, loading: true })
+    expect(slaveSync).toEqual({ data: { slave: { loading: true } }, loading: true })
+    expect(productSync).toEqual({ data: { a: { loading: true }, b: { loading: true } }, loading: true })
   });
 
   it('should return current value', () => {
-    const graph = makeTestGraph()
+    const { master, slave, a, b } = makeTestGraph();
 
-    query(graph, ['master'], { token: 'token' })
-    query(graph, ['slave'], { token: 'token' })
-    query(graph, ['a', 'b'], { token: 'token' })
+    query({ master }, { token: 'token' })
+    query({ slave }, { token: 'token' })
+    query({ a, b }, { token: 'token' })
 
     return new Promise((resolve, reject) => setTimeout(() => {
-      const master = querySync(graph, ['master'], { token: 'token' })
-      const slave = querySync(graph, ['slave'], { token: 'token' })
-      const product = querySync(graph, ['a', 'b'], { token: 'token' })
+      const masterSync = querySync({ master }, { token: 'token' })
+      const slaveSync = querySync({ slave }, { token: 'token' })
+      const productSync = querySync({ a, b }, { token: 'token' })
 
       try {
-        expect(master).toEqual({ data: { master: { loading: false, data: { bar: { foo: 'foo' } } } }, loading: false })
-        expect(slave).toEqual({ data: { slave: { loading: false, data: { foo: 'foo' } } }, loading: false })
-        expect(product).toEqual({ data: { a: { loading: false, data: 'a' }, b: { loading: false, data: 'b' } }, loading: false })
+        expect(masterSync).toEqual({ data: { master: { loading: false, data: { bar: { foo: 'foo' } } } }, loading: false })
+        expect(slaveSync).toEqual({ data: { slave: { loading: false, data: { foo: 'foo' } } }, loading: false })
+        expect(productSync).toEqual({ data: { a: { loading: false, data: 'a' }, b: { loading: false, data: 'b' } }, loading: false })
         resolve();
       } catch (e) {
         reject(e);

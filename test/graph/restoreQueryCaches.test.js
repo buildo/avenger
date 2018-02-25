@@ -40,11 +40,11 @@ const extractedCaches = {
 describe('restoreQueryCaches', () => {
 
   it('should work', () => {
-    const graph = makeTestGraph()
+    const { master, slave, a } = makeTestGraph()
 
-    restoreQueryCaches(graph, extractedCaches);
+    restoreQueryCaches({ master, slave, a }, extractedCaches);
     expect(
-      querySync(graph, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' })
+      querySync({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' })
     ).toEqual({
       loading: false,
       data: {

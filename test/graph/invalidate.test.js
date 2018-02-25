@@ -18,13 +18,13 @@ describe('graph/invalidate', () => {
 
   it('should refetch a single leaf node if it has observers', () => {
 
-    const graph = makeLeafNodes(['A', 'B'])
+    const { A } = makeLeafNodes(['A', 'B'])
 
-    const q = query(graph, ['A'], { token: 'lol' })
+    const q = query({ A }, { token: 'lol' })
     q.subscribe(() => {}) // subscribe
 
     setTimeout(() => { // invalidate later on
-      invalidate(graph, ['A'], { token: 'lol' })
+      invalidate({ A }, { token: 'lol' })
     }, 5)
 
     return new Promise((resolve, reject) => {
@@ -46,11 +46,11 @@ describe('graph/invalidate', () => {
 
   it('should not refetch a single leaf node if it has no observers', () => {
 
-    const graph = makeLeafNodes(['A', 'B'])
+    const { A } = makeLeafNodes(['A', 'B'])
 
-    const q = query(graph, ['A'], { token: 'lol' })
+    const q = query({ A }, { token: 'lol' })
 
-    invalidate(graph, ['A'], { token: 'lol' }) // do not subscribe and invalidate right away
+    invalidate({ A }, { token: 'lol' }) // do not subscribe and invalidate right away
 
     return new Promise((resolve, reject) => {
       q.bufferTime(10).take(1).subscribe(events => {
@@ -69,13 +69,13 @@ describe('graph/invalidate', () => {
 
   it('should refetch multiple leaf nodes if they have observers', () => {
 
-    const graph = makeLeafNodes(['A', 'B', 'C'])
+    const { A, C } = makeLeafNodes(['A', 'B', 'C'])
 
-    const q = query(graph, ['A', 'C'], { token: 'lol' })
+    const q = query({ A, C }, { token: 'lol' })
     q.subscribe(() => {})
 
     setTimeout(() => {
-      invalidate(graph, ['A', 'C'], { token: 'lol' })
+      invalidate({ A, C }, { token: 'lol' })
     }, 5)
 
     return new Promise((resolve, reject) => {
@@ -148,14 +148,14 @@ describe('graph/invalidate', () => {
 
     it('should refetch observed nodes', () => {
 
-      const graph = makeTestGraph()
+      const { A, B } = makeTestGraph()
 
-      const q1 = query(graph, ['A', 'B'], { token: 'lol' })
+      const q1 = query({ A, B }, { token: 'lol' })
 
       q1.subscribe(() => {}) // add a subscriber
 
       setTimeout(() => {
-        invalidate(graph, ['A'], { token: 'lol' }) // invalidate later on
+        invalidate({ A }, { token: 'lol' }) // invalidate later on
       }, 5)
 
       return new Promise((resolve, reject) => {
@@ -200,14 +200,14 @@ describe('graph/invalidate', () => {
 
     it('should refetch observed nodes 2', () => {
 
-      const graph = makeTestGraph()
+      const { A, B, C } = makeTestGraph()
 
-      const q1 = query(graph, ['B', 'C'], { token: 'lol' })
+      const q1 = query({ B, C }, { token: 'lol' })
 
       q1.subscribe(() => {}) // add a subscriber
 
       setTimeout(() => {
-        invalidate(graph, ['A'], { token: 'lol' }) // invalidate later on
+        invalidate({ A }, { token: 'lol' }) // invalidate later on
       }, 5)
 
       return new Promise((resolve, reject) => {
@@ -280,19 +280,19 @@ describe('graph/invalidate', () => {
     })
 
     it('should invalidate respecting dependency order 1', () => new Promise((resolve, reject) => {
-      const graph = makeTestGraph()
+      const { A, B } = makeTestGraph()
 
-      query(graph, ['A', 'B'], { token: 'lol' })
+      query({ A, B }, { token: 'lol' })
 
       setTimeout(() => {
         try {
-          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
-          expect(graph.A.fetch.cache.map.size).toBe(1);
+          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(A.fetch.cache.map.size).toBe(1);
 
-          invalidate(graph, ['B', 'A'], { token: 'lol' }) // invalidate
+          invalidate({ B, A }, { token: 'lol' }) // invalidate
 
-          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
-          expect(graph.A.fetch.cache.map.size).toBe(0);
+          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(A.fetch.cache.map.size).toBe(0);
 
           resolve()
         } catch (err) {
@@ -302,19 +302,19 @@ describe('graph/invalidate', () => {
     }))
 
     it('should invalidate respecting dependency order 2', () => new Promise((resolve, reject) => {
-      const graph = makeTestGraph()
+      const { A, B } = makeTestGraph()
 
-      query(graph, ['A', 'B'], { token: 'lol' })
+      query({ A, B }, { token: 'lol' })
 
       setTimeout(() => {
         try {
-          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
-          expect(graph.A.fetch.cache.map.size).toBe(1);
+          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(A.fetch.cache.map.size).toBe(1);
 
-          invalidate(graph, ['A', 'B'], { token: 'lol' }) // invalidate
+          invalidate({ A, B }, { token: 'lol' }) // invalidate
 
-          expect(graph.B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
-          expect(graph.A.fetch.cache.map.size).toBe(0);
+          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(A.fetch.cache.map.size).toBe(0);
 
           resolve()
         } catch (err) {

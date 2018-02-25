@@ -1,27 +1,24 @@
 import { apply, applySync } from '../query/apply';
-import { distributeParams, flatGraph } from './util';
-import pick from 'lodash/pick';
+import { distributeParams } from './util';
 import mapValues from 'lodash/mapValues';
 
 // query the `graph`
-// request `Ps` queries, e.g:
+// request `queryNodes` queries, e.g:
 //
-//   ['samples', 'tests']
+//   { samples, tests }
 //
-// with `A` arguments, e.g:
+// with `flatParams` arguments, e.g:
 //
 //   { token: 'asdafs', sampleId: 1, testId: 2 }
 //
-export function query(_graph, Ps, A) {
-  const graph = flatGraph(_graph);
-  const queries = pick(graph, Ps);
-  const args = distributeParams(queries, A);
-  return apply(mapValues(queries, n => n.cachedFetch || n.fetch), args);
+export function query(queryNodes, flatParams) {
+  const queries = mapValues(queryNodes, n => n.fetch);
+  const args = distributeParams(queryNodes, flatParams);
+  return apply(queries, args);
 }
 
-export function querySync(_graph, Ps, A) {
-  const graph = flatGraph(_graph);
-  const queries = pick(graph, Ps);
-  const args = distributeParams(queries, A);
-  return applySync(mapValues(queries, n => n.cachedFetch || n.fetch), args);
+export function querySync(queryNodes, A) {
+  const queries = mapValues(queryNodes, n => n.fetch);
+  const args = distributeParams(queryNodes, A);
+  return applySync(queries, args);
 }

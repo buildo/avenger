@@ -41,14 +41,14 @@ function pickA(AA, A) {
 // and an object of arguments `A`
 // returns the same information rearranged to match the
 // lower level `apply` signature expectations
-export function distributeParams(queries, flatParams) {
-  return Object.keys(queries).reduce((argz, P) => assign(argz, {
-    [P]: pickA(flatParams, queries[P].A)
+export function distributeParams(queryNodes, flatParams) {
+  return Object.keys(queryNodes).reduce((argz, P) => assign(argz, {
+    [P]: pickA(flatParams, queryNodes[P].A)
   }), {});
 }
 
 // e.g. if `C` depends on `B` depends on `A`
-// given ['A', 'B', 'C'] in any order, returns ['C', 'B', 'A'] (dependants first, root last)
-export function topoSorted(graph, Ps) {
-  return sortBy(Ps, P => -graph[P].depth);
+// given { A, B, C }, returns ['C', 'B', 'A'] (dependants first, root last)
+export function topoSorted(queryNodes) {
+  return sortBy(Object.keys(queryNodes), P => -queryNodes[P].depth);
 }

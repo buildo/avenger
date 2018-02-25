@@ -36,24 +36,24 @@ const makeTestGraph = () => {
 describe('graph/deps', () => {
 
   it('"slave" should be re-fetched if "master" changes and is being observed', () => {
-    const graph = makeTestGraph()
+    const { master, slave } = makeTestGraph()
 
     state.foo = 'foo_1';
     state.slaveFetchCount = 0;
 
-    const slave = query(graph, ['slave'], { token: 'token' })
+    const slaveQuery = query({ slave }, { token: 'token' })
 
-    slave.subscribe(() => {}); // add a subscriber to "slave"
+    slaveQuery.subscribe(() => {}); // add a subscriber to "slave"
 
     return new Promise((resolve, reject) => {
       // invalidate "master" after its cache has already expired
       setTimeout(() => {
         state.foo = 'foo_2';
-        invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
+        invalidate({ master }, { token: 'token' }) // invalidate later on
 
         // verify that "slave" has been correctly re-fetched
         setTimeout(() => {
-          slave.subscribe((r) => {
+          slaveQuery.subscribe((r) => {
             try {
               assert.equal(r.data.slave.data.foo, 'foo_2');
               assert.equal(state.slaveFetchCount, 2);
@@ -69,21 +69,21 @@ describe('graph/deps', () => {
   });
 
   it('"slave" should not be re-fetched if "master" changes but is not being observed', () => {
-    const graph = makeTestGraph()
+    const { master, slave } = makeTestGraph()
 
     state.foo = 'foo_1';
     state.slaveFetchCount = 0;
 
-    const master = query(graph, ['master'], { token: 'token' });
-    query(graph, ['slave'], { token: 'token' });
+    const masterQuery = query({ master }, { token: 'token' });
+    query({ slave }, { token: 'token' });
 
-    master.subscribe(() => {}); // add a subscriber to "master"
+    masterQuery.subscribe(() => {}); // add a subscriber to "master"
 
     return new Promise((resolve, reject) => {
       // invalidate "master" after its cache has already expired
       setTimeout(() => {
         state.foo = 'foo_2';
-        invalidate(graph, ['master'], { token: 'token' }) // invalidate later on
+        invalidate({ master }, { token: 'token' }) // invalidate later on
 
         // verify that "slave" has been correctly re-fetched
         setTimeout(() => {
