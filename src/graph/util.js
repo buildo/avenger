@@ -1,20 +1,7 @@
 import * as t from 'io-ts';
 import pick from 'lodash/pick';
 import assign from 'lodash/assign';
-import findKey from 'lodash/findKey';
 import sortBy from 'lodash/sortBy';
-
-export function flatGraph(graph) {
-  return Object.keys(graph).reduce((g, k) => ({
-    ...g,
-    [k]: graph[k],
-    ...(graph[k].childNodes || {})
-  }), {});
-}
-
-export function findP(graph, fetch) {
-  return findKey(graph, { fetch });
-}
 
 // given a flat `AA` object, e.g.
 //
@@ -51,4 +38,12 @@ export function distributeParams(queryNodes, flatParams) {
 // given { A, B, C }, returns ['C', 'B', 'A'] (dependants first, root last)
 export function topoSorted(queryNodes) {
   return sortBy(Object.keys(queryNodes), P => -queryNodes[P].depth);
+}
+
+export function flattenQueries(queries) {
+  return Object.keys(queries).reduce((g, k) => ({
+    ...g,
+    [k]: queries[k],
+    ...(queries[k].childNodes || {})
+  }), {});
 }

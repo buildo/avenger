@@ -5,9 +5,9 @@ import makeTestGraph from './makeBasicTestGraph';
 describe('extractQueryCaches', () => {
 
   it('should return an empty object for empty caches', () => {
-    const graph = makeTestGraph()
+    const { master, slave, a } = makeTestGraph()
 
-    const caches = extractQueryCaches(graph, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
+    const caches = extractQueryCaches({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
     expect(caches).toEqual({});
   });
 
@@ -16,7 +16,7 @@ describe('extractQueryCaches', () => {
 
     query({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
     setTimeout(() => {
-      const caches = extractQueryCaches({ master, slave, a }, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
+      const caches = extractQueryCaches({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
       try {
         expect(Object.keys(caches).length).toBe(4);
         expect(caches.master).toBeDefined();
@@ -40,7 +40,7 @@ describe('extractQueryCaches', () => {
     query({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
     query({ master, slave, a }, { token: 'bar', slaveToken: 'slaveBar' });
     setTimeout(() => {
-      const caches = extractQueryCaches({ master, slave, a }, ['master', 'slave', 'a'], { token: 'foo', slaveToken: 'slaveFoo' });
+      const caches = extractQueryCaches({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
       try {
         expect(Object.keys(caches).length).toBe(4);
         expect(caches.master).toBeDefined();

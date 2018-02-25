@@ -1,8 +1,8 @@
 import * as t from 'io-ts';
 import flatten from 'lodash/flatten';
-import pick from 'lodash/pick';
+import findKey from 'lodash/findKey';
 import { querySync } from '../query/query';
-import { distributeParams, findP, flatGraph } from './util';
+import { distributeParams, flattenQueries } from './util';
 
 const ExtractedQueryCache = t.strict({
   a: t.object,
@@ -12,11 +12,11 @@ export const ExtractedQueryCaches = t.dictionary(
   t.string, ExtractedQueryCache
 );
 
-function extractQueryCache(graph, fetch, a) {
+function extractQueryCache(flatQueryNodes, fetch, a) {
   if (fetch.type === 'product') {
     return flatten(
       fetch.fetches.map((f, i) =>
-        extractQueryCache(graph, f, a[i])
+        extractQueryCache(flatQueryNodes, f, a[i])
       )
     );
   }
@@ -31,24 +31,24 @@ function extractQueryCache(graph, fetch, a) {
       const data = isProduct ? masterValue.map(xi => xi.data) : masterValue.data;
       const a1 = ptoa(data, a);
       return [
-        ...extractQueryCache(graph, master, a),
-        ...extractQueryCache(graph, slave, a1)
+        ...extractQueryCache(flatQueryNodes, master, a),
+        ...extractQueryCache(flatQueryNodes, slave, a1)
       ];
     } else {
       return [];
     }
   }
 
-  const P = findP(graph, fetch);
+  const P = findKey(flatQueryNodes, { fetch });
   return [{ P, a, value: querySync(fetch, a).data }];
 }
 
-export function extractQueryCaches(_graph, Ps, A) {
-  const graph = flatGraph(_graph);
-  const args = distributeParams(pick(graph, Ps), A);
+export function extractQueryCaches(queryNodes, flatParams) {
   const caches = {};
-  Ps.forEach(P => {
-    const qc = extractQueryCache(graph, graph[P].fetch, args[P]);
+  const flatQueryNodes = flattenQueries(queryNodes);
+  const args = distributeParams(flatQueryNodes, flatParams);
+  Object.keys(flatQueryNodes).forEach(P => {
+    const qc = extractQueryCache(flatQueryNodes, flatQueryNodes[P].fetch, args[P]);
     qc.filter(
       ({ value }) => typeof value !== 'undefined'
     ).forEach(({ P: p, a, value }) => {
