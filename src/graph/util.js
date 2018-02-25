@@ -16,11 +16,6 @@ export function findP(graph, fetch) {
   return findKey(graph, { fetch });
 }
 
-function derivateA(graph, P) {
-  const node = graph[P];
-  return node.A;
-}
-
 // given a flat `AA` object, e.g.
 //
 //   { a: 3, foo: 'asd', bar: true }
@@ -51,7 +46,7 @@ export function queriesAndArgs(graph, Ps, A) {
     [P]: graph[P].cachedFetch || graph[P].fetch // non-atoms are not cached, we return the naked fetch
   }), {});
   const args = Ps.reduce((argz, P) => assign(argz, {
-    [P]: pickA(A, derivateA(graph, P))
+    [P]: pickA(A, graph[P].A)
   }), {});
   return { queries, args };
 }
