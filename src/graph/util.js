@@ -76,5 +76,5 @@ export function queriesAndArgs(graph, Ps, A) {
 // e.g. if `C` depends on `B` depends on `A`
 // given ['A', 'B', 'C'] in any order, returns ['C', 'B', 'A'] (dependants first, root last)
 export function topoSorted(graph, Ps) {
-  return sortBy(Ps, P => -graph[graph[P].compound].depth);
+  return sortBy(Ps, P => -graph[P].depth);
 }

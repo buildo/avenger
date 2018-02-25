@@ -7,8 +7,7 @@ import { compose, product } from '../fetch/operators';
 import { cacheFetch } from '../query/operators';
 import { ObservableCache } from '../query/ObservableCache';
 
-export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cachePToK, ...q }) => {
-  const compound = q.id;
+export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cachePToK, id, ...q }) => {
   const upsetParams = {
     ...Object.keys(q.dependencies || {}).reduce((ac, k) => ({
       ...ac, ...q.dependencies[k].query.upsetParams
@@ -22,10 +21,10 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     // becomes just `cacheFetch(finalFetch)`
     //
     const A = Object.keys(q.params || {});
-    const cache = new ObservableCache({ name: compound });
+    const cache = new ObservableCache({ name: id });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
-    return { fetch, A, compound, upsetParams, cachePToK, depth };
+    return { fetch, A, upsetParams, cachePToK, depth };
   } else {
     const paramKeys = Object.keys(q.params || {});
     const depsKeys = Object.keys(q.dependencies);
@@ -43,7 +42,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const atok = depsPToKLen > 0 ?
       obj => JSON.stringify(mapValues(obj, (v, k) => (depsPToK[k] || identity)(v))) :
       undefined;
-    const cache = new ObservableCache({ name: compound, atok });
+    const cache = new ObservableCache({ name: id, atok });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = Math.max(...depsKeys.map(k => q.dependencies[k].query.depth)) + 1;
 
@@ -61,14 +60,12 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       //
 
       const depsProduct = {
-        fetch: product(depsKeys.map(k => q.dependencies[k].query.fetch)),
-        compound
+        fetch: product(depsKeys.map(k => q.dependencies[k].query.fetch))
       };
 
       const finalFetch = {
         A: depsKeys,
-        fetch,
-        compound
+        fetch
       };
 
       const map = ps => depsKeys.reduce((ac, k, i) => ({
@@ -78,13 +75,12 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
 
       return {
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
-        compound,
         upsetParams,
         cachePToK,
         depth,
         childNodes: {
-          [`${compound}_depsProduct`]: depsProduct,
-          [`${compound}_finalFetch`]: finalFetch
+          [`${id}_depsProduct`]: depsProduct,
+          [`${id}_finalFetch`]: finalFetch
         }
       };
     } else {
@@ -102,23 +98,20 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       // otherwise it would not be "observable" (no subject available)
       //
 
-      const cache = new ObservableCache({ name: `${compound}_syncFetchA` });
+      const cache = new ObservableCache({ name: `${id}_syncFetchA` });
       const syncFetchAFetch = cacheFetch(aas => Promise.resolve(fromAKeys.map(pk => aas[pk])), refetch, cache);
       const syncFetchA = {
         A: fromAKeys,
-        fetch: syncFetchAFetch,
-        compound
+        fetch: syncFetchAFetch
       };
 
       const depsAndA = {
-        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].query.fetch))),
-        compound
+        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].query.fetch)))
       };
 
       const finalFetch = {
         A: uniq(paramKeys.concat(depsKeys)),
-        fetch,
-        compound
+        fetch
       };
 
       return {
@@ -134,14 +127,13 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
           }),
           finalFetch.fetch
         ),
-        compound,
         upsetParams,
         cachePToK,
         depth,
         childNodes: {
-          [`${compound}_syncFetchA`]: syncFetchA,
-          [`${compound}_depsAndA`]: depsAndA,
-          [`${compound}_finalFetch`]: finalFetch
+          [`${id}_syncFetchA`]: syncFetchA,
+          [`${id}_depsAndA`]: depsAndA,
+          [`${id}_finalFetch`]: finalFetch
         }
       };
     }
