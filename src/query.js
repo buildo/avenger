@@ -2,7 +2,6 @@ import { apply, applySync } from './query/apply';
 import { distributeParams } from './util';
 import mapValues from 'lodash/mapValues';
 
-// query the `graph`
 // request `queryNodes` queries, e.g:
 //
 //   { samples, tests }

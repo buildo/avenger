@@ -2,7 +2,7 @@ import assert from 'assert'
 import 'rxjs'
 import { Query as Node, invalidate, query } from '../src'
 
-describe('graph/invalidate', () => {
+describe('invalidate', () => {
 
   const makeLeafNodes = Ps => Ps.reduce((ac, P) => ({
     ...ac,

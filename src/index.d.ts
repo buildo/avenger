@@ -1,6 +1,8 @@
 import * as t from 'io-ts';
-import { Strategy } from '../cache/strategies';
+import { Strategy } from './cache/strategies';
 import { ObjectOverwrite } from 'typelevel-ts';
+
+type BROKEN_FlattenObject<O extends {}> = { [k in keyof O]: O[k] }[keyof O];
 
 export interface QueryReturn<A, P> {
   _A: A,
@@ -25,7 +27,7 @@ export type QueryArgsNoDeps<
   };
 
 export type Dependencies = { [k: string]: QueryReturn<any, any> };
-type DepA<D extends Dependencies> = {[k in keyof D]: D[k]['_A']}[keyof D];
+type DepA<D extends Dependencies> = BROKEN_FlattenObject<{ [k in keyof D]: D[k]['_A'] }>;
 
 export type QueryArgs<
   A extends IOTSParams,
@@ -55,7 +57,7 @@ export type CommandArgsNoInvs<A extends IOTSParams, R> = {
 
 export type Invalidates = { [k: string]: QueryReturn<any, any> };
 
-export type InvA<I extends Invalidates> = { [k in keyof I]: I[k]['_A'] }[keyof I];
+type InvA<I extends Invalidates> = BROKEN_FlattenObject<{ [k in keyof I]: I[k]['_A'] }>;
 
 export type CommandArgs<A extends IOTSParams, I extends Invalidates, R> = (
   ObjectOverwrite<CommandArgsNoInvs<A, R>, {
@@ -74,6 +76,8 @@ export function Command<A extends IOTSParams, R, I1 extends Invalidates>(
 export type Queries = { [k: string]: QueryReturn<any, any> }
 export type Commands = { [k: string]: CommandReturn<any, any> };
 
-export function query(...args: any[]): any
-export function runCommand<R>(graph: Queries, command: CommandReturn<any, R>, params: {}): Promise<R>
-export function invalidate(graph: Queries, Ps: (keyof Queries)[], params: {}): void
+type FlatParams<Q extends Queries> = BROKEN_FlattenObject<{ [k in keyof Q]: Q[k]['_A'] }>;
+
+export function query<Q extends Queries>(queryNodes: Q, flatParams: FlatParams<Q>): any
+export function runCommand<R, C extends CommandReturn<any, R>>(command: C, flatParams: C['_A']): Promise<R>
+export function invalidate<Q extends Queries>(queryNodes: Q, flatParams: FlatParams<Q>): void

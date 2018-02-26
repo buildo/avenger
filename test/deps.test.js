@@ -29,7 +29,7 @@ const makeTestGraph = () => {
   return { master, slave };
 }
 
-describe('graph/deps', () => {
+describe('dependencies', () => {
 
   it('"slave" should be re-fetched if "master" changes and is being observed', () => {
     const { master, slave } = makeTestGraph()

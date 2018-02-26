@@ -1,8 +1,8 @@
 import { invalidate } from './invalidate'
 
-export function runCommand(graph, command, A) {
-  return command.run(A).then(v => {
-    invalidate(command.invalidates || {}, A);
+export function runCommand(command, flatParams) {
+  return command.run(flatParams).then(v => {
+    invalidate(command.invalidates || {}, flatParams);
     return v;
   });
 }
