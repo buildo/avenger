@@ -1,3 +1,4 @@
+export * from './cache/strategies';
 export { query, querySync } from './query';
 export { invalidate } from './invalidate';
 export { Query } from './QueryNode';

@@ -1,8 +1,6 @@
 import 'rxjs'
 import assert from 'assert'
-import { invalidate, query } from '../../src/graph';
-import { Expire, available } from '../../src/cache/strategies';
-import { Query as Node } from '../../src/graph/QueryNode'
+import { invalidate, query, Expire, available, Query as Node } from '../src';
 
 const state = {
   foo: null,

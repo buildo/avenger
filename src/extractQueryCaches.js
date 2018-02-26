@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import flatten from 'lodash/flatten';
 import findKey from 'lodash/findKey';
-import { querySync } from '../query/query';
+import { querySync } from './query/query';
 import { distributeParams, flattenQueries } from './util';
 
 const ExtractedQueryCache = t.strict({

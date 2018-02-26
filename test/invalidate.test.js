@@ -1,7 +1,6 @@
 import assert from 'assert'
 import 'rxjs'
-import { Query as Node } from '../../src/graph/QueryNode'
-import { invalidate, query } from '../../src/graph';
+import { Query as Node, invalidate, query } from '../src'
 
 describe('graph/invalidate', () => {
 

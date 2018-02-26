@@ -1,4 +1,4 @@
-import { apply, applySync } from '../query/apply';
+import { apply, applySync } from './query/apply';
 import { distributeParams } from './util';
 import mapValues from 'lodash/mapValues';
 

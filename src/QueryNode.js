@@ -1,10 +1,10 @@
 import difference from 'lodash/difference';
 import uniq from 'lodash/uniq';
 import identity from 'lodash/identity';
-import { refetch } from '../cache/strategies';
-import { compose, product } from '../fetch/operators';
-import { cacheFetch } from '../query/operators';
-import { ObservableCache } from '../query/ObservableCache';
+import { refetch } from './cache/strategies';
+import { compose, product } from './fetch/operators';
+import { cacheFetch } from './query/operators';
+import { ObservableCache } from './query/ObservableCache';
 
 export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
   const upsetParams = {

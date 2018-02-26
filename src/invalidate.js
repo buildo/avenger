@@ -1,4 +1,4 @@
-import { invalidate as _invalidate, hasObservers } from '../query/invalidate';
+import { invalidate as _invalidate, hasObservers } from './query/invalidate';
 import { distributeParams, topoSorted } from './util';
 
 // invalidate (and refetch accordingly) `invalidatePs` for the given `A` arguments object

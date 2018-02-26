@@ -1,5 +1,4 @@
-import { Query as Node } from '../../src/graph/QueryNode';
-import { available } from '../../src/cache/strategies';
+import { Query as Node, available } from '../src';
 
 export default () => {
   const master = Node({

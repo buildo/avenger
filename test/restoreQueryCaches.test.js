@@ -1,5 +1,5 @@
 import makeTestGraph from './makeBasicTestGraph';
-import { querySync, restoreQueryCaches } from '../../src/graph';
+import { querySync, restoreQueryCaches } from '../src';
 
 const extractedCaches = {
   master: {

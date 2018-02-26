@@ -1,5 +1,5 @@
 import 'rxjs'
-import { query, extractQueryCaches } from '../../src/graph';
+import { query, extractQueryCaches } from '../src';
 import makeTestGraph from './makeBasicTestGraph';
 
 describe('extractQueryCaches', () => {

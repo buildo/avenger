@@ -1,4 +1,4 @@
-import { Query } from '../../src/graph/QueryNode';
+import { Query } from '../src';
 
 describe('QueryNode', () => {
   describe('upsetParams', () => {
