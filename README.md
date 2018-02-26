@@ -20,7 +20,7 @@ Avenger provides different levels of api:
 - **layer 1** `fcache`: caching layer on top of `fetch`. Caching and batching happens here. This layer can be considered similar to [DataLoader](https://github.com/facebook/dataloader), adding more powerful caching strategies. You'd use this layer directly in a stateless (server-side) environment, where no long-living cache is involved. Read more in [Cache](https://github.com/buildo/avenger#cache).
 - **layer 2** `query`: extends `fcache` with observable queries. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data.
 - **layer 3** `graph`: provides a higher level interface to `query`. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data. Read more in [Graph](https://github.com/buildo/avenger#graph).
-- **layer** + [react-avenger](https://github.com/buildo/react-avenger): provides helpers to connect a `graph` avenger instance to React components in a declarative fashion. You'd use this layer in a generic React client
+- **layer +** [react-avenger](https://github.com/buildo/react-avenger): provides helpers to connect a `graph` avenger instance to React components in a declarative fashion. You'd use this layer in a generic React client
 
 
 # Fetch
@@ -314,28 +314,26 @@ compose(
 
 ## query
 
-signature: `query(queryNodes: Dict[string,Query], A: Dict[string,any]): Observable<>`
+signature: `query(queryNodes: Dict[string,Query], flatParams: Dict[string,any]): Observable<>`
 
-`query` accepts the nodes to query and the `A`s to use as arguments:
+`query` accepts the nodes to query and the `flatParams`s to use as arguments:
 
 - `queryNodes` is a dictionary of query nodes
 
-- `A` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible `A`s any fetch we are requesting could need to run
-
-*TODO*
+- `flatParams` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible params any fetch we are requesting could need to run
 
 ## invalidate
 
-signature: `invalidate(invalidateQueryNodes: Dict[string,Query], A: Dict[string,any])`
+signature: `invalidate(invalidateQueryNodes: Dict[string,Query], flatParams: Dict[string,any])`
 
-`invalidate` accepts all the nodes that should be invalidated, for the given `A`s:
+`invalidate` accepts all the nodes that should be invalidated, for the given `flatParams`:
 
 
 - `invalidateQueryNodes` is a dictionary of query nodes
 
-- `A` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible `A`s any fetch we are invalidating could need to run
+- `flatParams` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible params any fetch we are invalidating could need to run
 
-Given a node to be invalidate, given as a string `P` in the signature above, we define the terms:
+Given a node to be invalidate, given as a property `{ [P]: Query }` in `invalidateQueryNodes` above, we define the terms:
 
   - *dependencies* of `P`: every other (if any) nodes for which a value is needed before evaluating `P`. `P` has a dependency on `n >= 0` other nodes
   - *dependents* of `P`:
@@ -370,7 +368,7 @@ To clarify these two phases and the `invalidate` api, here's an example:
 
 ### Example
 
-Assume our `graph` is composed of 3 compound nodes, `A`, `B` and `C`.
+Assume our set of queries is composed of three nodes: `A`, `B` and `C`.
 
 The graph is arranged in this way in terms of dependencies:
 
@@ -388,7 +386,7 @@ In other words:
 
 To simplify things, let's assume every node holds a fetch cached as `refetch` (that is: multiple semi-concurrent requests will reuse a single async request, but requesting the fetch again later on will cause a new refetch).
 
-We'll describe what happens in terms of calls to `query` and `invalidate`. We thus omit passing the first argument `graph` in these calls.
+We'll describe what happens in terms of calls to `query` and `invalidate`.
 
 We'll also assume that every fetch is performing an async authenticated request to a web server, and thus it needs a `token`.
 `B` and `C` also need something more (they have a dependency on `A` after all): we can imagine this to be whatever, for example:
