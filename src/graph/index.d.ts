@@ -17,7 +17,7 @@ export type QueryArgsNoDeps<
   A extends IOTSParams,
   P
   > = {
-    id: string,
+    id?: string,
     cacheStrategy?: Strategy,
     params: A,
     fetch: QueryFetch<IOTSDictToType<A>, P>,
@@ -48,7 +48,6 @@ export interface CommandReturn<A, P> {
 }
 
 export type CommandArgsNoInvs<A extends IOTSParams, R> = {
-  id: string,
   params: A,
   run: CommandRun<IOTSDictToType<A>, R>,
   invalidates?: never
