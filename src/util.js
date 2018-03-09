@@ -39,11 +39,3 @@ export function distributeParams(queryNodes, flatParams) {
 export function topoSorted(queryNodes) {
   return sortBy(Object.keys(queryNodes), P => -queryNodes[P].depth);
 }
-
-export function flattenQueries(queries) {
-  return Object.keys(queries).reduce((g, k) => ({
-    ...g,
-    [k]: queries[k],
-    ...(queries[k].childNodes || {})
-  }), {});
-}

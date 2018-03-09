@@ -1,59 +1,59 @@
 import * as t from 'io-ts';
-import flatten from 'lodash/flatten';
-import findKey from 'lodash/findKey';
 import { querySync } from './query/query';
-import { distributeParams, flattenQueries } from './util';
+import { distributeParams } from './util';
 
 const ExtractedQueryCache = t.strict({
   a: t.object,
   value: t.any
 });
+const ExtractedNodeCache = t.strict({
+  fetch: t.union([ExtractedQueryCache, t.undefined]),
+  finalFetch: t.union([ExtractedQueryCache, t.undefined]),
+  syncFetchA: t.union([ExtractedQueryCache, t.undefined])
+});
 export const ExtractedQueryCaches = t.dictionary(
-  t.string, ExtractedQueryCache
+  t.string, ExtractedNodeCache
 );
 
-function extractQueryCache(flatQueryNodes, fetch, a) {
-  if (fetch.type === 'product') {
-    return flatten(
-      fetch.fetches.map((f, i) =>
-        extractQueryCache(flatQueryNodes, f, a[i])
-      )
-    );
-  }
-
-  if (fetch.type === 'composition') {
-    const { master, slave, ptoa } = fetch;
-    const masterValue = querySync(master, a);
-    const isProduct = ( master.type === 'product' );
-    const ok = isProduct ?
-      masterValue.every(xi => xi.hasOwnProperty('data')) : masterValue.hasOwnProperty('data');
-    if (ok) {
-      const data = isProduct ? masterValue.map(xi => xi.data) : masterValue.data;
-      const a1 = ptoa(data, a);
-      return [
-        ...extractQueryCache(flatQueryNodes, master, a),
-        ...extractQueryCache(flatQueryNodes, slave, a1)
-      ];
-    } else {
-      return [];
-    }
-  }
-
-  const P = findKey(flatQueryNodes, { fetch });
-  return [{ P, a, value: querySync(fetch, a).data }];
-}
-
 export function extractQueryCaches(queryNodes, flatParams) {
-  const caches = {};
-  const flatQueryNodes = flattenQueries(queryNodes);
-  const args = distributeParams(flatQueryNodes, flatParams);
-  Object.keys(flatQueryNodes).forEach(P => {
-    const qc = extractQueryCache(flatQueryNodes, flatQueryNodes[P].fetch, args[P]);
-    qc.filter(
-      ({ value }) => typeof value !== 'undefined'
-    ).forEach(({ P: p, a, value }) => {
-      caches[p] = { a, value };
-    });
-  });
-  return caches;
+  const params = distributeParams(queryNodes, flatParams);
+  return Object.keys(queryNodes).reduce((extracted, P) => {
+    const node = queryNodes[P];
+    const a = params[P];
+    const caches = {};
+    if (!node.childNodes) {
+      const value = querySync(node.fetch, a).data
+      if (typeof value !== 'undefined') {
+        caches.fetch = { a, value };
+      }
+    } else {
+      const childNodes = node.childNodes;
+      const { master, ptoa } = node.fetch;
+      const masterValue = querySync(master, a);
+      if (masterValue.every(xi => xi.hasOwnProperty('data'))) {
+        const data = masterValue.map(xi => xi.data);
+        const a1 = ptoa(data, a);
+        const value = querySync(childNodes.finalFetch.fetch, a1).data;
+        if (typeof value !== 'undefined') {
+          caches.finalFetch = { a: a1, value };
+        }
+      }
+      if (childNodes.syncFetchA) {
+        const a2 = a[0];
+        const a3 = t.Array.is(a2) ? a2[a2.length - 1] : a2;
+        const value = querySync(childNodes.syncFetchA.fetch, a3).data;
+        if (typeof value !== 'undefined') {
+          caches.syncFetchA = { a: a3, value };
+        }
+      }
+    }
+    if (Object.keys(caches).length > 0) {
+      return {
+        ...extracted,
+        [P]: caches
+      };
+    } else {
+      return extracted;
+    }
+  }, {});
 }

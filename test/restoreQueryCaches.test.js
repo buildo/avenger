@@ -3,37 +3,43 @@ import { querySync, restoreQueryCaches } from '../src';
 
 const extractedCaches = {
   master: {
-    a: { token: 'foo' },
-    value: {
-      bar: {
-        foo: 'foo',
-        token: 'foo'
-      }
-    }
-  },
-  slave_syncFetchA: {
-    a: { slaveToken: 'slaveFoo' },
-    value: ['slaveFoo']
-  },
-  slave_finalFetch: {
-    a: {
-      master: {
+    fetch: {
+      a: { token: 'foo' },
+      value: {
         bar: {
           foo: 'foo',
           token: 'foo'
         }
-      },
-      slaveToken: 'slaveFoo'
+      }
+    }
+  },
+  slave: {
+    syncFetchA: {
+      a: { slaveToken: 'slaveFoo' },
+      value: ['slaveFoo']
     },
-    value: {
-      foo: 'foo',
-      token: 'foo',
-      slaveToken: 'slaveFoo'
+    finalFetch: {
+      a: {
+        master: {
+          bar: {
+            foo: 'foo',
+            token: 'foo'
+          }
+        },
+        slaveToken: 'slaveFoo'
+      },
+      value: {
+        foo: 'foo',
+        token: 'foo',
+        slaveToken: 'slaveFoo'
+      }
     }
   },
   a: {
-    a: {},
-    value: 'a'
+    fetch: {
+      a: {},
+      value: 'a'
+    }
   }
 };
 
@@ -48,9 +54,9 @@ describe('restoreQueryCaches', () => {
     ).toEqual({
       loading: false,
       data: {
-        master: { loading: false, data: extractedCaches.master.value },
-        slave: { loading: false, data: extractedCaches.slave_finalFetch.value },
-        a: { loading: false, data: extractedCaches.a.value }
+        master: { loading: false, data: extractedCaches.master.fetch.value },
+        slave: { loading: false, data: extractedCaches.slave.finalFetch.value },
+        a: { loading: false, data: extractedCaches.a.fetch.value }
       }
     });
   });

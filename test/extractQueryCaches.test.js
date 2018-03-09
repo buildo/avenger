@@ -18,15 +18,18 @@ describe('extractQueryCaches', () => {
     setTimeout(() => {
       const caches = extractQueryCaches({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
       try {
-        expect(Object.keys(caches).length).toBe(4);
+        expect(Object.keys(caches).length).toBe(3);
         expect(caches.master).toBeDefined();
-        expect(caches.master.value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
-        expect(caches.slave_syncFetchA).toBeDefined();
-        expect(caches.slave_syncFetchA.value).toEqual(['slaveFoo']);
-        expect(caches.slave_finalFetch).toBeDefined();
-        expect(caches.slave_finalFetch.value).toEqual({ foo: 'foo', token: 'foo', slaveToken: 'slaveFoo' });
+        expect(caches.master.fetch).toBeDefined();
+        expect(caches.master.fetch.value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
+        expect(caches.slave).toBeDefined();
+        expect(caches.slave.finalFetch).toBeDefined();
+        expect(caches.slave.finalFetch.value).toEqual({ foo: 'foo', token: 'foo', slaveToken: 'slaveFoo' });
+        expect(caches.slave.syncFetchA).toBeDefined();
+        expect(caches.slave.syncFetchA.value).toEqual(["slaveFoo"]);
         expect(caches.a).toBeDefined();
-        expect(caches.a.value).toEqual('a');
+        expect(caches.a.fetch).toBeDefined();
+        expect(caches.a.fetch.value).toEqual('a');
         resolve();
       } catch (e) {
         reject(e);
@@ -42,15 +45,18 @@ describe('extractQueryCaches', () => {
     setTimeout(() => {
       const caches = extractQueryCaches({ master, slave, a }, { token: 'foo', slaveToken: 'slaveFoo' });
       try {
-        expect(Object.keys(caches).length).toBe(4);
+        expect(Object.keys(caches).length).toBe(3);
         expect(caches.master).toBeDefined();
-        expect(caches.master.value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
-        expect(caches.slave_syncFetchA).toBeDefined();
-        expect(caches.slave_syncFetchA.value).toEqual(['slaveFoo']);
-        expect(caches.slave_finalFetch).toBeDefined();
-        expect(caches.slave_finalFetch.value).toEqual({ foo: 'foo', token: 'foo', slaveToken: 'slaveFoo' });
+        expect(caches.master.fetch).toBeDefined();
+        expect(caches.master.fetch.value).toEqual({ bar: { foo: 'foo', token: 'foo' } });
+        expect(caches.slave).toBeDefined();
+        expect(caches.slave.syncFetchA).toBeDefined();
+        expect(caches.slave.syncFetchA.value).toEqual(['slaveFoo']);
+        expect(caches.slave.finalFetch).toBeDefined();
+        expect(caches.slave.finalFetch.value).toEqual({ foo: 'foo', token: 'foo', slaveToken: 'slaveFoo' });
         expect(caches.a).toBeDefined();
-        expect(caches.a.value).toEqual('a');
+        expect(caches.a.fetch).toBeDefined();
+        expect(caches.a.fetch.value).toEqual('a');
         resolve();
       } catch (e) {
         reject(e);
