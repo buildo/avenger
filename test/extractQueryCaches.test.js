@@ -1,5 +1,5 @@
 import 'rxjs'
-import { query, extractQueryCaches } from '../src';
+import { query, extractQueryCaches, Query as Node, available } from '../src';
 import makeTestGraph from './makeBasicTestGraph';
 
 describe('extractQueryCaches', () => {
@@ -26,7 +26,7 @@ describe('extractQueryCaches', () => {
         expect(caches.slave.finalFetch).toBeDefined();
         expect(caches.slave.finalFetch.value).toEqual({ foo: 'foo', token: 'foo', slaveToken: 'slaveFoo' });
         expect(caches.slave.syncFetchA).toBeDefined();
-        expect(caches.slave.syncFetchA.value).toEqual(["slaveFoo"]);
+        expect(caches.slave.syncFetchA.value).toEqual(['slaveFoo']);
         expect(caches.a).toBeDefined();
         expect(caches.a.fetch).toBeDefined();
         expect(caches.a.fetch.value).toEqual('a');
@@ -63,5 +63,30 @@ describe('extractQueryCaches', () => {
       }
     }, 10);
   }));
+
+  it('should extract only requested cache nodes', () => new Promise((resolve, reject) => {
+    const { master, slave, a } = makeTestGraph();
+    const slave2 = Node({
+      debugId: 'slave2',
+      strategy: available,
+      params: { slave2Token: 'slave2Token' },
+      dependencies: { slave },
+      fetch: ({ slave, slave2Token }) => Promise.resolve({ ...slave, slave2Token })
+    });
+
+    query({ master, a, slave2 }, { token: 'foo', slaveToken: 'slaveFoo', slave2Token: 'slave2Foo' });
+    setTimeout(() => {
+      const caches = extractQueryCaches({ master, a, slave2 }, { token: 'foo', slaveToken: 'slaveFoo', slave2Token: 'slave2Foo' });
+      try {
+        expect(Object.keys(caches).length).toBe(3);
+        expect(caches.master).toBeDefined();
+        expect(caches.slave2).toBeDefined();
+        expect(caches.a).toBeDefined();
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    }, 10);
+  }))
 
 });
