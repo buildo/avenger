@@ -1,22 +1,15 @@
 import difference from 'lodash/difference';
 import uniq from 'lodash/uniq';
 import identity from 'lodash/identity';
-import mapValues from 'lodash/mapValues';
-import { refetch } from '../cache/strategies';
-import { compose, product } from '../fetch/operators';
-import { cacheFetch } from '../query/operators';
-import { ObservableCache } from '../query/ObservableCache';
+import { refetch } from './cache/strategies';
+import { compose, product } from './fetch/operators';
+import { cacheFetch } from './query/operators';
+import { ObservableCache } from './query/ObservableCache';
 
-const _compound = qObj => {
-  const compoundP = qObj[Object.keys(qObj)[0]].compound;
-  return qObj[compoundP];
-};
-
-export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cachePToK, ...q }) => {
-  const compound = q.id;
+export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anonymous', ...q }) => {
   const upsetParams = {
     ...Object.keys(q.dependencies || {}).reduce((ac, k) => ({
-      ...ac, ..._compound(q.dependencies[k].query).upsetParams
+      ...ac, ...q.dependencies[k].upsetParams
     }), {}),
     ...(q.params || {})
   };
@@ -27,11 +20,11 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     // becomes just `cacheFetch(finalFetch)`
     //
     const A = Object.keys(q.params || {});
-    const cache = new ObservableCache({ name: compound });
+    const cache = new ObservableCache({ name: debugId });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
     return {
-      [compound]: { fetch, A, compound, upsetParams, cachePToK, depth }
+      fetch, A, depth, upsetParams
     };
   } else {
     const paramKeys = Object.keys(q.params || {});
@@ -39,20 +32,9 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
     const fromAKeys = difference(paramKeys, depsKeys);
     const depsOnly = fromAKeys.length === 0;
 
-    const depsPToK = {};
-    depsKeys.forEach(depK => {
-      const depPToK = _compound(q.dependencies[depK].query).cachePToK;
-      if (depPToK) {
-        depsPToK[depK] = depPToK;
-      }
-    });
-    const depsPToKLen = Object.keys(depsPToK).length;
-    const atok = depsPToKLen > 0 ?
-      obj => JSON.stringify(mapValues(obj, (v, k) => (depsPToK[k] || identity)(v))) :
-      undefined;
-    const cache = new ObservableCache({ name: compound, atok });
+    const cache = new ObservableCache({ name: `${debugId}_finalFetch` });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
-    const depth = Math.max(...depsKeys.map(k => _compound(q.dependencies[k].query).depth)) + 1;
+    const depth = Math.max(...depsKeys.map(k => q.dependencies[k].depth)) + 1;
 
     if (depsOnly) {
       // a query with dependencies only (no params)
@@ -68,32 +50,26 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       //
 
       const depsProduct = {
-        fetch: product(depsKeys.map(k => _compound(q.dependencies[k].query).fetch)),
-        compound
+        A: depsKeys.map(k => q.dependencies[k].A),
+        fetch: product(depsKeys.map(k => q.dependencies[k].fetch))
       };
 
       const finalFetch = {
         A: depsKeys,
-        fetch,
-        compound
+        fetch
       };
 
       const map = ps => depsKeys.reduce((ac, k, i) => ({
         ...ac,
         [k]: (q.dependencies[k].map || identity)(ps[i])
       }), {});
-      const compoundRoot = {
-        fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
-        compound,
-        upsetParams,
-        cachePToK,
-        depth
-      };
 
       return {
-        [`${compound}_depsProduct`]: depsProduct,
-        [`${compound}_finalFetch`]: finalFetch,
-        [compound]: compoundRoot
+        A: depsProduct.A,
+        upsetParams,
+        fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
+        depth,
+        childNodes: { depsProduct, finalFetch }
       };
     } else {
       // a query with both dependencies
@@ -110,26 +86,26 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
       // otherwise it would not be "observable" (no subject available)
       //
 
-      const cache = new ObservableCache({ name: `${compound}_syncFetchA` });
+      const cache = new ObservableCache({ name: `${debugId}_syncFetchA` });
       const syncFetchAFetch = cacheFetch(aas => Promise.resolve(fromAKeys.map(pk => aas[pk])), refetch, cache);
       const syncFetchA = {
         A: fromAKeys,
-        fetch: syncFetchAFetch,
-        compound
+        fetch: syncFetchAFetch
       };
 
       const depsAndA = {
-        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => _compound(q.dependencies[k].query).fetch))),
-        compound
+        A: [syncFetchA.A].concat(depsKeys.map(k => q.dependencies[k].A)),
+        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].fetch)))
       };
 
       const finalFetch = {
         A: uniq(paramKeys.concat(depsKeys)),
-        fetch,
-        compound
+        fetch
       };
 
-      const compoundRoot = {
+      return {
+        A: depsAndA.A,
+        upsetParams,
         fetch: compose(
           depsAndA.fetch,
           ([syncFetchAPs, ...prodPs]) => ({
@@ -142,17 +118,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, __cachePToK: cac
           }),
           finalFetch.fetch
         ),
-        compound,
-        upsetParams,
-        cachePToK,
-        depth
-      };
-
-      return {
-        [`${compound}_syncFetchA`]: syncFetchA,
-        [`${compound}_depsAndA`]: depsAndA,
-        [`${compound}_finalFetch`]: finalFetch,
-        [compound]: compoundRoot
+        depth,
+        childNodes: { syncFetchA, depsAndA, finalFetch }
       };
     }
   }

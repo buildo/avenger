@@ -9,7 +9,8 @@
     "preversion": "npm run lint && npm test",
     "prepublish": "npm run build"
   },
-  "main": "lib",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "author": "",
   "license": "MIT",
   "jest": {
