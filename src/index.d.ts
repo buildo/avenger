@@ -19,7 +19,7 @@ export type QueryArgsNoDeps<
   A extends IOTSParams,
   P
   > = {
-    id?: string,
+    debugId?: string,
     cacheStrategy?: Strategy,
     params: A,
     fetch: QueryFetch<IOTSDictToType<A>, P>,

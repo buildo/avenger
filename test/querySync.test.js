@@ -3,23 +3,19 @@ import { query, querySync, available, Query as Node } from '../src';
 
 const makeTestGraph = () => {
   const master = Node({
-    id: 'master',
     params: { token: 'token' },
     fetch: () => Promise.resolve({ bar: { foo: 'foo' } })
   });
   const slave = Node({
-    id: 'slave',
     strategy: available,
     dependencies: { master },
     fetch: ({ master: { bar } }) => Promise.resolve(bar)
   })
   const a = Node({
-    id: 'a',
     strategy: available,
     fetch: () => Promise.resolve('a')
   })
   const b = Node({
-    id: 'b',
     strategy: available,
     fetch: () => Promise.resolve('b')
   })

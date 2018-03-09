@@ -6,7 +6,7 @@ import { compose, product } from './fetch/operators';
 import { cacheFetch } from './query/operators';
 import { ObservableCache } from './query/ObservableCache';
 
-export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
+export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anonymous', ...q }) => {
   const upsetParams = {
     ...Object.keys(q.dependencies || {}).reduce((ac, k) => ({
       ...ac, ...q.dependencies[k].upsetParams
@@ -20,7 +20,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
     // becomes just `cacheFetch(finalFetch)`
     //
     const A = Object.keys(q.params || {});
-    const cache = new ObservableCache({ name: id });
+    const cache = new ObservableCache({ name: debugId });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
     return {
@@ -32,7 +32,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
     const fromAKeys = difference(paramKeys, depsKeys);
     const depsOnly = fromAKeys.length === 0;
 
-    const cache = new ObservableCache({ name: id });
+    const cache = new ObservableCache({ name: `${debugId}_finalFetch` });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = Math.max(...depsKeys.map(k => q.dependencies[k].depth)) + 1;
 
@@ -69,10 +69,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
         upsetParams,
         fetch: compose(depsProduct.fetch, map, finalFetch.fetch),
         depth,
-        childNodes: {
-          [`${id}_depsProduct`]: depsProduct,
-          [`${id}_finalFetch`]: finalFetch
-        }
+        childNodes: { depsProduct, finalFetch }
       };
     } else {
       // a query with both dependencies
@@ -89,7 +86,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
       // otherwise it would not be "observable" (no subject available)
       //
 
-      const cache = new ObservableCache({ name: `${id}_syncFetchA` });
+      const cache = new ObservableCache({ name: `${debugId}_syncFetchA` });
       const syncFetchAFetch = cacheFetch(aas => Promise.resolve(fromAKeys.map(pk => aas[pk])), refetch, cache);
       const syncFetchA = {
         A: fromAKeys,
@@ -122,11 +119,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, id, ...q }) => {
           finalFetch.fetch
         ),
         depth,
-        childNodes: {
-          [`${id}_syncFetchA`]: syncFetchA,
-          [`${id}_depsAndA`]: depsAndA,
-          [`${id}_finalFetch`]: finalFetch
-        }
+        childNodes: { syncFetchA, depsAndA, finalFetch }
       };
     }
   }

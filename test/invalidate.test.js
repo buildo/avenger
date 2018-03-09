@@ -7,7 +7,7 @@ describe('invalidate', () => {
   const makeLeafNodes = Ps => Ps.reduce((ac, P) => ({
     ...ac,
     [P]: Node({
-      id: P,
+      debugId: P,
       params: { token: true },
       fetch: v => new Promise(resolve => {
         setTimeout(() => resolve(v))
@@ -115,14 +115,12 @@ describe('invalidate', () => {
 
     const makeTestGraph = () => {
       const A = Node({
-        id: 'A',
         params: { token: true },
         fetch: ({ token }) => new Promise(resolve => {
           setTimeout(() => resolve({ id: 1, token }))
         })
       })
       const B = Node({
-        id: 'B',
         params: { token: true },
         dependencies: { user: A },
         fetch: ({ token, user }) => new Promise(resolve => {
@@ -130,7 +128,6 @@ describe('invalidate', () => {
         })
       })
       const C = Node({
-        id: 'C',
         params: { token: true },
         dependencies: {
           user: A
@@ -283,12 +280,12 @@ describe('invalidate', () => {
 
       setTimeout(() => {
         try {
-          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(B.childNodes.finalFetch.fetch.cache.map.size).toBe(1);
           expect(A.fetch.cache.map.size).toBe(1);
 
           invalidate({ B, A }, { token: 'lol' }) // invalidate
 
-          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(B.childNodes.finalFetch.fetch.cache.map.size).toBe(0);
           expect(A.fetch.cache.map.size).toBe(0);
 
           resolve()
@@ -305,12 +302,12 @@ describe('invalidate', () => {
 
       setTimeout(() => {
         try {
-          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(1);
+          expect(B.childNodes.finalFetch.fetch.cache.map.size).toBe(1);
           expect(A.fetch.cache.map.size).toBe(1);
 
           invalidate({ A, B }, { token: 'lol' }) // invalidate
 
-          expect(B.childNodes.B_finalFetch.fetch.cache.map.size).toBe(0);
+          expect(B.childNodes.finalFetch.fetch.cache.map.size).toBe(0);
           expect(A.fetch.cache.map.size).toBe(0);
 
           resolve()

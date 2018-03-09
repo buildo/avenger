@@ -11,13 +11,11 @@ const MASTER_EXPIRE_TIME = 100;
 
 const makeTestGraph = () => {
   const master = Node({
-    id: 'master',
     strategy: new Expire(MASTER_EXPIRE_TIME),
     params: { token: 'token' },
     fetch: () => Promise.resolve({ bar: { foo: state.foo } })
   });
   const slave = Node({
-    id: 'slave',
     strategy: available,
     dependencies: { master },
     fetch: ({ master: { bar } }) => {
