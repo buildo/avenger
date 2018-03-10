@@ -2,6 +2,8 @@ import * as t from 'io-ts';
 import { Strategy } from './cache/strategies';
 import { ObjectOverwrite } from 'typelevel-ts';
 
+export * from './cache/strategies';
+
 type BROKEN_FlattenObject<O extends {}> = { [k in keyof O]: O[k] }[keyof O];
 
 export interface QueryReturn<A, P> {
