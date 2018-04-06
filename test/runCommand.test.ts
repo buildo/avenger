@@ -78,7 +78,11 @@ describe("runCommand", () => {
       run: ({ bar, q1, q2 }) => Promise.resolve({ bar, q1, q2 })
     });
 
-    const result = await runCommand(c, { foo1: "foo1", foo2: "foo2", bar: "bar" });
+    const result = await runCommand(c, {
+      foo1: "foo1",
+      foo2: "foo2",
+      bar: "bar"
+    });
 
     expect(result).toEqual({ q1: "foo1", q2: "foo2", bar: "bar" });
 
@@ -86,5 +90,51 @@ describe("runCommand", () => {
     expect(fetchQ1.mock.calls[1][0]).toEqual({ foo1: "foo1" });
     expect(fetchQ2.mock.calls.length).toBe(2);
     expect(fetchQ2.mock.calls[1][0]).toEqual({ foo2: "foo2" });
+  });
+
+  it("should not run dependencies overwritten by command params", async () => {
+    const fetchQ1 = jest.fn(({ foo1 }: { foo1: string }) =>
+      Promise.resolve(foo1)
+    );
+
+    const fetchQ2 = jest.fn(({ foo2 }: { foo2: string }) =>
+      Promise.resolve(foo2)
+    );
+    const q1 = Query({
+      params: { foo1: t.string },
+      fetch: fetchQ1
+    });
+
+    const q2 = Query({
+      params: { foo2: t.string },
+      fetch: fetchQ2
+    });
+
+    query({ q1, q2 }, { foo1: "foo1", foo2: "foo2" }).subscribe(() => {});
+
+    expect(fetchQ1.mock.calls.length).toBe(1);
+    expect(fetchQ1.mock.calls[0][0]).toEqual({ foo1: "foo1" });
+    expect(fetchQ2.mock.calls.length).toBe(1);
+    expect(fetchQ2.mock.calls[0][0]).toEqual({ foo2: "foo2" });
+
+    await sleep(10);
+
+    const c = Command({
+      dependencies: { q1, q2 },
+      params: { bar: t.string },
+      run: ({ bar, q1, q2 }) => Promise.resolve({ bar, q1, q2 })
+    });
+
+    const result = await runCommand(c, {
+      foo1: "foo1",
+      q2: "foo2",
+      bar: "bar"
+    });
+
+    expect(result).toEqual({ q1: "foo1", q2: "foo2", bar: "bar" });
+
+    expect(fetchQ1.mock.calls.length).toBe(2);
+    expect(fetchQ1.mock.calls[1][0]).toEqual({ foo1: "foo1" });
+    expect(fetchQ2.mock.calls.length).toBe(1);
   });
 });
