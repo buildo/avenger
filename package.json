@@ -13,9 +13,6 @@
   "typings": "lib/index.d.ts",
   "author": "",
   "license": "MIT",
-  "jest": {
-    "setupTestFrameworkScriptFile": "./test/jestSetup.js"
-  },
   "dependencies": {
     "debug": "^2.2.0",
     "io-ts": "^0.9.8",
@@ -24,6 +21,8 @@
     "typelevel-ts": "^0.2.3"
   },
   "devDependencies": {
+    "@types/jest": "^22.2.2",
+    "@types/node": "^9.6.2",
     "babel-cli": "6.8.0",
     "babel-eslint": "6.0.4",
     "babel-jest": "^22.0.4",
@@ -34,9 +33,23 @@
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
     "jest": "^22.0.4",
-    "sinon": "1.17.4"
+    "sinon": "1.17.4",
+    "ts-jest": "^22.4.2",
+    "typescript": "^2.8.1"
   },
   "files": [
     "lib"
-  ]
+  ],
+  "jest": {
+    "setupTestFrameworkScriptFile": "./test/jestSetup.js",
+    "transform": {
+      "^.+\\.js$": "babel-jest",
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(js|ts)$",
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ]
+  }
 }
