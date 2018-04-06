@@ -54,7 +54,8 @@ export interface CommandReturn<A, P> {
 export type CommandArgsNoInvs<A extends IOTSParams, R> = {
   params: A,
   run: CommandRun<IOTSDictToType<A>, R>,
-  invalidates?: never
+  invalidates?: never,
+  dependencies?: any
 };
 
 export type Invalidates = { [k: string]: QueryReturn<any, any> };

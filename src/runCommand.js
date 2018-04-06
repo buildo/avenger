@@ -1,20 +1,19 @@
-import { invalidate } from './invalidate';
-import { query } from './query';
+import { invalidate } from "./invalidate";
+import { query } from "./query";
 
 export function runCommand(command, flatParams) {
   if (command.dependencies) {
     // TODO don't run queries if passed as params
-    return new Promise(resolve =>
+    return new Promise((resolve, reject) =>
       query(command.dependencies, flatParams)
         .filter(
-          event =>
-            Object.keys(event).filter(key => event[key].loading === true) === 0
+          event => !event.loading
         )
         .subscribe(event => {
-          const queryResults = Object.keys(event).reduce(
+          const queryResults = Object.keys(event.data).reduce(
             (acc, k) => ({
               ...acc,
-              [k]: event[k].data
+              [k]: event.data[k].data
             }),
             {}
           );
@@ -24,7 +23,7 @@ export function runCommand(command, flatParams) {
               return v;
             })
           );
-        })
+        }, reject)
     );
   } else {
     return command.run(flatParams).then(v => {
