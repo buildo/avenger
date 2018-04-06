@@ -2,13 +2,17 @@ import { invalidate } from "./invalidate";
 import { query } from "./query";
 
 export function runCommand(command, flatParams) {
-  if (command.dependencies) {
+  const noDeps = Object.keys(command.dependencies).length === 0;
+  if (noDeps) {
+    return command.run(flatParams).then(v => {
+      invalidate(command.invalidates, flatParams);
+      return v;
+    });
+  } else {
     // TODO don't run queries if passed as params
     return new Promise((resolve, reject) =>
       query(command.dependencies, flatParams)
-        .filter(
-          event => !event.loading
-        )
+        .filter(event => !event.loading)
         .subscribe(event => {
           const queryResults = Object.keys(event.data).reduce(
             (acc, k) => ({
@@ -19,16 +23,11 @@ export function runCommand(command, flatParams) {
           );
           resolve(
             command.run({ ...queryResults, ...flatParams }).then(v => {
-              invalidate(command.invalidates || {}, flatParams);
+              invalidate(command.invalidates, flatParams);
               return v;
             })
           );
         }, reject)
     );
-  } else {
-    return command.run(flatParams).then(v => {
-      invalidate(command.invalidates || {}, flatParams);
-      return v;
-    });
   }
 }
