@@ -17,12 +17,12 @@ describe("runCommand", () => {
     );
     const q1 = Query({
       params: { foo: t.string },
-      fetch: fetchFoo
+      fetch: fetchFoo as (params: { foo: string }) => Promise<string>
     });
 
     const q2 = Query({
       params: { foo: t.string },
-      fetch: fetchFoo
+      fetch: fetchFoo as (params: { foo: string }) => Promise<string>
     });
 
     query({ q1, q2 }, { foo: "foo" }).subscribe(() => {});
@@ -55,12 +55,12 @@ describe("runCommand", () => {
     );
     const q1 = Query({
       params: { foo1: t.string },
-      fetch: fetchQ1
+      fetch: fetchQ1 as (params: { foo1: string }) => Promise<string>
     });
 
     const q2 = Query({
       params: { foo2: t.string },
-      fetch: fetchQ2
+      fetch: fetchQ2 as (params: { foo2: string }) => Promise<string>
     });
 
     query({ q1, q2 }, { foo1: "foo1", foo2: "foo2" }).subscribe(() => {});
@@ -100,14 +100,15 @@ describe("runCommand", () => {
     const fetchQ2 = jest.fn(({ foo2 }: { foo2: string }) =>
       Promise.resolve(foo2)
     );
+
     const q1 = Query({
       params: { foo1: t.string },
-      fetch: fetchQ1
+      fetch: fetchQ1 as (params: { foo1: string }) => Promise<string>
     });
 
     const q2 = Query({
       params: { foo2: t.string },
-      fetch: fetchQ2
+      fetch: fetchQ2 as (params: { foo2: string }) => Promise<string>
     });
 
     query({ q1, q2 }, { foo1: "foo1", foo2: "foo2" }).subscribe(() => {});
