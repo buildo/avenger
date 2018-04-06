@@ -17,32 +17,28 @@ type IOTSParams = { [k: string]: t.Type<any, any> }
 
 type IOTSDictToType<O extends IOTSParams> = {[k in keyof O]: t.TypeOf<O[k]> };
 
-export type QueryArgsNoDeps<
-  A extends IOTSParams,
-  P
-  > = {
-    debugId?: string,
-    cacheStrategy?: Strategy,
-    params: A,
-    fetch: QueryFetch<IOTSDictToType<A>, P>,
-    dependencies?: never
-  };
-
 export type Dependencies = { [k: string]: QueryReturn<any, any> };
 type DepA<D extends Dependencies> = BROKEN_FlattenObject<{ [k in keyof D]: D[k]['_A'] }>;
 
 export type QueryArgs<
   A extends IOTSParams,
   P,
-  D extends Dependencies
-  > = ObjectOverwrite<QueryArgsNoDeps<A, P>, {
-    fetch: QueryFetch<IOTSDictToType<A> & {[k in keyof D]: D[k]['_P']}, P>,
-    dependencies: D
-  }>;
+  D
+  > = {
+    fetch: D extends Dependencies ? QueryFetch<IOTSDictToType<A> & {[k in keyof D]: D[k]['_P']}, P> : QueryFetch<IOTSDictToType<A>, P>,
+    debugId?: string,
+    cacheStrategy?: Strategy,
+    params?: A,
+    dependencies?: D
+  };
 
-export function Query<A extends IOTSParams, P>(args: QueryArgsNoDeps<A, P>): QueryReturn<IOTSDictToType<A>, P>
+export function Query<A extends IOTSParams, P, D extends Dependencies>(
+  args: QueryArgs<A, P, D>
+): QueryReturn<IOTSDictToType<A> & DepA<D>, P>
 
-export function Query<A extends IOTSParams, P, D1 extends Dependencies>(args: QueryArgs<A, P, D1>): QueryReturn<IOTSDictToType<A> & DepA<D1>, P>
+export function Query<A extends IOTSParams, P>(
+  args: QueryArgs<A, P, undefined>
+): QueryReturn<IOTSDictToType<A>, P>
 
 export type CommandRun<A, P> = (a: A) => Promise<P>;
 
@@ -51,29 +47,23 @@ export interface CommandReturn<A, P> {
   _P: P
 }
 
-export type CommandArgsNoInvs<A extends IOTSParams, R> = {
-  params: A,
-  run: CommandRun<IOTSDictToType<A>, R>,
-  invalidates?: never,
-  dependencies?: any
-};
-
 export type Invalidates = { [k: string]: QueryReturn<any, any> };
 
 type InvA<I extends Invalidates> = BROKEN_FlattenObject<{ [k in keyof I]: I[k]['_A'] }>;
 
-export type CommandArgs<A extends IOTSParams, I extends Invalidates, R> = (
-  ObjectOverwrite<CommandArgsNoInvs<A, R>, {
-    run: CommandRun<IOTSDictToType<A> & {[k in keyof I]: I[k]['_A']}, R>,
-    invalidates: I
-  }>
-);
+export type CommandArgs<A extends IOTSParams, I, R> = {
+    run: I extends Invalidates ? CommandRun<IOTSDictToType<A> & {[k in keyof I]: I[k]['_A']}, R> : CommandRun<IOTSDictToType<A>, R>,
+    params?: A,
+    invalidates?: I
+};
 
-export function Command<A extends IOTSParams, R>(args: CommandArgsNoInvs<A, R>): CommandReturn<IOTSDictToType<A>, R>;
+export function Command<A extends IOTSParams, R, I extends Invalidates>(
+  args: CommandArgs<A, I, R>
+): CommandReturn<IOTSDictToType<A> & InvA<I>, R>;
 
-export function Command<A extends IOTSParams, R, I1 extends Invalidates>(
-  args: CommandArgs<A, I1, R>
-): CommandReturn<IOTSDictToType<A> & InvA<I1>, R>;
+export function Command<A extends IOTSParams, R>(
+  args: CommandArgs<A, undefined, R>
+): CommandReturn<IOTSDictToType<A>, R>;
 
 
 export type Queries = { [k: string]: QueryReturn<any, any> }

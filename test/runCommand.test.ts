@@ -37,7 +37,7 @@ describe("runCommand", () => {
       run: ({ bar }) => Promise.resolve(bar)
     });
 
-    const result = await runCommand(c, { foo: "foo", bar: "bar" });
+    const result = await runCommand(c, { bar: "bar", foo: "foo" });
     expect(result).toBe("bar");
     expect(fetchFoo.mock.calls.length).toBe(4);
     expect(fetchFoo.mock.calls[2][0]).toEqual({ foo: "foo" });
@@ -121,17 +121,15 @@ describe("runCommand", () => {
 
     const c = Command({
       dependencies: { q1, q2 },
-      params: { bar: t.string },
-      run: ({ bar, q1, q2 }) => Promise.resolve({ bar, q1, q2 })
+      run: ({ q1, q2 }) => Promise.resolve({ q1, q2 })
     });
 
     const result = await runCommand(c, {
       foo1: "foo1",
-      q2: "foo2",
-      bar: "bar"
+      q2: "foo2"
     });
 
-    expect(result).toEqual({ q1: "foo1", q2: "foo2", bar: "bar" });
+    expect(result).toEqual({ q1: "foo1", q2: "foo2" });
 
     expect(fetchQ1.mock.calls.length).toBe(2);
     expect(fetchQ1.mock.calls[1][0]).toEqual({ foo1: "foo1" });
