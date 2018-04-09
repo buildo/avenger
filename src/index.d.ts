@@ -30,13 +30,14 @@ export type QueryArgsNoDeps<
 
 export type Dependencies = { [k: string]: QueryReturn<any, any> };
 type DepA<D extends Dependencies> = BROKEN_FlattenObject<{ [k in keyof D]: D[k]['_A'] }>;
+type DepP<D extends Dependencies> = {[k in keyof D]: D[k]['_P']};
 
 export type QueryArgs<
   A extends IOTSParams,
   P,
   D extends Dependencies
   > = ObjectOverwrite<QueryArgsNoDeps<A, P>, {
-    fetch: QueryFetch<IOTSDictToType<A> & {[k in keyof D]: D[k]['_P']}, P>,
+    fetch: QueryFetch<IOTSDictToType<A> & DepP<D>, P>,
     dependencies: D
   }>;
 
@@ -64,21 +65,21 @@ type InvA<I extends Invalidates> = BROKEN_FlattenObject<{ [k in keyof I]: I[k]['
 
 export type CommandArgsNoDeps<A extends IOTSParams, I extends Invalidates, R> = (
   ObjectOverwrite<CommandArgsNoInvsNoDeps<A, R>, {
-    run: CommandRun<IOTSDictToType<A> & {[k in keyof I]: I[k]['_A']}, R>,
+    run: CommandRun<IOTSDictToType<A> & InvA<I>, R>,
     invalidates: I
   }>
 );
 
 export type CommandArgsNoInvs<A extends IOTSParams, D extends Dependencies, R> = (
   ObjectOverwrite<CommandArgsNoInvsNoDeps<A, R>, {
-    run: CommandRun<IOTSDictToType<A> & {[k in keyof D]: D[k]['_P']}, R>,
+    run: CommandRun<IOTSDictToType<A> & DepP<D>, R>,
     dependencies: D
   }>
 );
 
 export type CommandArgs<A extends IOTSParams, I extends Invalidates, D extends Dependencies, R> = (
   ObjectOverwrite<CommandArgsNoInvs<A, D, R>, {
-    run: CommandRun<IOTSDictToType<A> & {[k in keyof I]: I[k]['_A']} & {[k in keyof D]: D[k]['_P']}, R>,
+    run: CommandRun<IOTSDictToType<A> & InvA<I> & DepP<D>, R>,
     invalidates: I
   }>
 );
@@ -91,11 +92,11 @@ export function Command<A extends IOTSParams, R, I extends Invalidates>(
 
 export function Command<A extends IOTSParams, R, D extends Dependencies>(
   args: CommandArgsNoInvs<A, D, R>
-): CommandReturn<IOTSDictToType<A> & DepA<D> & {[k in keyof D]?: D[k]['_P']}, R>;
+): CommandReturn<IOTSDictToType<A> & DepA<D> & Partial<DepP<D>>, R>;
 
 export function Command<A extends IOTSParams, R, I extends Invalidates, D extends Dependencies>(
   args: CommandArgs<A, I, D, R>
-): CommandReturn<IOTSDictToType<A> & InvA<I> & DepA<D>  & {[k in keyof D]?: D[k]['_P']}, R>;
+): CommandReturn<IOTSDictToType<A> & InvA<I> & DepA<D> & Partial<DepP<D>>, R>;
 
 export type Queries = { [k: string]: QueryReturn<any, any> }
 export type Commands = { [k: string]: CommandReturn<any, any> };
