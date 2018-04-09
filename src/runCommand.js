@@ -1,5 +1,5 @@
-import { invalidate } from "./invalidate";
-import { query } from "./query";
+import { invalidate } from './invalidate';
+import { query } from './query';
 import 'rxjs'
 
 export function runCommand(command, flatParams) {
