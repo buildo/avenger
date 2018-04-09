@@ -1,4 +1,3 @@
-import * as t from 'io-ts'
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 import { ExtractedQueryCaches } from './extractQueryCaches';
 import debug from 'debug';
@@ -6,7 +5,7 @@ import debug from 'debug';
 const log = debug('avenger:restoreQueryCaches');
 
 export function restoreQueryCaches(queryNodes, data) {
-  ThrowReporter.report(t.validate(data, ExtractedQueryCaches))
+  ThrowReporter.report(ExtractedQueryCaches.decode(data))
   Object.keys(data).forEach(P => {
     Object.keys(data[P]).forEach(fk => {
       const { a, value } = data[P][fk];

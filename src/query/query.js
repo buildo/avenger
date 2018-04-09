@@ -26,7 +26,7 @@ import {
 
 export function query(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
+    ThrowReporter.report(t.Function.decode(fetch))
   }
 
   const observer = observe(fetch, a).distinctUntilChanged(isEqual)
@@ -38,7 +38,7 @@ export function query(fetch, a) {
 
 export function querySync(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
+    ThrowReporter.report(t.Function.decode(fetch))
   }
 
   if (fetch.type === 'product') {

@@ -3,7 +3,7 @@ import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 
 export function product(fetches) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetches, t.array(t.Function)))
+    ThrowReporter.report(t.array(t.Function).decode(fetches))
   }
 
   const len = fetches.length
@@ -25,9 +25,9 @@ export function product(fetches) {
 
 export function compose(master, ptoa, slave) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(slave, t.Function))
-    ThrowReporter.report(t.validate(ptoa, t.Function))
-    ThrowReporter.report(t.validate(master, t.Function))
+    ThrowReporter.report(t.Function.decode(slave))
+    ThrowReporter.report(t.Function.decode(ptoa))
+    ThrowReporter.report(t.Function.decode(master))
   }
 
   function composition(a) {
@@ -44,7 +44,7 @@ export function compose(master, ptoa, slave) {
 
 export function star(fetch) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
+    ThrowReporter.report(t.Function.decode(fetch))
   }
 
   const functions = {}

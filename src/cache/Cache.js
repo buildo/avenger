@@ -33,7 +33,7 @@ export class Cache {
 
   set(a, value) {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(value, CacheValue))
+      ThrowReporter.report(CacheValue.decode(value))
     }
     return this.map.set(this.atok(a), value)
   }
@@ -49,7 +49,7 @@ export class Cache {
 
   getAvailablePromise(a, strategy) /* Maybe[Promise[P]] */ {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(strategy, Strategy))
+      ThrowReporter.report(Strategy.decode(strategy))
     }
 
     const value = this.get(a)
@@ -71,8 +71,8 @@ export class Cache {
 
   getPromise(a, strategy, fetch) /* Promise[P] */ {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(strategy, Strategy))
-      ThrowReporter.report(t.validate(fetch, t.Function))
+      ThrowReporter.report(Strategy.decode(strategy))
+      ThrowReporter.report(t.Function.decode(fetch))
     }
 
     const availablePromise = this.getAvailablePromise(a, strategy)

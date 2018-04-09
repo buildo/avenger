@@ -13,7 +13,7 @@ function observeCache(cache, a) {
 
 export function observe(fetch, a) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
+    ThrowReporter.report(t.Function.decode(fetch))
   }
 
   if (fetch.type === 'product') {

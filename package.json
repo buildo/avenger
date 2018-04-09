@@ -31,7 +31,7 @@
     "babel-preset-react": "^6.5.0",
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
-    "io-ts": "^0.9.8",
+    "io-ts": "^1.0.5",
     "jest": "^22.0.4",
     "sinon": "1.17.4",
     "ts-jest": "^22.4.2",

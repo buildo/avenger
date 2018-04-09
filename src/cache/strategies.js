@@ -17,14 +17,14 @@ export class Expire {
 
   constructor(delay) {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(delay, Delay))
+      ThrowReporter.report(Delay.decode(delay))
     }
     this.delay = delay
   }
 
   isExpired(time) {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(time, t.number))
+      ThrowReporter.report(t.number.decode(time))
     }
 
     const delta = new Date().getTime() - time
@@ -37,7 +37,7 @@ export class Expire {
 
   isAvailable(value) {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(value, CacheValue))
+      ThrowReporter.report(CacheValue.decode(value))
     }
     return !Nil.is(value.done) && !this.isExpired(value.done.timestamp)
   }

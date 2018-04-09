@@ -11,8 +11,8 @@ import {
 
 export function cacheFetch(fetch, strategy, cache) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
-    ThrowReporter.report(t.validate(strategy, Strategy))
+    ThrowReporter.report(t.Function.decode(fetch))
+    ThrowReporter.report(Strategy.decode(strategy))
     if (!(cache instanceof Cache)) {
       throw new Error(`invalid value cache=${cache} provided to cacheFetch, it should be a Cache`)
     }
@@ -25,15 +25,15 @@ export function cacheFetch(fetch, strategy, cache) {
 
 export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(catalog, t.Function))
+    ThrowReporter.report(t.Function.decode(catalog))
     if (!(cache instanceof Cache)) {
       throw new Error(`invalid value cache=${cache} provided to cacheCatalog, it should be a Cache`)
     }
-    ThrowReporter.report(t.validate(strategy, Strategy))
+    ThrowReporter.report(Strategy.decode(strategy))
     if (!(pcache instanceof Cache)) {
       throw new Error(`invalid value pcache=${pcache} provided to cacheCatalog, it should be a Cache`)
     }
-    ThrowReporter.report(t.validate(ptoa, t.Function))
+    ThrowReporter.report(t.Function.decode(ptoa))
   }
 
   return function cachedCatalog(s) {
@@ -55,8 +55,8 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
 
 export function cacheStar(star, strategy, cache, pcache) {
   if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(star, t.Function))
-    ThrowReporter.report(t.validate(strategy, Strategy))
+    ThrowReporter.report(t.Function.decode(star))
+    ThrowReporter.report(Strategy.decode(strategy))
     if (!(cache instanceof Cache)) {
       throw new Error(`invalid value cache=${cache} provided to cacheStar, it should be a Cache`)
     }
@@ -110,7 +110,7 @@ export function cacheStar(star, strategy, cache, pcache) {
 
   return function cachedStar(as) {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(as, t.Array))
+      ThrowReporter.report(t.Array.decode(as))
     }
 
     const promise = Promise.all(as.map(load))
