@@ -1,6 +1,5 @@
 import { invalidate } from "./invalidate";
 import { query } from "./query";
-import omit from 'lodash/omit';
 import 'rxjs'
 
 export function runCommand(command, flatParams) {
@@ -11,9 +10,8 @@ export function runCommand(command, flatParams) {
       return v;
     });
   } else {
-    const depsToRun = omit(command.dependencies, Object.keys(flatParams))
     return new Promise((resolve, reject) =>
-      query(depsToRun, flatParams)
+      query(command.dependencies, flatParams)
         .filter(event => !event.loading)
         .first() // unsubscribe after the first not loading event
         .subscribe(event => {

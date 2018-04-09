@@ -92,7 +92,16 @@ describe("runCommand", () => {
     expect(fetchQ2.mock.calls[1][0]).toEqual({ foo2: "foo2" });
   });
 
-  it("should not run dependencies overwritten by command params", async () => {
+  it.skip("should not run dependencies overwritten by command params", async () => {
+    /*
+    Test skipped because the feature was removed.
+    The code of the feature was very simple; it just added the following line
+    in runCommand, before running the queries:
+      const depsToRun = omit(command.dependencies, Object.keys(flatParams))
+
+    We decided to remove it beacause in terms of TS typings it was too complicated.
+    */
+
     const fetchQ1 = jest.fn(({ foo1 }: { foo1: string }) =>
       Promise.resolve(foo1)
     );
