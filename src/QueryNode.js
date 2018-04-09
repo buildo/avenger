@@ -6,20 +6,21 @@ import { compose, product } from './fetch/operators';
 import { cacheFetch } from './query/operators';
 import { ObservableCache } from './query/ObservableCache';
 
-export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anonymous', ...q }) => {
+export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anonymous', params = {}, dependencies = {} }) => {
   const upsetParams = {
-    ...Object.keys(q.dependencies || {}).reduce((ac, k) => ({
-      ...ac, ...q.dependencies[k].upsetParams
+    ...Object.keys(dependencies).reduce((ac, k) => ({
+      ...ac, ...dependencies[k].upsetParams
     }), {}),
-    ...(q.params || {})
+    ...(params)
   };
 
-  if (!q.dependencies) {
+  const noDeps = Object.keys(dependencies).length === 0
+  if (noDeps) {
     // atom / no dependencies (can have params)
     //
     // becomes just `cacheFetch(finalFetch)`
     //
-    const A = Object.keys(q.params || {});
+    const A = Object.keys(params);
     const cache = new ObservableCache({ name: debugId });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
     const depth = 0;
@@ -27,14 +28,14 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anony
       fetch, A, depth, upsetParams
     };
   } else {
-    const paramKeys = Object.keys(q.params || {});
-    const depsKeys = Object.keys(q.dependencies);
+    const paramKeys = Object.keys(params);
+    const depsKeys = Object.keys(dependencies);
     const fromAKeys = difference(paramKeys, depsKeys);
     const depsOnly = fromAKeys.length === 0;
 
     const cache = new ObservableCache({ name: `${debugId}_finalFetch` });
     const fetch = cacheFetch(_fetch, cacheStrategy, cache);
-    const depth = Math.max(...depsKeys.map(k => q.dependencies[k].depth)) + 1;
+    const depth = Math.max(...depsKeys.map(k => dependencies[k].depth)) + 1;
 
     if (depsOnly) {
       // a query with dependencies only (no params)
@@ -50,8 +51,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anony
       //
 
       const depsProduct = {
-        A: depsKeys.map(k => q.dependencies[k].A),
-        fetch: product(depsKeys.map(k => q.dependencies[k].fetch))
+        A: depsKeys.map(k => dependencies[k].A),
+        fetch: product(depsKeys.map(k => dependencies[k].fetch))
       };
 
       const finalFetch = {
@@ -61,7 +62,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anony
 
       const map = ps => depsKeys.reduce((ac, k, i) => ({
         ...ac,
-        [k]: (q.dependencies[k].map || identity)(ps[i])
+        [k]: (dependencies[k].map || identity)(ps[i])
       }), {});
 
       return {
@@ -94,8 +95,8 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anony
       };
 
       const depsAndA = {
-        A: [syncFetchA.A].concat(depsKeys.map(k => q.dependencies[k].A)),
-        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => q.dependencies[k].fetch)))
+        A: [syncFetchA.A].concat(depsKeys.map(k => dependencies[k].A)),
+        fetch: product([syncFetchA.fetch].concat(depsKeys.map(k => dependencies[k].fetch)))
       };
 
       const finalFetch = {
@@ -110,7 +111,7 @@ export const Query = ({ fetch: _fetch, cacheStrategy = refetch, debugId = 'anony
           depsAndA.fetch,
           ([syncFetchAPs, ...prodPs]) => ({
             ...prodPs.reduce((ac, p, i) => ({
-              ...ac, [depsKeys[i]]: (q.dependencies[depsKeys[i]].map || identity)(p)
+              ...ac, [depsKeys[i]]: (dependencies[depsKeys[i]].map || identity)(p)
             }), {}),
             ...syncFetchAPs.reduce((ac, p, i) => ({
               ...ac, [fromAKeys[i]]: p
