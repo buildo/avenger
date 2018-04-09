@@ -92,11 +92,11 @@ export function Command<A extends IOTSParams, R, I extends Invalidates>(
 
 export function Command<A extends IOTSParams, R, D extends Dependencies>(
   args: CommandArgsNoInvs<A, D, R>
-): CommandReturn<IOTSDictToType<A> & DepA<D> & Partial<DepP<D>>, R>;
+): CommandReturn<IOTSDictToType<A> & DepA<D>, R>;
 
 export function Command<A extends IOTSParams, R, I extends Invalidates, D extends Dependencies>(
   args: CommandArgs<A, I, D, R>
-): CommandReturn<IOTSDictToType<A> & InvA<I> & DepA<D> & Partial<DepP<D>>, R>;
+): CommandReturn<IOTSDictToType<A> & InvA<I> & DepA<D>, R>;
 
 export type Queries = { [k: string]: QueryReturn<any, any> }
 export type Commands = { [k: string]: CommandReturn<any, any> };

@@ -100,6 +100,7 @@ describe("runCommand", () => {
       const depsToRun = omit(command.dependencies, Object.keys(flatParams))
 
     We decided to remove it beacause in terms of TS typings it was too complicated.
+    This is the reason why TS complains below: dependency override is not allowed anymore.
     */
 
     const fetchQ1 = jest.fn(({ foo1 }: { foo1: string }) =>
