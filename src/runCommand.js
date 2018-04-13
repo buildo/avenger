@@ -23,7 +23,7 @@ export function runCommand(command, flatParams) {
             {}
           );
           resolve(
-            command.run({ ...queryResults, ...flatParams }).then(v => {
+            command.run({ ...flatParams, ...queryResults }).then(v => {
               invalidate(command.invalidates, flatParams);
               return v;
             })
