@@ -110,8 +110,11 @@ export class Cache {
   storePromise(a, promise) {
     promise.then(
       p => {
-        // quando la promise risolve immagazzino il nuovo payload
-        this.storePayload(a, p, promise)
+        // quando la promise risolve immagazzino il nuovo payload,
+        // solo se questo blocked è ancora il corrente
+        if (this.get(a).blocked === promise) {
+          this.storePayload(a, p, promise);
+        }
       },
       err => {
         // quando viene rifiutata, pulisco il blocked, a meno che non sia già cambiato
