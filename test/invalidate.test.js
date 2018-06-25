@@ -47,12 +47,10 @@ describe('invalidate', () => {
 
     const { A } = makeLeafNodes(['A', 'B'])
 
-    const q = query({ A }, { token: 'lol' })
-
-    invalidate({ A }, { token: 'lol' }) // do not subscribe and invalidate right away
+    invalidate({ A }, { token: 'lol' }) // do not subscribe, and invalidate right away
 
     return new Promise((resolve, reject) => {
-      q.bufferTime(10).take(1).subscribe(events => {
+      query({ A }, { token: 'lol' }).bufferTime(10).take(1).subscribe(events => {
         try {
           assert.deepEqual(events, [
             { loading: true, data: { A: { loading: true } } },
