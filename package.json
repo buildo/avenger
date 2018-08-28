@@ -31,7 +31,7 @@
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
     "io-ts": "^1.0.5",
-    "jest": "^22.0.4",
+    "jest": "^23.5.0",
     "sinon": "1.17.4",
     "ts-jest": "^22.4.2",
     "typescript": "^2.8.1"
