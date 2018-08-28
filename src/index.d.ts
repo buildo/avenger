@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import { Strategy } from './cache/strategies';
-import { ObjectOverwrite } from 'typelevel-ts';
+
+type ObjectOverwrite<A extends object, B extends object> = Pick<A, Exclude<keyof A, keyof B>> & B;
 
 export * from './cache/strategies';
 

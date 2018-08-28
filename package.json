@@ -16,8 +16,7 @@
   "dependencies": {
     "debug": "^2.2.0",
     "lodash": "^4.13.1",
-    "rxjs": "^5.4.2",
-    "typelevel-ts": "^0.2.3"
+    "rxjs": "^5.4.2"
   },
   "devDependencies": {
     "@types/jest": "^22.2.2",
