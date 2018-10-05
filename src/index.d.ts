@@ -8,6 +8,7 @@ export * from './cache/strategies';
 type BROKEN_FlattenObject<O extends {}> = { [k in keyof O]: O[k] }[keyof O];
 
 export interface QueryReturn<A, P> {
+  _tag: 'QueryReturn',
   _A: A,
   _P: P
 }
@@ -49,6 +50,7 @@ export function Query<A extends IOTSParams, P, D extends Dependencies>(args: Que
 export type CommandRun<A, P> = (a: A) => Promise<P>;
 
 export interface CommandReturn<A, P> {
+  _tag: 'CommandReturn',
   _A: A,
   _P: P
 }
