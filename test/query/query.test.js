@@ -115,6 +115,26 @@ describe('query', () => {
         })
       })
 
+      it('should emit L + E events for an empty cache when a fetch fails with an undefined rejection', () => {
+        const c = new ObservableCache()
+        const raw = () => Promise.reject()
+        const fetch = cacheFetch(raw, available, c)
+        const q = query(fetch, 1)
+        return new Promise((resolve, reject) => {
+          q.bufferTime(10).take(1).subscribe(events => {
+            try {
+              assert.deepEqual(events, [
+                { loading: true },
+                { loading: false, error: undefined } // meaning the `error` property is set
+              ])
+              resolve()
+            } catch (e) {
+              reject(e)
+            }
+          })
+        })
+      })
+
     })
 
   })
