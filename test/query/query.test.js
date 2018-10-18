@@ -25,6 +25,7 @@ import {
 
 // L = LOADING event
 // P = PAYLOAD event
+// E = ERROR event
 
 describe('query', () => {
 
@@ -69,6 +70,51 @@ describe('query', () => {
           }
         })
       })
+    })
+
+    describe('fetch failures', () => {
+
+      it('should emit L + E events for an empty cache when a fetch fails', () => {
+        const c = new ObservableCache()
+        const raw = () => Promise.reject('rejection')
+        const fetch = cacheFetch(raw, available, c)
+        const q = query(fetch, 1)
+        return new Promise((resolve, reject) => {
+          q.bufferTime(10).take(1).subscribe(events => {
+            try {
+              assert.deepEqual(events, [
+                { loading: true },
+                { loading: false, error: 'rejection' }
+              ])
+              resolve()
+            } catch (e) {
+              reject(e)
+            }
+          })
+        })
+      })
+
+      it('should emit L + E events when strategy is refetch, even after a cache hit, when a fetch fails', () => {
+        const c = new ObservableCache()
+        c.set(1, { done: { value: 2, timestamp: new Date().getTime(), promise: Promise.resolve(2) } })
+        const raw = () => Promise.reject('rejection')
+        const fetch = cacheFetch(raw, refetch, c)
+        const q = query(fetch, 1)
+        return new Promise((resolve, reject) => {
+          q.bufferTime(10).take(1).subscribe(events => {
+            try {
+              assert.deepEqual(events, [
+                { loading: true },
+                { loading: false, error: 'rejection' }
+              ])
+              resolve()
+            } catch (e) {
+              reject(e)
+            }
+          })
+        })
+      })
+
     })
 
   })
