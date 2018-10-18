@@ -124,7 +124,7 @@ export class Cache {
         // per il momento non facciamo fallire ma logghiamo soltanto, per render felice jest
         this.log('unhandled promise rejection', err)
         if (process.env.NODE_ENV !== 'production') {
-          console.error('Unhandled promise rejection', err); // eslint-disable-line no-console
+          console.warn('Unhandled promise rejection', err); // eslint-disable-line no-console
         }
       }
     )
