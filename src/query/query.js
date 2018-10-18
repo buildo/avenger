@@ -5,7 +5,7 @@ import 'rxjs/add/operator/distinctUntilChanged'
 // avoid as much as possible deep comparisons
 // by just diffing on (nested) `loading` keys
 function isEqual(a, b) {
-  if (a.loading !== b.loading) {
+  if (a.loading !== b.loading || a.error !== b.error) {
     return false
   }
 

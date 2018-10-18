@@ -45,7 +45,7 @@
       "^.+\\.js$": "babel-jest",
       "^.+\\.ts$": "ts-jest"
     },
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(js|ts)$",
+    "testRegex": "test/.*\\.test\\.js$",
     "moduleFileExtensions": [
       "ts",
       "js"

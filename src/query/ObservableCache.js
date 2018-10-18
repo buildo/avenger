@@ -56,11 +56,7 @@ export class ObservableCache extends Cache {
   emitErrorEvent(a, error) {
     this.log('emitting ERROR event for %o', a)
     const subject = this.getSubject(a)
-    const event = { loading: true, error }
-    if (subject.value.hasOwnProperty('data')) {
-      event.data = subject.value.data
-    }
-    subject.next(event)
+    subject.next({ loading: false, error })
   }
 
 }
