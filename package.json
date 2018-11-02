@@ -1,6 +1,6 @@
 {
   "name": "avenger",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "lint": "eslint src test",
