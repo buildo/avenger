@@ -5,7 +5,13 @@ type ObjectOverwrite<A extends object, B extends object> = Pick<A, Exclude<keyof
 
 export * from './cache/strategies';
 
-type BROKEN_FlattenObject<O extends {}> = { [k in keyof O]: O[k] }[keyof O];
+type UnionToIntersection<U> = (U extends any
+  ? (k: U) => void
+  : never) extends ((k: infer I) => void)
+  ? I
+  : never;
+
+export type FlattenObject<O extends {}> = UnionToIntersection<O[keyof O]>;
 
 export interface QueryReturn<A, P> {
   _tag: 'QueryReturn',
@@ -31,7 +37,7 @@ export type QueryArgsNoDeps<
   };
 
 export type Dependencies = { [k: string]: QueryReturn<any, any> };
-type DepA<D extends Dependencies> = BROKEN_FlattenObject<{ [k in keyof D]: D[k]['_A'] }>;
+type DepA<D extends Dependencies> = FlattenObject<{ [k in keyof D]: D[k]['_A'] }>;
 type DepP<D extends Dependencies> = {[k in keyof D]: D[k]['_P']};
 
 export type QueryArgs<
@@ -64,7 +70,7 @@ export type CommandArgsNoInvsNoDeps<A extends IOTSParams, R> = {
 
 export type Invalidates = { [k: string]: QueryReturn<any, any> };
 
-type InvA<I extends Invalidates> = BROKEN_FlattenObject<{ [k in keyof I]: I[k]['_A'] }>;
+type InvA<I extends Invalidates> = FlattenObject<{ [k in keyof I]: I[k]['_A'] }>;
 
 export type CommandArgsNoDeps<A extends IOTSParams, I extends Invalidates, R> = (
   ObjectOverwrite<CommandArgsNoInvsNoDeps<A, R>, {
@@ -104,7 +110,7 @@ export function Command<A extends IOTSParams, R, I extends Invalidates, D extend
 export type Queries = { [k: string]: QueryReturn<any, any> }
 export type Commands = { [k: string]: CommandReturn<any, any> };
 
-type FlatParams<Q extends Queries> = BROKEN_FlattenObject<{ [k in keyof Q]: Q[k]['_A'] }>;
+type FlatParams<Q extends Queries> = FlattenObject<{ [k in keyof Q]: Q[k]['_A'] }>;
 
 export function query<Q extends Queries>(queryNodes: Q, flatParams: FlatParams<Q>): any
 export function runCommand<R, C extends CommandReturn<any, R>>(command: C, flatParams: C['_A']): Promise<R>
