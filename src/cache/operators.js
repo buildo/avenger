@@ -2,17 +2,12 @@ import * as t from 'io-ts'
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 
 import {
-  Strategy
-} from './strategies'
-
-import {
   Cache
 } from './Cache'
 
 export function cacheFetch(fetch, strategy, cache) {
   if (process.env.NODE_ENV !== 'production') {
     ThrowReporter.report(t.Function.decode(fetch))
-    ThrowReporter.report(Strategy.decode(strategy))
     if (!(cache instanceof Cache)) {
       throw new Error(`invalid value cache=${cache} provided to cacheFetch, it should be a Cache`)
     }
@@ -29,7 +24,7 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
     if (!(cache instanceof Cache)) {
       throw new Error(`invalid value cache=${cache} provided to cacheCatalog, it should be a Cache`)
     }
-    ThrowReporter.report(Strategy.decode(strategy))
+
     if (!(pcache instanceof Cache)) {
       throw new Error(`invalid value pcache=${pcache} provided to cacheCatalog, it should be a Cache`)
     }
@@ -56,7 +51,6 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
 export function cacheStar(star, strategy, cache, pcache) {
   if (process.env.NODE_ENV !== 'production') {
     ThrowReporter.report(t.Function.decode(star))
-    ThrowReporter.report(Strategy.decode(strategy))
     if (!(cache instanceof Cache)) {
       throw new Error(`invalid value cache=${cache} provided to cacheStar, it should be a Cache`)
     }

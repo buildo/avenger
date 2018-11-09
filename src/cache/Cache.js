@@ -1,9 +1,6 @@
 import * as t from 'io-ts'
 import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 import debug from 'debug'
-import {
-  Strategy
-} from './strategies'
 
 const Done = t.interface({
   value: t.any,         // il valore contenuto nella promise
@@ -48,10 +45,6 @@ export class Cache {
   }
 
   getAvailablePromise(a, strategy) /* Maybe[Promise[P]] */ {
-    if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(Strategy.decode(strategy))
-    }
-
     const value = this.get(a)
 
     if (strategy.isAvailable(value)) {
@@ -71,7 +64,6 @@ export class Cache {
 
   getPromise(a, strategy, fetch) /* Promise[P] */ {
     if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(Strategy.decode(strategy))
       ThrowReporter.report(t.Function.decode(fetch))
     }
 
