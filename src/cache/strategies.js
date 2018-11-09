@@ -5,10 +5,6 @@ import {
   CacheValue
 } from './Cache'
 
-export const Strategy = t.interface({
-  isAvailable: t.Function
-}, 'Strategy')
-
 const Delay = t.number
 const Nil = t.union([t.undefined, t.null])
 
