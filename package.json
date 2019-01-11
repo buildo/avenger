@@ -16,7 +16,8 @@
   "dependencies": {
     "debug": "^2.2.0",
     "lodash": "^4.13.1",
-    "rxjs": "^5.4.2"
+    "rxjs": "^5.4.2",
+    "io-ts": "^1.0.5"
   },
   "devDependencies": {
     "@types/jest": "^22.2.2",
@@ -30,7 +31,6 @@
     "babel-preset-react": "^6.5.0",
     "eslint": "2.9.0",
     "eslint-config-buildo": "github:buildo/eslint-config",
-    "io-ts": "^1.0.5",
     "jest": "^23.5.0",
     "sinon": "1.17.4",
     "ts-jest": "^22.4.2",
