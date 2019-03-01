@@ -4,8 +4,9 @@
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "test": "jest",
+    "prettier": "prettier --check \"{src,test}/**/*.{ts,tsx}\"",
     "build": "rm -rf lib && mkdir lib && tsc",
-    "preversion": "npm test",
+    "preversion": "npm test && npm run prettier",
     "prepublish": "npm run build"
   },
   "main": "lib",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@types/jest": "^24.0.9",
     "jest": "^24.1.0",
+    "prettier": "^1.16.4",
     "ts-jest": "^24.0.0",
     "typescript": "^3.3.3333"
   },
