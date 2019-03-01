@@ -1,7 +1,0 @@
-{
-  "extends": "buildo",
-  "rules": {
-    "semi": 0,
-    "max-len": 0
-  }
-}
