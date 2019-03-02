@@ -6,22 +6,32 @@ import {
   cacheValueResolved
 } from './CacheValue';
 import { Fetch } from './Fetch';
-import { Strategy } from './Strategy';
 import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
 import { Either } from 'fp-ts/lib/Either';
+import { Setoid } from 'fp-ts/lib/Setoid';
+import { member, lookup } from 'fp-ts/lib/Map';
+import { Option } from 'fp-ts/lib/Option';
 
 export class Cache<A, L, P> {
   private readonly subjects: Map<A, Subject<CacheValue<L, P>>> = new Map();
+  private readonly map: Map<A, CacheValue<L, P>> = new Map();
 
-  constructor(
-    readonly fetch: Fetch<A, L, P>,
-    readonly strategy: Strategy<A, L, P>,
-    readonly map: Map<A, CacheValue<L, P>> = new Map()
-  ) {}
+  private member: <T>(input: A, map: Map<A, T>) => boolean;
+  private lookup: <T>(input: A, map: Map<A, T>) => Option<T>;
+  private unsafeLookup: <T>(input: A, map: Map<A, T>) => T;
+
+  constructor(readonly fetch: Fetch<A, L, P>, readonly inputSetoid: Setoid<A>) {
+    this.member = member(inputSetoid);
+    this.lookup = lookup(inputSetoid);
+    this.unsafeLookup = (input, map) =>
+      this.lookup(input, map).getOrElseL(() => {
+        throw new Error('unsafe lookup fail');
+      });
+  }
 
   private unsafeGet(params: A): TaskEither<L, P> {
-    const cacheValue = this.map.get(params)!;
+    const cacheValue = this.unsafeLookup(params, this.map);
     return cacheValue.fold(
       value => new TaskEither(new Task(() => value)),
       value => fromLeft(value),
@@ -57,13 +67,11 @@ export class Cache<A, L, P> {
   }
 
   private emitEvent(params: A, cacheValue: CacheValue<L, P>): void {
-    if (this.subjects.has(params)) {
-      this.subjects.get(params)!.next(cacheValue);
-    }
+    this.lookup(params, this.subjects).map(s => s.next(cacheValue));
   }
 
   getOrFetch(params: A): TaskEither<L, P> {
-    if (this.map.has(params) && this.strategy(this.map.get(params)!, params)) {
+    if (this.member(params, this.map)) {
       return this.unsafeGet(params);
     }
 
@@ -78,9 +86,9 @@ export class Cache<A, L, P> {
   }
 
   observe(params: A): Observable<CacheValue<L, P>> {
-    if (!this.subjects.has(params)) {
+    if (!this.member(params, this.subjects)) {
       this.subjects.set(params, new Subject());
     }
-    return this.subjects.get(params)!.asObservable();
+    return this.unsafeLookup(params, this.subjects).asObservable();
   }
 }
