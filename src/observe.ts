@@ -3,7 +3,6 @@ import { Cache } from './Cache';
 import { identity } from 'fp-ts/lib/function';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { array } from 'fp-ts/lib/Array';
-import { Strategy, refetch } from './Strategy';
 import { CacheValue } from './CacheValue';
 import {
   FetchResult,
@@ -14,6 +13,7 @@ import {
 } from './FetchResult';
 import { of, Observable, combineLatest } from 'rxjs';
 import { distinctUntilChanged, switchMap, map } from 'rxjs/operators';
+import { Setoid } from 'fp-ts/lib/Setoid';
 
 export interface ObservableFetch<A, L, P> extends Fetch<A, L, P> {
   cache: Cache<A, L, P>;
@@ -88,9 +88,9 @@ export function product<A, L, P>(...fetches: Array<ObservableFetch<A, L, P>>) {
 
 export function cache<A = undefined, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
-  strategy: Strategy<A, L, P> = refetch
+  inputSetoid: Setoid<A>
 ): ObservableFetch<A, L, P> {
-  const cache = new Cache(fetch, strategy);
+  const cache = new Cache(fetch, inputSetoid);
   const cachedFetch: Fetch<A, L, P> = params => cache.getOrFetch(params);
   (cachedFetch as any).cache = cache;
   return cachedFetch as any;
