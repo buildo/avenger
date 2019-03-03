@@ -1,7 +1,8 @@
 - [ ] Fix Unhandled Promise rejections (see `yarn test`)
 - [ ] Find a way to write readable tests
 - [ ] Try to remove some `@ts-ignore`s or unsafe `any` casts
-- [ ] Add `invalidate` (to `Cache` and export as top-level function like `observe`). It should delete from cache and then `run()`.
+- [x] Add `invalidate` to `Cache`
+- [ ] Add top-level `invalidate`. Should invalidate a set of queries (topologically sorted first)
 - [ ] Add `command(cmd: Fetch<A, L, P>, invalidates: Record<K, ObservableQ>)`. Implement the old `runCommand` as the result of `command.run()`
 - [ ] Add support for `Strategy` (and maybe some default ones)
 - [ ] Start porting some real world usages as tests
