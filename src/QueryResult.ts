@@ -3,18 +3,18 @@ import { Functor2 } from 'fp-ts/lib/Functor';
 
 declare module 'fp-ts/lib/HKT' {
   interface URI2HKT2<L, A> {
-    FetchResult: FetchResult<L, A>;
+    QueryResult: QueryResult<L, A>;
   }
 }
 
-export const URI = 'FetchResult';
+export const URI = 'QueryResult';
 
 export type URI = typeof URI;
 
-export type FetchResult<L, A> = Loading<L, A> | Failure<L, A> | Success<L, A>;
+export type QueryResult<L, A> = Loading<L, A> | Failure<L, A> | Success<L, A>;
 
 export class Loading<L, A> {
-  static value: FetchResult<never, never> = new Loading();
+  static value: QueryResult<never, never> = new Loading();
   readonly type: 'Loading' = 'Loading';
   readonly _A!: A;
   readonly _L!: L;
@@ -29,12 +29,12 @@ export class Loading<L, A> {
     return onLoading;
   }
 
-  map<B>(_: (a: A) => B): FetchResult<L, B> {
+  map<B>(_: (a: A) => B): QueryResult<L, B> {
     return this as any;
   }
 
-  ap<B>(fab: FetchResult<L, (a: A) => B>): FetchResult<L, B> {
-    return fab.fold<FetchResult<L, B>>(
+  ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
+    return fab.fold<QueryResult<L, B>>(
       this as any, // loading
       () => fab as any, // failure. Do we want to aggregate loadings here?
       () => this as any // loading
@@ -57,12 +57,12 @@ export class Failure<L, A> {
     return onFailure(this.value, this.loading);
   }
 
-  map<B>(_: (a: A) => B): FetchResult<L, B> {
+  map<B>(_: (a: A) => B): QueryResult<L, B> {
     return this as any;
   }
 
-  ap<B>(fab: FetchResult<L, (a: A) => B>): FetchResult<L, B> {
-    return fab.fold<FetchResult<L, B>>(
+  ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
+    return fab.fold<QueryResult<L, B>>(
       this as any, // failure
       () => fab as any, // fab's failure. Do we want to aggregate loadings here?
       () => this as any // failure
@@ -85,12 +85,12 @@ export class Success<L, A> {
     return onSuccess(this.value, this.loading);
   }
 
-  map<B>(f: (a: A) => B): FetchResult<L, B> {
+  map<B>(f: (a: A) => B): QueryResult<L, B> {
     return new Success(f(this.value), this.loading);
   }
 
-  ap<B>(fab: FetchResult<L, (a: A) => B>): FetchResult<L, B> {
-    return fab.fold<FetchResult<L, B>>(
+  ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
+    return fab.fold<QueryResult<L, B>>(
       fab as any, // loading
       () => fab as any, // fab's failure. Do we want to aggregate loadings here?
       value => this.map(value) // success
@@ -98,35 +98,35 @@ export class Success<L, A> {
   }
 }
 
-export const loading: FetchResult<never, never> = Loading.value;
+export const loading: QueryResult<never, never> = Loading.value;
 
-export function failure<L, A>(value: L, loading: boolean): FetchResult<L, A> {
+export function failure<L, A>(value: L, loading: boolean): QueryResult<L, A> {
   return new Failure(value, loading);
 }
 
-export function success<L, A>(value: A, loading: boolean): FetchResult<L, A> {
+export function success<L, A>(value: A, loading: boolean): QueryResult<L, A> {
   return new Success(value, loading);
 }
 
 const map = <L, A, B>(
-  fa: FetchResult<L, A>,
+  fa: QueryResult<L, A>,
   f: (a: A) => B
-): FetchResult<L, B> => {
+): QueryResult<L, B> => {
   return fa.map(f);
 };
 
 const ap = <L, A, B>(
-  fab: FetchResult<L, (a: A) => B>,
-  fa: FetchResult<L, A>
-): FetchResult<L, B> => {
+  fab: QueryResult<L, (a: A) => B>,
+  fa: QueryResult<L, A>
+): QueryResult<L, B> => {
   return fa.ap(fab);
 };
 
-const of = <L, A>(value: A): FetchResult<L, A> => {
+const of = <L, A>(value: A): QueryResult<L, A> => {
   return success(value, false);
 };
 
-export const fetchResult: Functor2<URI> & Applicative2<URI> = {
+export const queryResult: Functor2<URI> & Applicative2<URI> = {
   URI,
   map,
   ap,

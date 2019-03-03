@@ -1,94 +1,78 @@
-import { Subject, Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import {
   CacheValue,
   cacheValuePending,
   cacheValueError,
-  cacheValueResolved
+  cacheValueResolved,
+  cacheValueInitial
 } from './CacheValue';
-import { Fetch } from './Fetch';
-import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
-import { Task } from 'fp-ts/lib/Task';
+import { Fetch } from './Query';
 import { Either } from 'fp-ts/lib/Either';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { member, lookup } from 'fp-ts/lib/Map';
 import { Option } from 'fp-ts/lib/Option';
 
-export class Cache<A, L, P> {
-  private readonly subjects: Map<A, Subject<CacheValue<L, P>>> = new Map();
-  private readonly map: Map<A, CacheValue<L, P>> = new Map();
+function toResolvedOnly<L, P>(pending: Promise<Either<L, P>>): Promise<P> {
+  return pending.then(r => r.fold(Promise.reject, v => Promise.resolve(v)));
+}
 
-  private member: <T>(input: A, map: Map<A, T>) => boolean;
-  private lookup: <T>(input: A, map: Map<A, T>) => Option<T>;
-  private unsafeLookup: <T>(input: A, map: Map<A, T>) => T;
+export class Cache<A, L, P> {
+  private readonly subjects: Map<
+    A,
+    BehaviorSubject<CacheValue<L, P>>
+  > = new Map();
+  private readonly member: <T>(input: A, map: Map<A, T>) => boolean;
+  private readonly lookup: <T>(input: A, map: Map<A, T>) => Option<T>;
+  private readonly unsafeLookup: <T>(input: A, map: Map<A, T>) => T;
 
   constructor(readonly fetch: Fetch<A, L, P>, readonly inputSetoid: Setoid<A>) {
     this.member = member(inputSetoid);
     this.lookup = lookup(inputSetoid);
     this.unsafeLookup = (input, map) =>
       this.lookup(input, map).getOrElseL(() => {
-        throw new Error('unsafe lookup fail');
+        throw new Error('unsafe lookup failed');
       });
   }
 
-  private unsafeGet(params: A): TaskEither<L, P> {
-    const cacheValue = this.unsafeLookup(params, this.map);
-    return cacheValue.fold(
-      value => new TaskEither(new Task(() => value)),
-      value => fromLeft(value),
-      value => taskEither.of(value)
-    );
+  private emitEvent(input: A, cacheValue: CacheValue<L, P>): void {
+    this.lookup(input, this.subjects).map(s => s.next(cacheValue));
   }
 
-  private set(type: 'Resolved', params: A, value: P): P;
-  private set(type: 'Error', params: A, value: L): L;
-  private set(
-    type: 'Pending',
-    params: A,
-    value: Promise<Either<L, P>>
-  ): Promise<Either<L, P>>;
-  private set(
-    type: CacheValue<any, any>['type'],
-    params: any,
-    value: any
-  ): any {
-    const cacheValue = ((): CacheValue<any, any> => {
-      switch (type) {
-        case 'Pending':
-          return cacheValuePending(value, new Date());
-        case 'Error':
-          return cacheValueError(value, new Date());
-        case 'Resolved':
-          return cacheValueResolved(value, new Date());
-      }
-    })();
-    this.map.set(params, cacheValue);
-    this.emitEvent(params, cacheValue);
-    return value;
-  }
-
-  private emitEvent(params: A, cacheValue: CacheValue<L, P>): void {
-    this.lookup(params, this.subjects).map(s => s.next(cacheValue));
-  }
-
-  getOrFetch(params: A): TaskEither<L, P> {
-    if (this.member(params, this.map)) {
-      return this.unsafeGet(params);
+  private getSubject(input: A): BehaviorSubject<CacheValue<L, P>> {
+    if (!this.member(input, this.subjects)) {
+      this.subjects.set(input, new BehaviorSubject(cacheValueInitial<L, P>()));
+      this.createPending(input);
     }
+    return this.unsafeLookup(input, this.subjects);
+  }
 
-    const pending = this.fetch(params)
+  private createPending = (input: A) => {
+    const pending = this.fetch(input)
       .bimap(
-        error => this.set('Error', params, error),
-        value => this.set('Resolved', params, value)
+        error => {
+          this.emitEvent(input, cacheValueError(error, new Date()));
+          return error;
+        },
+        value => {
+          this.emitEvent(input, cacheValueResolved(value, new Date()));
+          return value;
+        }
       )
       .run();
-    this.set('Pending', params, pending);
-    return this.unsafeGet(params);
-  }
+    this.emitEvent(input, cacheValuePending(pending, new Date()));
+    return toResolvedOnly(pending);
+  };
 
-  observe(params: A): Observable<CacheValue<L, P>> {
-    if (!this.member(params, this.subjects)) {
-      this.subjects.set(params, new Subject());
-    }
-    return this.unsafeLookup(params, this.subjects).asObservable();
+  getOrFetch = (input: A): Promise<P> => {
+    return this.getSubject(input).value.fold(
+      () => this.createPending(input),
+      toResolvedOnly,
+      Promise.reject,
+      Promise.resolve
+    );
+  };
+
+  observe(input: A): Observable<CacheValue<L, P>> {
+    return this.getSubject(input).asObservable();
   }
 }

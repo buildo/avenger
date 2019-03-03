@@ -1,4 +1,5 @@
-export { cache, compose, product, observe } from './observe';
+export { query, compose, product } from './Query';
+export { observe } from './observe';
 
 // const a = (input: string) => (
 //   console.log('>> fa'),

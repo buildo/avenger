@@ -1,9 +1,26 @@
 import { Either } from 'fp-ts/lib/Either';
 
 export type CacheValue<L, A> =
+  | CacheValueInitial<L, A>
   | CacheValuePending<L, A>
   | CacheValueResolved<L, A>
   | CacheValueError<L, A>;
+
+class CacheValueInitial<L, A> {
+  readonly type: 'Initial' = 'Initial';
+  readonly _A!: A;
+  readonly _L!: L;
+  constructor() {}
+
+  fold<R>(
+    onCacheValueInitial: () => R,
+    _onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
+    _onCacheValueError: (value: L, updated: Date) => R,
+    _onCacheValueResolved: (value: A, updated: Date) => R
+  ): R {
+    return onCacheValueInitial();
+  }
+}
 
 class CacheValuePending<L, A> {
   readonly type: 'Pending' = 'Pending';
@@ -12,6 +29,7 @@ class CacheValuePending<L, A> {
   constructor(readonly value: Promise<Either<L, A>>, readonly updated: Date) {}
 
   fold<R>(
+    _onCacheValueInitial: () => R,
     onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
     _onCacheValueError: (value: L, updated: Date) => R,
     _onCacheValueResolved: (value: A, updated: Date) => R
@@ -27,6 +45,7 @@ class CacheValueError<L, A> {
   constructor(readonly value: L, readonly updated: Date) {}
 
   fold<R>(
+    _onCacheValueInitial: () => R,
     _onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
     onCacheValueError: (value: L, updated: Date) => R,
     _onCacheValueResolved: (value: A, updated: Date) => R
@@ -42,12 +61,17 @@ class CacheValueResolved<L, A> {
   constructor(readonly value: A, readonly updated: Date) {}
 
   fold<R>(
+    _onCacheValueInitial: () => R,
     _onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
     _onCacheValueError: (value: L, updated: Date) => R,
     onCacheValueResolved: (value: A, updated: Date) => R
   ): R {
     return onCacheValueResolved(this.value, this.updated);
   }
+}
+
+export function cacheValueInitial<L, A>(): CacheValue<L, A> {
+  return new CacheValueInitial();
 }
 
 export function cacheValuePending<L, A>(
