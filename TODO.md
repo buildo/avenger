@@ -1,0 +1,11 @@
+- [ ] Fix Unhandled Promise rejections (see `yarn test`)
+- [ ] Find a way to write readable tests
+- [ ] Try to remove some `@ts-ignore`s or unsafe `any` casts
+- [ ] Add `invalidate` (to `Cache` and export as top-level function like `observe`). It should delete from cache and then `run()`.
+- [ ] Add `command(cmd: Fetch<A, L, P>, invalidates: Record<K, ObservableQ>)`. Implement the old `runCommand` as the result of `command.run()`
+- [ ] Add support for `Strategy` (and maybe some default ones)
+- [ ] Start porting some real world usages as tests
+- [ ] Rewrite `Product`s to be labelled products (structs) instead of tuples. So that we can e.g. reuse it as `command` named dependencies. Refer to https://github.com/gcanti/fp-ts-contrib/blob/master/src/sequenceS.ts (similar typing strategy)
+- [ ] (maybe) Add command `dependencies`
+- [ ] (maybe) Add `/compat` folder, supporting the old `Query`/`Command` DSLs
+- [ ] Add `/react` folder, basically including `react-avenger` with necessary changes
