@@ -1,13 +1,15 @@
 import { TaskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
 import { Setoid } from 'fp-ts/lib/Setoid';
+import { Option, none, option } from 'fp-ts/lib/Option';
+import { array } from 'fp-ts/lib/Array';
 
 export interface Fetch<A = void, L = unknown, P = unknown> {
   (input: A): TaskEither<L, P>;
 }
 
 interface BaseQuery<A, P> {
-  run: (input: A) => Promise<P>;
+  run: (input: A) => Promise<Option<P>>;
 }
 
 interface CachedQuery<A = void, L = unknown, P = unknown>
@@ -59,7 +61,10 @@ export function compose<A1, L1, P1, L2, P2>(
     master,
     slave,
     // @ts-ignore
-    run: (a1: A1) => master.run(a1).then(a2 => slave.run(a2))
+    run: (a1: A1) =>
+      master
+        .run(a1)
+        .then(a2 => a2.fold(Promise.resolve(none), a2 => slave.run(a2 as any)))
   };
 }
 
@@ -96,6 +101,8 @@ export function product(
     type: 'product',
     queries,
     run: (...as: Array<any>) =>
-      Promise.all(queries.map((query, i) => query.run(as[i])))
+      Promise.all(queries.map((query, i) => query.run(as[i]))).then(ps =>
+        array.sequence(option)(ps)
+      )
   };
 }

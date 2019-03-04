@@ -1,4 +1,4 @@
-- [ ] Fix Unhandled Promise rejections (see `yarn test`)
+- [x] Fix Unhandled Promise rejections (see `yarn test`)
 - [ ] Find a way to write readable tests
 - [ ] Try to remove some `@ts-ignore`s or unsafe `any` casts
 - [x] Add `invalidate` to `Cache`

@@ -10,12 +10,12 @@ import { Fetch } from './Query';
 import { Either } from 'fp-ts/lib/Either';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { member, lookup, remove } from 'fp-ts/lib/Map';
-import { Option } from 'fp-ts/lib/Option';
+import { Option, some, none } from 'fp-ts/lib/Option';
 
-function toResolvedOnly<L, P>(pending: Promise<Either<L, P>>): Promise<P> {
-  return pending.then(r =>
-    r.fold(() => Promise.reject(), v => Promise.resolve(v))
-  );
+function toResolvedOnly<L, P>(
+  pending: Promise<Either<L, P>>
+): Promise<Option<P>> {
+  return pending.then(r => r.fold(() => none, v => some(v)));
 }
 
 export class Cache<A, L, P> {
@@ -64,16 +64,16 @@ export class Cache<A, L, P> {
     return toResolvedOnly(pending);
   };
 
-  getOrFetch = (input: A): Promise<P> => {
+  getOrFetch = (input: A): Promise<Option<P>> => {
     return this.getSubject(input).value.fold(
       () => this.createPending(input),
       toResolvedOnly,
-      error => Promise.reject(error),
-      value => Promise.resolve(value)
+      () => Promise.resolve(none),
+      value => Promise.resolve(some(value))
     );
   };
 
-  invalidate = (input: A): Promise<P> => {
+  invalidate = (input: A): Promise<Option<P>> => {
     this.subjects = this.remove(input, this.subjects);
     return this.getOrFetch(input);
   };
