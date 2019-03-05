@@ -271,9 +271,9 @@ it("compose - composition's observer is notified with failure on slave failure",
 it('product', async () => {
   const f1 = query((s: string) => taskEither.of(s.length), setoidString);
   const f2 = query((n: number) => taskEither.of(n * 2), setoidNumber);
-  const p = product(f1, f2);
-  requestAnimationFrame(() => p.run(['foo', 2]).run());
-  const results = await observe(p, ['foo', 2] as [string, number])
+  const p = product({ f1, f2 });
+  requestAnimationFrame(() => p.run({ f1: 'foo', f2: 2 }).run());
+  const results = await observe(p, { f1: 'foo', f2: 2 })
     .pipe(
       take(2),
       toArray()
@@ -281,15 +281,15 @@ it('product', async () => {
     .toPromise();
   expect(results).toEqual([
     { type: 'Loading' },
-    { type: 'Success', value: [3, 4], loading: false }
+    { type: 'Success', value: { f1: 3, f2: 4 }, loading: false }
   ]);
 });
 
 it('product - f<n> observer is notified when product is run', async () => {
   const f1 = query((s: string) => taskEither.of(s.length), setoidString);
   const f2 = query((n: number) => taskEither.of(n * 2), setoidNumber);
-  const p = product(f1, f2);
-  requestAnimationFrame(() => p.run(['foo', 2]).run());
+  const p = product({ f1, f2 });
+  requestAnimationFrame(() => p.run({ f1: 'foo', f2: 2 }).run());
   const results = await observe(f1, 'foo')
     .pipe(
       take(2),
@@ -305,9 +305,9 @@ it('product - f<n> observer is notified when product is run', async () => {
 it('product - product observer is notified when f<n> is run', async () => {
   const f1 = query((s: string) => taskEither.of(s.length), setoidString);
   const f2 = query((n: number) => taskEither.of(n * 2), setoidNumber);
-  const p = product(f1, f2);
+  const p = product({ f1, f2 });
   requestAnimationFrame(() => f1.run('foo').run());
-  const results = await observe(p, ['foo', 1] as [string, number])
+  const results = await observe(p, { f1: 'foo', f2: 1 })
     .pipe(
       take(2),
       toArray()
@@ -315,7 +315,7 @@ it('product - product observer is notified when f<n> is run', async () => {
     .toPromise();
   expect(results).toEqual([
     { type: 'Loading' },
-    { type: 'Success', value: [3, 2], loading: false }
+    { type: 'Success', value: { f1: 3, f2: 2 }, loading: false }
   ]);
 });
 
@@ -325,9 +325,9 @@ it('product - product observer is notified with failure on f<n> failure', async 
     (_: number) => fromLeft<string, number>('nope'),
     setoidNumber
   );
-  const p = product(f1, f2);
+  const p = product({ f1, f2 });
   requestAnimationFrame(() => f1.run('foo').run());
-  const results = await observe(p, ['foo', 1] as [string, number])
+  const results = await observe(p, { f1: 'foo', f2: 1 })
     .pipe(
       take(2),
       toArray()

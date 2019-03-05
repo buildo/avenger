@@ -1,5 +1,6 @@
-import { Fetch, ObservableQuery } from './Query';
+import { Fetch, ObservableQuery, EnforceNonEmptyRecord } from './Query';
 import { invalidate } from './invalidate';
+import { TaskEither } from 'fp-ts/lib/TaskEither';
 
 export function command<
   A,
@@ -8,9 +9,9 @@ export function command<
   I extends Record<string, ObservableQuery<any, any, any>>,
   IL extends { [k in keyof I]: I[k]['_L'] }[keyof I],
   IA extends { [k in keyof I]: I[k]['_A'] }
->(cmd: Fetch<A, L, P>, queries: I): Fetch<[A, IA], L | IL, P> {
-  return ([a, ia]) =>
-    (cmd as Fetch<A, L | IL, P>)(a).chain(p =>
-      invalidate(queries, ia).map(() => p)
-    );
+>(
+  cmd: Fetch<A, L, P>,
+  queries: EnforceNonEmptyRecord<I>
+): (a: A, ia: IA) => TaskEither<L | IL, P> {
+  return (a, ia) => cmd(a).chain(p => invalidate(queries, ia).map(() => p));
 }

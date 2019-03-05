@@ -1,7 +1,15 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
 import { Setoid } from 'fp-ts/lib/Setoid';
-import { array } from 'fp-ts/lib/Array';
+import { mapWithKey, sequence } from 'fp-ts/lib/Record';
+
+export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
+
+// these type annotations are needed because fp-ts can't add stricter
+// overloads yet due to https://github.com/Microsoft/TypeScript/issues/29246
+const sequenceRecordTaskEither: <K extends string, L, A>(
+  ta: Record<K, TaskEither<L, A>>
+) => TaskEither<L, Record<K, A>> = sequence(taskEither);
 
 export interface Fetch<A = void, L = unknown, P = unknown> {
   (input: A): TaskEither<L, P>;
@@ -40,7 +48,7 @@ interface Composition<
 interface Product<A = void, L = unknown, P = unknown>
   extends BaseQuery<A, L, P> {
   type: 'product';
-  queries: Array<ObservableQuery<A, L, P>>;
+  queries: Record<string, ObservableQuery<A, L, P>>;
 }
 
 export type ObservableQuery<A = void, L = unknown, P = unknown> =
@@ -83,43 +91,30 @@ export function compose<A1, L1, P1, L2, P2>(
 }
 
 export function product<
-  A1 = void,
-  L1 = unknown,
-  P1 = unknown,
-  A2 = void,
-  L2 = unknown,
-  P2 = unknown
+  R extends Record<string, ObservableQuery<any, any, any>>
 >(
-  f1: ObservableQuery<A1, L1, P1>,
-  f2: ObservableQuery<A2, L2, P2>
-): Product<[A1, A2], [L1, L2], [P1, P2]>;
-export function product<
-  A1 = void,
-  L1 = unknown,
-  P1 = unknown,
-  A2 = void,
-  L2 = unknown,
-  P2 = unknown,
-  A3 = void,
-  L3 = unknown,
-  P3 = unknown
->(
-  f1: ObservableQuery<A1, L1, P1>,
-  f2: ObservableQuery<A2, L2, P2>,
-  f3: ObservableQuery<A3, L3, P3>
-): Product<[A1, A2, A3], [L1, L2, L3], [P1, P2, P3]>;
-export function product(
-  ...queries: Array<ObservableQuery<any, any, any>>
-): Product<any, any, any> {
+  queries: EnforceNonEmptyRecord<R>
+): Product<
+  { [K in keyof R]: R[K]['_A'] },
+  { [K in keyof R]: R[K]['_L'] }[keyof R],
+  { [K in keyof R]: R[K]['_P'] }
+> {
+  type A = { [K in keyof R]: R[K]['_A'] };
+  const runQueries = (a: A) =>
+    mapWithKey(queries, (k, query) => query.run(a[k]));
+  const invalidateQueries = (a: A) =>
+    mapWithKey(queries, (k, query) => query.run(a[k]));
   return {
     type: 'product',
-    ...queryPhantoms<any, any, any>(),
+    ...queryPhantoms<
+      A,
+      { [K in keyof R]: R[K]['_L'] }[keyof R],
+      { [K in keyof R]: R[K]['_P'] }
+    >(),
     queries,
-    run: (...as: Array<any>) =>
-      array.sequence(taskEither)(queries.map((query, i) => query.run(as[i]))),
-    invalidate: (...as: Array<any>) =>
-      array.sequence(taskEither)(
-        queries.map((query, i) => query.invalidate(as[i]))
-      )
+    // @ts-ignore
+    run: (a: A) => sequenceRecordTaskEither(runQueries(a)),
+    // @ts-ignore
+    invalidate: (a: A) => sequenceRecordTaskEither(invalidateQueries(a))
   };
 }
