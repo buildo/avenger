@@ -1,4 +1,3 @@
-import { array } from 'fp-ts/lib/Array';
 import { CacheValue } from './CacheValue';
 import {
   QueryResult,
@@ -10,6 +9,8 @@ import {
 import { of, Observable, combineLatest } from 'rxjs';
 import { distinctUntilChanged, switchMap, map } from 'rxjs/operators';
 import { ObservableQuery } from './Query';
+import { sequence, mapWithKey } from 'fp-ts/lib/Record';
+import { tuple } from 'fp-ts/lib/function';
 
 function cacheValueToQueryResult<L, P>(
   cacheValue: CacheValue<L, P>
@@ -44,10 +45,20 @@ export function observe<A, L, P>(
         rxSkipDuplicateLoadings
       );
     case 'product':
-      return combineLatest(
-        query.queries.map((query, i) => observe(query, (input as any)[i]))
-      ).pipe(
-        map(array.sequence(queryResult)),
+      const observableStruct = mapWithKey(query.queries, (k, query) =>
+        // @ts-ignore
+        observe(query, input[k]).pipe(map(result => tuple(k, result)))
+      );
+      const observableTuple = Object.values(observableStruct);
+      return combineLatest(observableTuple).pipe(
+        map(trs =>
+          trs.reduce(
+            // @ts-ignore
+            (acc, tr) => ({ ...acc, [tr[0]]: tr[1] }),
+            {}
+          )
+        ),
+        map(sequence(queryResult)),
         rxSkipDuplicateLoadings
       );
     case 'cached':

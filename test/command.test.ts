@@ -13,7 +13,7 @@ describe('command', () => {
     const bSpy = jest.spyOn(obj, 'b');
     const a = query(obj.a, setoidNumber);
     const b = query(obj.b, setoidString);
-    const c: Fetch<void, string, number> = () => taskEither.of(1);
+    const c: Fetch<string, string, number> = () => taskEither.of(1);
     const cmd = command(c, { a, b });
 
     // run queries once first
@@ -22,7 +22,7 @@ describe('command', () => {
     expect(bSpy.mock.calls.length).toBe(1);
 
     // run command
-    await cmd([void 0, { a: 1, b: 'foo' }]).run();
+    await cmd('bar', { a: 1, b: 'foo' }).run();
     expect(aSpy.mock.calls.length).toBe(2);
     expect(bSpy.mock.calls.length).toBe(2);
   });
@@ -36,7 +36,7 @@ describe('command', () => {
     const bSpy = jest.spyOn(obj, 'b');
     const a = query(obj.a, setoidNumber);
     const b = query(obj.b, setoidString);
-    const c: Fetch<void, string, number> = () => fromLeft('nope');
+    const c: Fetch<string, string, number> = () => fromLeft('nope');
     const cmd = command(c, { a, b });
 
     // run queries once first
@@ -45,7 +45,7 @@ describe('command', () => {
     expect(bSpy.mock.calls.length).toBe(1);
 
     // run command
-    await cmd([void 0, { a: 1, b: 'foo' }]).run();
+    await cmd('bar', { a: 1, b: 'foo' }).run();
     expect(aSpy.mock.calls.length).toBe(1);
     expect(bSpy.mock.calls.length).toBe(1);
   });
