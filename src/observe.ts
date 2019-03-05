@@ -45,7 +45,7 @@ export function observe<A, L, P>(
       );
     case 'product':
       return combineLatest(
-        query.queries.map((query, i) => observe(query, (input as any)[i])) // TODO
+        query.queries.map((query, i) => observe(query, (input as any)[i]))
       ).pipe(
         map(array.sequence(queryResult)),
         rxSkipDuplicateLoadings

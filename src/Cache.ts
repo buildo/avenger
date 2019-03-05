@@ -7,16 +7,11 @@ import {
   cacheValueInitial
 } from './CacheValue';
 import { Fetch } from './Query';
-import { Either } from 'fp-ts/lib/Either';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { member, lookup, remove } from 'fp-ts/lib/Map';
-import { Option, some, none } from 'fp-ts/lib/Option';
-
-function toResolvedOnly<L, P>(
-  pending: Promise<Either<L, P>>
-): Promise<Option<P>> {
-  return pending.then(r => r.fold(() => none, v => some(v)));
-}
+import { Option } from 'fp-ts/lib/Option';
+import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
+import { Task } from 'fp-ts/lib/Task';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
@@ -47,33 +42,32 @@ export class Cache<A, L, P> {
     return this.unsafeLookup(input, this.subjects);
   }
 
-  private createPending = (input: A) => {
-    const pending = this.fetch(input)
-      .bimap(
-        error => {
-          this.emitEvent(input, cacheValueError(error, new Date()));
-          return error;
-        },
-        value => {
-          this.emitEvent(input, cacheValueResolved(value, new Date()));
-          return value;
-        }
-      )
-      .run();
-    this.emitEvent(input, cacheValuePending(pending, new Date()));
-    return toResolvedOnly(pending);
+  private createPending = (input: A): TaskEither<L, P> => {
+    const pending = this.fetch(input).bimap(
+      error => {
+        this.emitEvent(input, cacheValueError(error, new Date()));
+        return error;
+      },
+      value => {
+        this.emitEvent(input, cacheValueResolved(value, new Date()));
+        return value;
+      }
+    );
+    this.emitEvent(input, cacheValuePending(pending.value.run(), new Date()));
+    return pending;
   };
 
-  getOrFetch = (input: A): Promise<Option<P>> => {
+  getOrFetch = (input: A): TaskEither<L, P> => {
     return this.getSubject(input).value.fold(
       () => this.createPending(input),
-      toResolvedOnly,
-      () => Promise.resolve(none),
-      value => Promise.resolve(some(value))
+      pending => new TaskEither(new Task(() => pending)),
+      error => fromLeft<L, P>(error),
+      value => taskEither.of<L, P>(value)
     );
   };
 
-  invalidate = (input: A): Promise<Option<P>> => {
+  invalidate = (input: A): TaskEither<L, P> => {
+    // TODO: do we nead to cleanup the subject first to avoid leaks?
     this.subjects = this.remove(input, this.subjects);
     return this.getOrFetch(input);
   };
