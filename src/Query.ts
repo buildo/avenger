@@ -1,19 +1,18 @@
-import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
 import { Setoid } from 'fp-ts/lib/Setoid';
-import { Option, none, option } from 'fp-ts/lib/Option';
 import { array } from 'fp-ts/lib/Array';
 
 export interface Fetch<A = void, L = unknown, P = unknown> {
   (input: A): TaskEither<L, P>;
 }
 
-interface BaseQuery<A, P> {
-  run: (input: A) => Promise<Option<P>>;
+interface BaseQuery<A, L, P> {
+  run: (input: A) => TaskEither<L, P>;
 }
 
 interface CachedQuery<A = void, L = unknown, P = unknown>
-  extends BaseQuery<A, P> {
+  extends BaseQuery<A, L, P> {
   type: 'cached';
   cache: Cache<A, L, P>;
 }
@@ -24,13 +23,14 @@ interface Composition<
   P1 = unknown,
   L2 = unknown,
   P2 = unknown
-> extends BaseQuery<A1, P2> {
+> extends BaseQuery<A1, L1 | L2, P2> {
   type: 'composition';
   master: ObservableQuery<A1, L1, P1>;
   slave: ObservableQuery<P1, L2, P2>;
 }
 
-interface Product<A = void, L = unknown, P = unknown> extends BaseQuery<A, P> {
+interface Product<A = void, L = unknown, P = unknown>
+  extends BaseQuery<A, L, P> {
   type: 'product';
   queries: Array<ObservableQuery<A, L, P>>;
 }
@@ -60,11 +60,10 @@ export function compose<A1, L1, P1, L2, P2>(
     type: 'composition',
     master,
     slave,
-    // @ts-ignore
     run: (a1: A1) =>
-      master
-        .run(a1)
-        .then(a2 => a2.fold(Promise.resolve(none), a2 => slave.run(a2 as any)))
+      (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
+        (slave.run as Fetch<P1, L2, P2>)(a2)
+      )
   };
 }
 
@@ -101,8 +100,6 @@ export function product(
     type: 'product',
     queries,
     run: (...as: Array<any>) =>
-      Promise.all(queries.map((query, i) => query.run(as[i]))).then(ps =>
-        array.sequence(option)(ps)
-      )
+      array.sequence(taskEither)(queries.map((query, i) => query.run(as[i])))
   };
 }

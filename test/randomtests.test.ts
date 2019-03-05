@@ -6,7 +6,7 @@ import { query, compose, product, observe } from '../src';
 it('does something', async () => {
   const a = (input: number) => taskEither.of(input);
   const cachedA = query(a, setoidNumber);
-  requestAnimationFrame(() => cachedA.run(1));
+  requestAnimationFrame(() => cachedA.run(1).run());
   const results = await observe(cachedA, 1)
     .pipe(
       take(2),
@@ -22,7 +22,7 @@ it('does something', async () => {
 it('caches indefinitely (temporarily since no strategies - will change)', async () => {
   const a = (input: number) => taskEither.of(input);
   const cachedA = query(a, setoidNumber);
-  requestAnimationFrame(() => cachedA.run(1));
+  requestAnimationFrame(() => cachedA.run(1).run());
   const results1 = await observe(cachedA, 1)
     .pipe(
       take(2),
@@ -33,7 +33,7 @@ it('caches indefinitely (temporarily since no strategies - will change)', async 
     { type: 'Loading' },
     { type: 'Success', value: 1, loading: false }
   ]);
-  requestAnimationFrame(() => cachedA.run(1));
+  requestAnimationFrame(() => cachedA.run(1).run());
   const results2 = await observe(cachedA, 1)
     .pipe(
       take(1),
@@ -46,7 +46,7 @@ it('caches indefinitely (temporarily since no strategies - will change)', async 
 it('new observers get the latest available result', async () => {
   const a = (input: number) => taskEither.of(input);
   const cachedA = query(a, setoidNumber);
-  requestAnimationFrame(() => cachedA.run(1));
+  requestAnimationFrame(() => cachedA.run(1).run());
   const results1 = await observe(cachedA, 1)
     .pipe(
       take(2),
@@ -70,8 +70,8 @@ it('should reuse the same pending (primitive inputs)', async () => {
   const spyObj = { a: (input: number) => taskEither.of(input) };
   const aSpy = jest.spyOn(spyObj, 'a');
   const cachedA = query(spyObj.a, setoidNumber);
-  requestAnimationFrame(() => cachedA.run(1));
-  requestAnimationFrame(() => cachedA.run(1));
+  requestAnimationFrame(() => cachedA.run(1).run());
+  requestAnimationFrame(() => cachedA.run(1).run());
   const o1 = observe(cachedA, 1)
     .pipe(
       take(2),
@@ -95,8 +95,8 @@ it('should reuse the same pending (non-primitive inputs)', async () => {
   const cachedA = query(spyObj.a, getStructSetoid({ foo: setoidString }));
   const input1 = { foo: 'bar' };
   const input2 = { foo: 'bar' };
-  requestAnimationFrame(() => cachedA.run(input1));
-  requestAnimationFrame(() => cachedA.run(input2));
+  requestAnimationFrame(() => cachedA.run(input1).run());
+  requestAnimationFrame(() => cachedA.run(input2).run());
   const o1 = observe(cachedA, input1)
     .pipe(
       take(2),
@@ -116,7 +116,7 @@ it('should reuse the same pending (non-primitive inputs)', async () => {
 
 it('should notify on failures', async () => {
   const a = query((_: string) => fromLeft('nope'), setoidString);
-  requestAnimationFrame(() => a.run('foo'));
+  requestAnimationFrame(() => a.run('foo').run());
   const results = await observe(a, 'foo')
     .pipe(
       take(2),
@@ -136,7 +136,7 @@ it('compose', async () => {
     master,
     slave
   );
-  requestAnimationFrame(() => composition.run('foo'));
+  requestAnimationFrame(() => composition.run('foo').run());
   // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
@@ -160,7 +160,7 @@ it("compose - master's observer is notified when composition is run", async () =
   requestAnimationFrame(() => {
     // @ts-ignore
     observe(composition, 'foo').subscribe();
-    composition.run('foo');
+    composition.run('foo').run();
   });
   // @ts-ignore
   const results = await observe(master, 'foo')
@@ -185,7 +185,7 @@ it("compose - slave's observer is notified when composition is run", async () =>
   requestAnimationFrame(() => {
     // @ts-ignore
     observe(composition, 'foo').subscribe();
-    composition.run('foo');
+    composition.run('foo').run();
   });
   const results = await observe(slave, 3)
     .pipe(
@@ -206,7 +206,7 @@ it("compose - composition's observer is notified when master is run", async () =
     master,
     slave
   );
-  requestAnimationFrame(() => master.run('foo'));
+  requestAnimationFrame(() => master.run('foo').run());
   // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
@@ -230,7 +230,7 @@ it("compose - composition's observer is notified with failure on master failure"
     master,
     slave
   );
-  requestAnimationFrame(() => master.run('foo'));
+  requestAnimationFrame(() => master.run('foo').run());
   // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
@@ -254,7 +254,7 @@ it("compose - composition's observer is notified with failure on slave failure",
     master,
     slave
   );
-  requestAnimationFrame(() => slave.run(3));
+  requestAnimationFrame(() => slave.run(3).run());
   // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
@@ -272,7 +272,7 @@ it('product', async () => {
   const f1 = query((s: string) => taskEither.of(s.length), setoidString);
   const f2 = query((n: number) => taskEither.of(n * 2), setoidNumber);
   const p = product(f1, f2);
-  requestAnimationFrame(() => p.run(['foo', 2]));
+  requestAnimationFrame(() => p.run(['foo', 2]).run());
   const results = await observe(p, ['foo', 2] as [string, number])
     .pipe(
       take(2),
@@ -289,7 +289,7 @@ it('product - f<n> observer is notified when product is run', async () => {
   const f1 = query((s: string) => taskEither.of(s.length), setoidString);
   const f2 = query((n: number) => taskEither.of(n * 2), setoidNumber);
   const p = product(f1, f2);
-  requestAnimationFrame(() => p.run(['foo', 2]));
+  requestAnimationFrame(() => p.run(['foo', 2]).run());
   const results = await observe(f1, 'foo')
     .pipe(
       take(2),
@@ -306,7 +306,7 @@ it('product - product observer is notified when f<n> is run', async () => {
   const f1 = query((s: string) => taskEither.of(s.length), setoidString);
   const f2 = query((n: number) => taskEither.of(n * 2), setoidNumber);
   const p = product(f1, f2);
-  requestAnimationFrame(() => f1.run('foo'));
+  requestAnimationFrame(() => f1.run('foo').run());
   const results = await observe(p, ['foo', 1] as [string, number])
     .pipe(
       take(2),
@@ -326,7 +326,7 @@ it('product - product observer is notified with failure on f<n> failure', async 
     setoidNumber
   );
   const p = product(f1, f2);
-  requestAnimationFrame(() => f1.run('foo'));
+  requestAnimationFrame(() => f1.run('foo').run());
   const results = await observe(p, ['foo', 1] as [string, number])
     .pipe(
       take(2),
