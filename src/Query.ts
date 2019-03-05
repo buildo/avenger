@@ -8,7 +8,15 @@ export interface Fetch<A = void, L = unknown, P = unknown> {
 }
 
 interface BaseQuery<A, L, P> {
+  _A: A;
+  _L: L;
+  _P: P;
   run: (input: A) => TaskEither<L, P>;
+  invalidate: (input: A) => TaskEither<L, P>;
+}
+
+function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {
+  return null as any;
 }
 
 interface CachedQuery<A = void, L = unknown, P = unknown>
@@ -47,8 +55,10 @@ export function query<A = void, L = unknown, P = unknown>(
   const cache = new Cache<A, L, P>(fetch, inputSetoid);
   return {
     type: 'cached',
+    ...queryPhantoms<A, L, P>(),
     cache,
-    run: cache.getOrFetch
+    run: cache.getOrFetch,
+    invalidate: cache.invalidate
   };
 }
 
@@ -58,11 +68,16 @@ export function compose<A1, L1, P1, L2, P2>(
 ): Composition<A1, L1, P1, L2, P2> {
   return {
     type: 'composition',
+    ...queryPhantoms<A1, L1 | L2, P2>(),
     master,
     slave,
     run: (a1: A1) =>
       (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
         (slave.run as Fetch<P1, L2, P2>)(a2)
+      ),
+    invalidate: (a1: A1) =>
+      (master.invalidate as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
+        (slave.invalidate as Fetch<P1, L2, P2>)(a2)
       )
   };
 }
@@ -98,8 +113,13 @@ export function product(
 ): Product<any, any, any> {
   return {
     type: 'product',
+    ...queryPhantoms<any, any, any>(),
     queries,
     run: (...as: Array<any>) =>
-      array.sequence(taskEither)(queries.map((query, i) => query.run(as[i])))
+      array.sequence(taskEither)(queries.map((query, i) => query.run(as[i]))),
+    invalidate: (...as: Array<any>) =>
+      array.sequence(taskEither)(
+        queries.map((query, i) => query.invalidate(as[i]))
+      )
   };
 }

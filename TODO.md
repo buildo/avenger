@@ -2,7 +2,8 @@
 - [ ] Find a way to write readable tests
 - [ ] Try to remove some `@ts-ignore`s or unsafe `any` casts
 - [x] Add `invalidate` to `Cache`
-- [ ] Add top-level `invalidate`. Should invalidate a set of queries (topologically sorted first)
+- [x] Add top-level `invalidate`. Should invalidate a set of queries
+- [ ] Add topo-sort to top-level `invalidate`
 - [ ] Add `command(cmd: Fetch<A, L, P>, invalidates: Record<K, ObservableQ>)`. Implement the old `runCommand` as the result of `command.run()`
 - [ ] Add support for `Strategy` (and maybe some default ones)
 - [ ] Start porting some real world usages as tests
