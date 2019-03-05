@@ -4,10 +4,11 @@
 - [x] Add `invalidate` to `Cache`
 - [x] Add top-level `invalidate`. Should invalidate a set of queries
 - [ ] Add topo-sort to top-level `invalidate`
-- [ ] Add `command(cmd: Fetch<A, L, P>, invalidates: Record<K, ObservableQ>)`. Implement the old `runCommand` as the result of `command.run()`
+- [x] Add `command(cmd: Fetch<A, L, P>, invalidates: Record<K, ObservableQ>)`. Implement the old `runCommand` as the result of `command.run()`
 - [ ] Add support for `Strategy` (and maybe some default ones)
 - [ ] Start porting some real world usages as tests
 - [ ] Rewrite `Product`s to be labelled products (structs) instead of tuples. So that we can e.g. reuse it as `command` named dependencies. Refer to https://github.com/gcanti/fp-ts-contrib/blob/master/src/sequenceS.ts (similar typing strategy)
+- [ ] moar overloads for `product`
 - [ ] (maybe) Add command `dependencies`
 - [ ] (maybe) Add `/compat` folder, supporting the old `Query`/`Command` DSLs
 - [ ] Add `/react` folder, basically including `react-avenger` with necessary changes
