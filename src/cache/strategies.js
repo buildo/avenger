@@ -1,32 +1,11 @@
-import * as t from 'io-ts'
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
-
-import {
-  CacheValue
-} from './Cache'
-
-export const Strategy = t.interface({
-  isAvailable: t.Function
-}, 'Strategy')
-
-const Delay = t.number
-const Nil = t.union([t.undefined, t.null])
-
 // questa strategia esegue una fetch se non c'è un done oppure se il done presente è troppo vecchio
 export class Expire {
 
   constructor(delay) {
-    if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(delay, Delay))
-    }
     this.delay = delay
   }
 
   isExpired(time) {
-    if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(time, t.number))
-    }
-
     const delta = new Date().getTime() - time
     // prendo in considerazione tempi futuri
     if (delta < 0) {
@@ -36,10 +15,8 @@ export class Expire {
   }
 
   isAvailable(value) {
-    if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(value, CacheValue))
-    }
-    return !Nil.is(value.done) && !this.isExpired(value.done.timestamp)
+    // eslint-disable-next-line eqeqeq
+    return value.done != null && !this.isExpired(value.done.timestamp)
   }
 
   toString() {

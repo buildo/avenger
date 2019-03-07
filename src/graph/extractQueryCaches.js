@@ -1,15 +1,6 @@
-import * as t from 'io-ts';
 import flatten from 'lodash/flatten';
 import { querySync } from '../query/query';
 import { queriesAndArgs, findP } from './util';
-
-const ExtractedQueryCache = t.strict({
-  a: t.object,
-  value: t.any
-});
-export const ExtractedQueryCaches = t.dictionary(
-  t.string, ExtractedQueryCache
-);
 
 function extractQueryCache(graph, fetch, a) {
   if (fetch.type === 'product') {

@@ -1,41 +1,10 @@
-import * as t from 'io-ts'
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
-
-import {
-  Strategy
-} from './strategies'
-
-import {
-  Cache
-} from './Cache'
-
 export function cacheFetch(fetch, strategy, cache) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
-    ThrowReporter.report(t.validate(strategy, Strategy))
-    if (!(cache instanceof Cache)) {
-      throw new Error(`invalid value cache=${cache} provided to cacheFetch, it should be a Cache`)
-    }
-  }
-
   return function cachedFetch(a) {
     return cache.getPromise(a, strategy, fetch)
   }
 }
 
 export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(catalog, t.Function))
-    if (!(cache instanceof Cache)) {
-      throw new Error(`invalid value cache=${cache} provided to cacheCatalog, it should be a Cache`)
-    }
-    ThrowReporter.report(t.validate(strategy, Strategy))
-    if (!(pcache instanceof Cache)) {
-      throw new Error(`invalid value pcache=${pcache} provided to cacheCatalog, it should be a Cache`)
-    }
-    ThrowReporter.report(t.validate(ptoa, t.Function))
-  }
-
   return function cachedCatalog(s) {
     const { blocked, done } = cache.get(s)
     const promise = cache.getPromise(s, strategy, catalog)
@@ -54,17 +23,6 @@ export function cacheCatalog(catalog, strategy, cache, pcache, ptoa) {
 }
 
 export function cacheStar(star, strategy, cache, pcache) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(star, t.Function))
-    ThrowReporter.report(t.validate(strategy, Strategy))
-    if (!(cache instanceof Cache)) {
-      throw new Error(`invalid value cache=${cache} provided to cacheStar, it should be a Cache`)
-    }
-    if (!(cache instanceof Cache)) {
-      throw new Error(`invalid value pcache=${pcache} provided to cacheStar, it should be a Cache`)
-    }
-  }
-
   let resolvedPromise
   let queue = []
 
@@ -109,10 +67,6 @@ export function cacheStar(star, strategy, cache, pcache) {
   }
 
   return function cachedStar(as) {
-    if (process.env.NODE_ENV !== 'production') {
-      ThrowReporter.report(t.validate(as, t.Array))
-    }
-
     const promise = Promise.all(as.map(load))
     cache.storePromise(as, promise)
     return promise

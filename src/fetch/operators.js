@@ -1,19 +1,5 @@
-import * as t from 'io-ts'
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
-
 export function product(fetches) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetches, t.array(t.Function)))
-  }
-
-  const len = fetches.length
-
   function product(as) {
-    if (process.env.NODE_ENV !== 'production') {
-      if (as.length !== len) {
-        throw new Error(`Invalid argument supplied to product fetch (expected an array of ${len})`)
-      }
-    }
     return Promise.all(fetches.map((fetch, i) => fetch(as[i])))
   }
 
@@ -24,12 +10,6 @@ export function product(fetches) {
 }
 
 export function compose(master, ptoa, slave) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(slave, t.Function))
-    ThrowReporter.report(t.validate(ptoa, t.Function))
-    ThrowReporter.report(t.validate(master, t.Function))
-  }
-
   function composition(a) {
     return master(a).then(p => slave(ptoa(p, a)))
   }
@@ -43,10 +23,6 @@ export function compose(master, ptoa, slave) {
 }
 
 export function star(fetch) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
-  }
-
   const functions = {}
 
   function fstar(as) {

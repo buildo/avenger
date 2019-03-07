@@ -1,5 +1,3 @@
-import * as t from 'io-ts'
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter'
 import 'rxjs/add/operator/distinctUntilChanged'
 
 // avoid as much as possible deep comparisons
@@ -25,10 +23,6 @@ import {
 } from './observe'
 
 export function query(fetch, a) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
-  }
-
   const observer = observe(fetch, a).distinctUntilChanged(isEqual)
 
   fetch(a)
@@ -37,10 +31,6 @@ export function query(fetch, a) {
 }
 
 export function querySync(fetch, a) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
-  }
-
   if (fetch.type === 'product') {
     return fetch.fetches.map((fetch, i) => querySync(fetch, a[i]))
   }

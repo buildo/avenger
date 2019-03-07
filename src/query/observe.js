@@ -1,5 +1,3 @@
-import * as t from 'io-ts';
-import { ThrowReporter } from 'io-ts/lib/ThrowReporter';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/combineLatest';
 import 'rxjs/add/operator/filter';
@@ -12,10 +10,6 @@ function observeCache(cache, a) {
 }
 
 export function observe(fetch, a) {
-  if (process.env.NODE_ENV !== 'production') {
-    ThrowReporter.report(t.validate(fetch, t.Function))
-  }
-
   if (fetch.type === 'product') {
     // fix https://github.com/ReactiveX/rxjs/issues/1686
     return Observable.combineLatest(...fetch.fetches.map((fetch, i) => observe(fetch, a[i])), (...values) => values)
