@@ -1,5 +1,5 @@
+import { Applicative3 } from 'fp-ts/lib/Applicative';
 import { Either } from 'fp-ts/lib/Either';
-import { Monad3 } from 'fp-ts/lib/Monad';
 import { Setoid, strictEqual } from 'fp-ts/lib/Setoid';
 import { Cache } from './Cache';
 import {
@@ -68,13 +68,6 @@ class CachedQuery<A, L, P> {
     );
   }
 
-  chain<B>(f: (p: P) => Query<A, L, B>): Query<A, L, B> {
-    const master: ReaderTaskEither<A, L, unknown> = this.value;
-    const slave: ReaderTaskEither<unknown, L, B> = new ReaderTaskEither(
-      a => new TaskEither(new Task(() => f(a as any).run(a as any)))
-    );
-    return new CompositionQuery<A, L, B>(master, slave);
-  }
 
   run(a: A): Promise<Either<L, P>> {
     return this.value.run(a);
@@ -122,16 +115,6 @@ class CompositionQuery<A, L, P> {
     );
   }
 
-  chain<B>(f: (p: P) => Query<A, L, B>): Query<A, L, B> {
-    const master: ReaderTaskEither<A, L, unknown> = new ReaderTaskEither(
-      a =>
-        new TaskEither(new Task((): Promise<Either<L, unknown>> => this.run(a)))
-    );
-    const slave: ReaderTaskEither<unknown, L, B> = new ReaderTaskEither(
-      a => new TaskEither(new Task(() => f(a as any).run(a as any)))
-    );
-    return new CompositionQuery<A, L, B>(master, slave);
-  }
 
   run(a: A): Promise<Either<L, P>> {
     return this.master.chain(a => this.slave.local(() => a)).run(a);
@@ -173,16 +156,6 @@ class ProductQuery<A, L, P> {
     );
   }
 
-  chain<B>(f: (p: P) => Query<A, L, B>): Query<A, L, B> {
-    const master: ReaderTaskEither<A, L, unknown> = new ReaderTaskEither(
-      a =>
-        new TaskEither(new Task((): Promise<Either<L, unknown>> => this.run(a)))
-    );
-    const slave: ReaderTaskEither<unknown, L, B> = new ReaderTaskEither(
-      a => new TaskEither(new Task(() => f(a as any).run(a as any)))
-    );
-    return new CompositionQuery<A, L, B>(master, slave);
-  }
 
   run(a: A): Promise<Either<L, P>> {
     return this.value.run(a);
@@ -198,13 +171,6 @@ function ap<U, L, A, B>(
   fa: Query<U, L, A>
 ): Query<U, L, B> {
   return fa.ap(fab);
-}
-
-function chain<A, L, P, B>(
-  fa: Query<A, L, P>,
-  f: (a: P) => Query<A, L, B>
-): Query<A, L, B> {
-  return fa.chain(f);
 }
 
 const unusedOfSetoid: Setoid<unknown> = {
@@ -226,10 +192,9 @@ export function fromFetch<A, L, P>(
   return new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
 }
 
-export const query: Monad3<URI> = {
+export const query: Applicative3<URI> = {
   URI,
   map,
   of,
-  ap,
-  chain
+  ap
 };

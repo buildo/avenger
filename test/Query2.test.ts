@@ -112,37 +112,6 @@ describe('Query2', () => {
     });
   });
 
-  describe('Monad', () => {
-    it('chain', async () => {
-      const master = Q.query.of<string, string, string>('foo');
-      const res = await master
-        .chain((s: string) => Q.fromTaskEither(taskEither.of(s.length)))
-        .run('');
-      expect(res).toEqual(right(3));
-    });
-
-    it('Left identity: M.chain(M.of(a), f) = f(a)', async () => {
-      const f = (s: string) =>
-        Q.fromTaskEither<string, unknown, number>(
-          taskEither.of<unknown, number>(s.length)
-        );
-      const [res1, res2] = await Promise.all([
-        Q.query.chain(Q.query.of<string, unknown, string>('foo'), f).run(''),
-        f('foo').run('')
-      ]);
-      expect(res1).toEqual(res2);
-    });
-
-    it('Right identity: M.chain(fa, M.of) = fa', async () => {
-      const fa = Q.query.of<string, unknown, string>('foo');
-      const [res1, res2] = await Promise.all([
-        Q.query.chain<string, unknown, string, string>(fa, Q.query.of).run(''),
-        fa.run('')
-      ]);
-      expect(res1).toEqual(res2);
-    });
-  });
-
   describe('CachedQuery', () => {
     it('should cache values indefinitely', async () => {
       const aObj = {
