@@ -8,6 +8,8 @@
 - [ ] Add support for `Strategy` (and maybe some default ones)
 - [ ] Start porting some real world usages as tests
 - [x] Rewrite `Product`s to be labelled products (structs) instead of tuples. So that we can e.g. reuse it as `command` named dependencies. Refer to https://github.com/gcanti/fp-ts-contrib/blob/master/src/sequenceS.ts (similar typing strategy)
+- [ ] TODO in Cache.ts/invalidate: do we nead to cleanup the subject first to avoid leaks?
+- [ ] TODOs in QueryResult.ts: Do we want to aggregate loadings here?
 - [ ] (maybe) Add command `dependencies`
 - [ ] (maybe) Add `/compat` folder, supporting the old `Query`/`Command` DSLs
 - [ ] Add `/react` folder, basically including `react-avenger` with necessary changes
