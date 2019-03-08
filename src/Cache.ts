@@ -67,7 +67,6 @@ export class Cache<A, L, P> {
   };
 
   invalidate = (input: A): TaskEither<L, P> => {
-    // TODO: do we nead to cleanup the subject first to avoid leaks?
     this.subjects = this.remove(input, this.subjects);
     return this.getOrFetch(input);
   };
