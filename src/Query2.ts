@@ -68,6 +68,19 @@ class CachedQuery<A, L, P> {
     );
   }
 
+  compose<L2, P2>(
+    fetch: (a2: P) => TaskEither<L2, P2>,
+    inputSetoid: Setoid<P>
+  ): Query<A, L | L2, P2> {
+    const slaveQ = new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+    const slave = new ReaderTaskEither<unknown, L | L2, P2>(
+      a2 =>
+        new TaskEither<L | L2, P2>(
+          new Task<Either<L | L2, P2>>(() => slaveQ.run(a2 as any))
+        )
+    );
+    return new CompositionQuery<A, L | L2, P2>(this.value, slave);
+  }
 
   run(a: A): Promise<Either<L, P>> {
     return this.value.run(a);
@@ -115,6 +128,22 @@ class CompositionQuery<A, L, P> {
     );
   }
 
+  compose<L2, P2>(
+    fetch: (a2: P) => TaskEither<L2, P2>,
+    inputSetoid: Setoid<P>
+  ): Query<A, L | L2, P2> {
+    const slaveQ = new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+    const slave = new ReaderTaskEither<unknown, L | L2, P2>(
+      a2 =>
+        new TaskEither<L | L2, P2>(
+          new Task<Either<L | L2, P2>>(() => slaveQ.run(a2 as any))
+        )
+    );
+    return new CompositionQuery<A, L | L2, P2>(
+      this.master.chain(a => this.slave.local(() => a)),
+      slave
+    );
+  }
 
   run(a: A): Promise<Either<L, P>> {
     return this.master.chain(a => this.slave.local(() => a)).run(a);
@@ -156,6 +185,19 @@ class ProductQuery<A, L, P> {
     );
   }
 
+  compose<L2, P2>(
+    fetch: (a2: P) => TaskEither<L2, P2>,
+    inputSetoid: Setoid<P>
+  ): Query<A, L | L2, P2> {
+    const slaveQ = new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+    const slave = new ReaderTaskEither<unknown, L | L2, P2>(
+      a2 =>
+        new TaskEither<L | L2, P2>(
+          new Task<Either<L | L2, P2>>(() => slaveQ.run(a2 as any))
+        )
+    );
+    return new CompositionQuery<A, L | L2, P2>(this.value, slave);
+  }
 
   run(a: A): Promise<Either<L, P>> {
     return this.value.run(a);
@@ -185,11 +227,10 @@ export function fromTaskEither<A, L, P>(te: TaskEither<L, P>): Query<A, L, P> {
   return new CachedQuery(RTEfromTaskEither(te), unusedOfSetoid);
 }
 
-export function fromFetch<A, L, P>(
-  fetch: (a: A) => TaskEither<L, P>,
+export function fromFetch<A>(
   inputSetoid: Setoid<A>
-): Query<A, L, P> {
-  return new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+): <L, P>(fetch: (a: A) => TaskEither<L, P>) => Query<A, L, P> {
+  return fetch => new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
 }
 
 export const query: Applicative3<URI> = {

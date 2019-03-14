@@ -13,3 +13,4 @@
 - [ ] (maybe) Add command `dependencies`
 - [ ] (maybe) Add `/compat` folder, supporting the old `Query`/`Command` DSLs
 - [ ] Add `/react` folder, basically including `react-avenger` with necessary changes
+- [ ] try to remove Product alltogheter? Or do we have to keep the case for observe()?

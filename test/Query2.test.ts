@@ -2,7 +2,7 @@ import * as Q from '../src/Query2';
 import { identity, Curried3, Function1 } from 'fp-ts/lib/function';
 import { right } from 'fp-ts/lib/Either';
 import { taskEither } from 'fp-ts/lib/TaskEither';
-import { setoidString } from 'fp-ts/lib/Setoid';
+import { setoidString, setoidNumber } from 'fp-ts/lib/Setoid';
 import { sequenceT } from 'fp-ts/lib/Apply';
 
 describe('Query2', () => {
@@ -118,7 +118,7 @@ describe('Query2', () => {
         a: (s: string) => taskEither.of<string, number>(s.length)
       };
       const aSpy = jest.spyOn(aObj, 'a');
-      const fa = Q.fromFetch(aObj.a, setoidString);
+      const fa = Q.fromFetch(setoidString)(aObj.a);
       const res1 = await fa.run('foo');
       expect(res1).toEqual(right(3));
       expect(aSpy.mock.calls.length).toBe(1);
@@ -130,17 +130,15 @@ describe('Query2', () => {
 
   describe('CompositionQuery', () => {
     it('should cache values indefinitely', async () => {
-      const aObj = {
-        a: (s: string) => taskEither.of<string, string>(s + s)
-      };
-      const bObj = {
-        b: (s: string) => taskEither.of<string, number>(s.length)
-      };
+      const aObj = { a: (s: string) => taskEither.of(s.length) };
+      const bObj = { b: (n: number) => taskEither.of(n * 2) };
       const aSpy = jest.spyOn(aObj, 'a');
       const bSpy = jest.spyOn(bObj, 'b');
-      const fa = Q.fromFetch(aObj.a, setoidString);
-      const fb = Q.fromFetch(bObj.b, setoidString);
-      const composition = fa.chain(() => fb);
+      const fa = Q.fromFetch(setoidString)(aObj.a);
+      const composition = fa.compose(
+        bObj.b,
+        setoidNumber
+      );
       const res1 = await composition.run('foo');
       expect(res1).toEqual(right(6));
       expect(aSpy.mock.calls.length).toBe(1);
@@ -162,8 +160,8 @@ describe('Query2', () => {
       };
       const aSpy = jest.spyOn(aObj, 'a');
       const bSpy = jest.spyOn(bObj, 'b');
-      const fa = Q.fromFetch(aObj.a, setoidString);
-      const fb = Q.fromFetch(bObj.b, setoidString);
+      const fa = Q.fromFetch(setoidString)(aObj.a);
+      const fb = Q.fromFetch(setoidString)(bObj.b);
       const product = sequenceT(Q.query)(fa, fb);
       const res1 = await product.run('foo');
       expect(res1).toEqual(right([3, 'foofoo']));
