@@ -1,120 +1,245 @@
-import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
+import { Applicative3 } from 'fp-ts/lib/Applicative';
+import { Either } from 'fp-ts/lib/Either';
+import { Setoid, strictEqual } from 'fp-ts/lib/Setoid';
 import { Cache } from './Cache';
-import { Setoid } from 'fp-ts/lib/Setoid';
-import { mapWithKey, sequence } from 'fp-ts/lib/Record';
+import {
+  ReaderTaskEither,
+  fromTaskEither as RTEfromTaskEither,
+  readerTaskEither
+} from 'fp-ts/lib/ReaderTaskEither';
+import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { Task } from 'fp-ts/lib/Task';
 
-export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
-
-// these type annotations are needed because fp-ts can't add stricter
-// overloads yet due to https://github.com/Microsoft/TypeScript/issues/29246
-const sequenceRecordTaskEither: <K extends string, L, A>(
-  ta: Record<K, TaskEither<L, A>>
-) => TaskEither<L, Record<K, A>> = sequence(taskEither);
-
-export interface Fetch<A = void, L = unknown, P = unknown> {
-  (input: A): TaskEither<L, P>;
+declare module 'fp-ts/lib/HKT' {
+  interface URI2HKT3<U, L, A> {
+    Query: Query<U, L, A>;
+  }
 }
 
-interface BaseQuery<A, L, P> {
-  _A: A;
-  _L: L;
-  _P: P;
-  run: (input: A) => TaskEither<L, P>;
-  invalidate: (input: A) => TaskEither<L, P>;
-}
+export const URI = 'Query';
 
-function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {
-  return null as any;
-}
+export type URI = typeof URI;
 
-interface CachedQuery<A = void, L = unknown, P = unknown>
-  extends BaseQuery<A, L, P> {
-  type: 'cached';
-  cache: Cache<A, L, P>;
-}
-
-interface Composition<
-  A1 = void,
-  L1 = unknown,
-  P1 = unknown,
-  L2 = unknown,
-  P2 = unknown
-> extends BaseQuery<A1, L1 | L2, P2> {
-  type: 'composition';
-  master: ObservableQuery<A1, L1, P1>;
-  slave: ObservableQuery<P1, L2, P2>;
-}
-
-interface Product<A = void, L = unknown, P = unknown>
-  extends BaseQuery<A, L, P> {
-  type: 'product';
-  queries: Record<string, ObservableQuery<A, L, P>>;
-}
-
-export type ObservableQuery<A = void, L = unknown, P = unknown> =
+export type Query<A, L, P> =
   | CachedQuery<A, L, P>
-  | Composition<A, L, P>
-  | Product<A, L, P>;
+  | CompositionQuery<A, L, P>
+  | ProductQuery<A, L, P>;
 
-export function query<A = void, L = unknown, P = unknown>(
-  fetch: Fetch<A, L, P>,
-  inputSetoid: Setoid<A>
-): CachedQuery<A, L, P> {
-  const cache = new Cache<A, L, P>(fetch, inputSetoid);
-  return {
-    type: 'cached',
-    ...queryPhantoms<A, L, P>(),
-    cache,
-    run: cache.getOrFetch,
-    invalidate: cache.invalidate
-  };
-}
+class CachedQuery<A, L, P> {
+  readonly type: 'Cached' = 'Cached';
+  readonly _A!: A;
+  readonly _L!: L;
+  readonly _P!: P;
+  readonly _URI!: URI;
+  private readonly cache: Cache<A, L, P>;
+  private readonly value: ReaderTaskEither<A, L, P>;
 
-export function compose<A1, L1, P1, L2, P2>(
-  master: ObservableQuery<A1, L1, P1>,
-  slave: ObservableQuery<P1, L2, P2>
-): Composition<A1, L1, P1, L2, P2> {
-  return {
-    type: 'composition',
-    ...queryPhantoms<A1, L1 | L2, P2>(),
-    master,
-    slave,
-    run: (a1: A1) =>
-      (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
-        (slave.run as Fetch<P1, L2, P2>)(a2)
-      ),
-    invalidate: (a1: A1) =>
-      (master.invalidate as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
-        (slave.invalidate as Fetch<P1, L2, P2>)(a2)
+  constructor(
+    value: ReaderTaskEither<A, L, P>,
+    readonly inputSetoid: Setoid<A>
+  ) {
+    this.cache = new Cache<A, L, P>(value, inputSetoid);
+    this.value = new ReaderTaskEither(this.cache.getOrFetch);
+  }
+
+  fold<R>(
+    whenCached: () => R,
+    _whenComposition: () => R,
+    _whenProduct: () => R
+  ): R {
+    return whenCached();
+  }
+
+  map<B>(f: (p: P) => B): Query<A, L, B> {
+    return new CachedQuery(this.value.map(f), this.inputSetoid);
+  }
+
+  ap<B>(fab: Query<A, L, (a: P) => B>): Query<A, L, B> {
+    return new ProductQuery(
+      readerTaskEither.ap(
+        new ReaderTaskEither<A, L, (a: P) => B>(
+          (a: A) =>
+            new TaskEither<L, (a: P) => B>(
+              new Task<Either<L, (a: P) => B>>(() => fab.run(a))
+            )
+        ),
+        this.value
       )
-  };
+    );
+  }
+
+  compose<L2, P2>(
+    fetch: (a2: P) => TaskEither<L2, P2>,
+    inputSetoid: Setoid<P>
+  ): Query<A, L | L2, P2> {
+    const slaveQ = new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+    const slave = new ReaderTaskEither<unknown, L | L2, P2>(
+      a2 =>
+        new TaskEither<L | L2, P2>(
+          new Task<Either<L | L2, P2>>(() => slaveQ.run(a2 as any))
+        )
+    );
+    return new CompositionQuery<A, L | L2, P2>(this.value, slave);
+  }
+
+  invalidate(a: A) {
+    return this.cache.invalidate(a);
+  }
+
+  run(a: A): Promise<Either<L, P>> {
+    return this.value.run(a);
+  }
 }
 
-export function product<
-  R extends Record<string, ObservableQuery<any, any, any>>
->(
-  queries: EnforceNonEmptyRecord<R>
-): Product<
-  { [K in keyof R]: R[K]['_A'] },
-  { [K in keyof R]: R[K]['_L'] }[keyof R],
-  { [K in keyof R]: R[K]['_P'] }
-> {
-  type A = { [K in keyof R]: R[K]['_A'] };
-  const runQueries = (a: A) =>
-    mapWithKey(queries, (k, query) => query.run(a[k]));
-  const invalidateQueries = (a: A) =>
-    mapWithKey(queries, (k, query) => query.run(a[k]));
-  return {
-    type: 'product',
-    ...queryPhantoms<
-      A,
-      { [K in keyof R]: R[K]['_L'] }[keyof R],
-      { [K in keyof R]: R[K]['_P'] }
-    >(),
-    queries,
-    // @ts-ignore
-    run: (a: A) => sequenceRecordTaskEither(runQueries(a)),
-    // @ts-ignore
-    invalidate: (a: A) => sequenceRecordTaskEither(invalidateQueries(a))
-  };
+class CompositionQuery<A, L, P> {
+  readonly type: 'Composition' = 'Composition';
+  readonly _A!: A;
+  readonly _L!: L;
+  readonly _P!: P;
+  readonly _URI!: URI;
+
+  constructor(
+    readonly master: ReaderTaskEither<A, L, unknown>,
+    readonly slave: ReaderTaskEither<unknown, L, P>
+  ) {}
+
+  fold<R>(
+    _whenCached: () => R,
+    whenComposition: () => R,
+    _whenProduct: () => R
+  ): R {
+    return whenComposition();
+  }
+
+  map<B>(f: (p: P) => B): Query<A, L, B> {
+    return new CompositionQuery(this.master, this.slave.map(f));
+  }
+
+  ap<B>(fab: Query<A, L, (a: P) => B>): Query<A, L, B> {
+    return new ProductQuery(
+      readerTaskEither.ap(
+        new ReaderTaskEither<A, L, (a: P) => B>(
+          (a: A) =>
+            new TaskEither<L, (a: P) => B>(
+              new Task<Either<L, (a: P) => B>>(() => fab.run(a))
+            )
+        ),
+        new ReaderTaskEither<A, L, P>(
+          (a: A) =>
+            new TaskEither<L, P>(new Task<Either<L, P>>(() => this.run(a)))
+        )
+      )
+    );
+  }
+
+  compose<L2, P2>(
+    fetch: (a2: P) => TaskEither<L2, P2>,
+    inputSetoid: Setoid<P>
+  ): Query<A, L | L2, P2> {
+    const slaveQ = new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+    const slave = new ReaderTaskEither<unknown, L | L2, P2>(
+      a2 =>
+        new TaskEither<L | L2, P2>(
+          new Task<Either<L | L2, P2>>(() => slaveQ.run(a2 as any))
+        )
+    );
+    return new CompositionQuery<A, L | L2, P2>(
+      this.master.chain(a => this.slave.local(() => a)),
+      slave
+    );
+  }
+
+  run(a: A): Promise<Either<L, P>> {
+    return this.master.chain(a => this.slave.local(() => a)).run(a);
+  }
 }
+
+class ProductQuery<A, L, P> {
+  readonly type: 'Product' = 'Product';
+  readonly _A!: A;
+  readonly _L!: L;
+  readonly _P!: P;
+  readonly _URI!: URI;
+
+  constructor(readonly value: ReaderTaskEither<A, L, P>) {}
+
+  fold<R>(
+    _whenCached: () => R,
+    _whenComposition: () => R,
+    whenProduct: () => R
+  ): R {
+    return whenProduct();
+  }
+
+  map<B>(f: (p: P) => B): Query<A, L, B> {
+    return new ProductQuery(this.value.map(f));
+  }
+
+  ap<B>(fab: Query<A, L, (a: P) => B>): Query<A, L, B> {
+    return new ProductQuery(
+      readerTaskEither.ap(
+        new ReaderTaskEither<A, L, (a: P) => B>(
+          (a: A) =>
+            new TaskEither<L, (a: P) => B>(
+              new Task<Either<L, (a: P) => B>>(() => fab.run(a))
+            )
+        ),
+        this.value
+      )
+    );
+  }
+
+  compose<L2, P2>(
+    fetch: (a2: P) => TaskEither<L2, P2>,
+    inputSetoid: Setoid<P>
+  ): Query<A, L | L2, P2> {
+    const slaveQ = new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+    const slave = new ReaderTaskEither<unknown, L | L2, P2>(
+      a2 =>
+        new TaskEither<L | L2, P2>(
+          new Task<Either<L | L2, P2>>(() => slaveQ.run(a2 as any))
+        )
+    );
+    return new CompositionQuery<A, L | L2, P2>(this.value, slave);
+  }
+
+  run(a: A): Promise<Either<L, P>> {
+    return this.value.run(a);
+  }
+}
+
+function map<A, L, P, B>(fa: Query<A, L, P>, f: (p: P) => B): Query<A, L, B> {
+  return fa.map(f);
+}
+
+function ap<U, L, A, B>(
+  fab: Query<U, L, (a: A) => B>,
+  fa: Query<U, L, A>
+): Query<U, L, B> {
+  return fa.ap(fab);
+}
+
+const unusedOfSetoid: Setoid<unknown> = {
+  equals: strictEqual
+};
+
+function of<A, L, P>(p: P): Query<A, L, P> {
+  return new CachedQuery(readerTaskEither.of<A, L, P>(p), unusedOfSetoid);
+}
+
+export function fromTaskEither<A, L, P>(te: TaskEither<L, P>): Query<A, L, P> {
+  return new CachedQuery(RTEfromTaskEither(te), unusedOfSetoid);
+}
+
+export function fromFetch<A>(
+  inputSetoid: Setoid<A>
+): <L, P>(fetch: (a: A) => TaskEither<L, P>) => Query<A, L, P> {
+  return fetch => new CachedQuery(new ReaderTaskEither(fetch), inputSetoid);
+}
+
+export const query: Applicative3<URI> = {
+  URI,
+  map,
+  of,
+  ap
+};

@@ -6,12 +6,12 @@ import {
   cacheValueResolved,
   cacheValueInitial
 } from './CacheValue';
-import { Fetch } from './Query';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { member, lookup, remove } from 'fp-ts/lib/Map';
 import { Option } from 'fp-ts/lib/Option';
 import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
+import { ReaderTaskEither } from 'fp-ts/lib/ReaderTaskEither';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
@@ -20,7 +20,10 @@ export class Cache<A, L, P> {
   private readonly remove: <T>(input: A, map: Map<A, T>) => Map<A, T>;
   private readonly unsafeLookup: <T>(input: A, map: Map<A, T>) => T;
 
-  constructor(readonly fetch: Fetch<A, L, P>, readonly inputSetoid: Setoid<A>) {
+  constructor(
+    readonly fetch: ReaderTaskEither<A, L, P>,
+    readonly inputSetoid: Setoid<A>
+  ) {
     this.member = member(inputSetoid);
     this.lookup = lookup(inputSetoid);
     this.remove = remove(inputSetoid);
@@ -43,7 +46,7 @@ export class Cache<A, L, P> {
   }
 
   private createPending = (input: A): TaskEither<L, P> => {
-    const pending = this.fetch(input).bimap(
+    const pending = this.fetch.value(input).bimap(
       error => {
         this.emitEvent(input, cacheValueError(error, new Date()));
         return error;
