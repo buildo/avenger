@@ -7,11 +7,11 @@ import {
   cacheValueInitial
 } from './CacheValue';
 import { Fetch } from './Query';
-import { Setoid } from 'fp-ts/lib/Setoid';
 import { member, lookup, remove } from 'fp-ts/lib/Map';
 import { Option } from 'fp-ts/lib/Option';
 import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
+import { Strategy } from './Strategy';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
@@ -20,10 +20,13 @@ export class Cache<A, L, P> {
   private readonly remove: <T>(input: A, map: Map<A, T>) => Map<A, T>;
   private readonly unsafeLookup: <T>(input: A, map: Map<A, T>) => T;
 
-  constructor(readonly fetch: Fetch<A, L, P>, readonly inputSetoid: Setoid<A>) {
-    this.member = member(inputSetoid);
-    this.lookup = lookup(inputSetoid);
-    this.remove = remove(inputSetoid);
+  constructor(
+    readonly fetch: Fetch<A, L, P>,
+    readonly strategy: Strategy<A, L, P>
+  ) {
+    this.member = member(strategy.inputSetoid);
+    this.lookup = lookup(strategy.inputSetoid);
+    this.remove = remove(strategy.inputSetoid);
     this.unsafeLookup = (input, map) =>
       this.lookup(input, map).getOrElseL(() => {
         throw new Error('unsafe lookup failed');

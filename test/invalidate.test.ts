@@ -1,6 +1,7 @@
 import { query, invalidate } from '../src';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { setoidNumber, setoidString } from 'fp-ts/lib/Setoid';
+import { available } from '../src/Strategy';
 
 describe('invalidate', () => {
   it('should invalidate a set of queries', async () => {
@@ -10,8 +11,8 @@ describe('invalidate', () => {
     };
     const aSpy = jest.spyOn(obj, 'a');
     const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a, setoidNumber);
-    const b = query(obj.b, setoidString);
+    const a = query(obj.a, available(setoidNumber));
+    const b = query(obj.b, available(setoidString));
 
     // run once
     await Promise.all([a.run(1).run(), b.run('foo').run()]);

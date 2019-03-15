@@ -1,7 +1,7 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
-import { Setoid } from 'fp-ts/lib/Setoid';
 import { mapWithKey, sequence } from 'fp-ts/lib/Record';
+import { Strategy } from './Strategy';
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
 
@@ -58,9 +58,9 @@ export type ObservableQuery<A = void, L = unknown, P = unknown> =
 
 export function query<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
-  inputSetoid: Setoid<A>
+  strategy: Strategy<A, L, P>
 ): CachedQuery<A, L, P> {
-  const cache = new Cache<A, L, P>(fetch, inputSetoid);
+  const cache = new Cache<A, L, P>(fetch, strategy);
   return {
     type: 'cached',
     ...queryPhantoms<A, L, P>(),
