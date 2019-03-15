@@ -2,6 +2,7 @@ import { Cache } from '../src/Cache';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { setoidString } from 'fp-ts/lib/Setoid';
 import { delay } from 'fp-ts/lib/Task';
+import { available } from '../src/Strategy';
 
 describe('Cache', () => {
   describe('getOrFetch', () => {
@@ -10,7 +11,7 @@ describe('Cache', () => {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, setoidString);
+      const cache = new Cache(fetchObj.fetch, available(setoidString));
       await cache.getOrFetch('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await cache.getOrFetch('foo').run();
@@ -22,7 +23,7 @@ describe('Cache', () => {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, setoidString);
+      const cache = new Cache(fetchObj.fetch, available(setoidString));
       await cache.getOrFetch('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await delay(20, void 0).run();
@@ -37,7 +38,7 @@ describe('Cache', () => {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, setoidString);
+      const cache = new Cache(fetchObj.fetch, available(setoidString));
       await cache.getOrFetch('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await cache.invalidate('foo').run();

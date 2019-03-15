@@ -2,6 +2,7 @@ import { query, command } from '../src';
 import { taskEither, fromLeft } from 'fp-ts/lib/TaskEither';
 import { setoidNumber, setoidString } from 'fp-ts/lib/Setoid';
 import { Fetch } from '../src/Query';
+import { available } from '../src/Strategy';
 
 describe('command', () => {
   it('should run a command and then invalidate if it was successful', async () => {
@@ -11,8 +12,8 @@ describe('command', () => {
     };
     const aSpy = jest.spyOn(obj, 'a');
     const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a, setoidNumber);
-    const b = query(obj.b, setoidString);
+    const a = query(obj.a, available(setoidNumber));
+    const b = query(obj.b, available(setoidString));
     const c: Fetch<string, string, number> = () => taskEither.of(1);
     const cmd = command(c, { a, b });
 
@@ -34,8 +35,8 @@ describe('command', () => {
     };
     const aSpy = jest.spyOn(obj, 'a');
     const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a, setoidNumber);
-    const b = query(obj.b, setoidString);
+    const a = query(obj.a, available(setoidNumber));
+    const b = query(obj.b, available(setoidString));
     const c: Fetch<string, string, number> = () => fromLeft('nope');
     const cmd = command(c, { a, b });
 
