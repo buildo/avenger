@@ -27,13 +27,13 @@ function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {
   return null as any;
 }
 
-interface CachedQuery<A = void, L = unknown, P = unknown>
+export interface CachedQuery<A = void, L = unknown, P = unknown>
   extends BaseQuery<A, L, P> {
   type: 'cached';
   cache: Cache<A, L, P>;
 }
 
-interface Composition<
+export interface Composition<
   A1 = void,
   L1 = unknown,
   P1 = unknown,
@@ -45,7 +45,7 @@ interface Composition<
   slave: ObservableQuery<P1, L2, P2>;
 }
 
-interface Product<A = void, L = unknown, P = unknown>
+export interface Product<A = void, L = unknown, P = unknown>
   extends BaseQuery<A, L, P> {
   type: 'product';
   queries: Record<string, ObservableQuery<A, L, P>>;
