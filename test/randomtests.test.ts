@@ -6,7 +6,7 @@ import { available } from '../src/Strategy';
 
 it('does something', async () => {
   const a = (input: number) => taskEither.of(input);
-  const cachedA = query(a, available(setoidNumber));
+  const cachedA = query(a)(available(setoidNumber));
   requestAnimationFrame(() => cachedA.run(1).run());
   const results = await observe(cachedA, 1)
     .pipe(
@@ -22,7 +22,7 @@ it('does something', async () => {
 
 it('caches indefinitely (temporarily since no strategies - will change)', async () => {
   const a = (input: number) => taskEither.of(input);
-  const cachedA = query(a, available(setoidNumber));
+  const cachedA = query(a)(available(setoidNumber));
   requestAnimationFrame(() => cachedA.run(1).run());
   const results1 = await observe(cachedA, 1)
     .pipe(
@@ -46,7 +46,7 @@ it('caches indefinitely (temporarily since no strategies - will change)', async 
 
 it('new observers get the latest available result', async () => {
   const a = (input: number) => taskEither.of(input);
-  const cachedA = query(a, available(setoidNumber));
+  const cachedA = query(a)(available(setoidNumber));
   requestAnimationFrame(() => cachedA.run(1).run());
   const results1 = await observe(cachedA, 1)
     .pipe(
@@ -70,7 +70,7 @@ it('new observers get the latest available result', async () => {
 it('should reuse the same pending (primitive inputs)', async () => {
   const spyObj = { a: (input: number) => taskEither.of(input) };
   const aSpy = jest.spyOn(spyObj, 'a');
-  const cachedA = query(spyObj.a, available(setoidNumber));
+  const cachedA = query(spyObj.a)(available(setoidNumber));
   requestAnimationFrame(() => cachedA.run(1).run());
   requestAnimationFrame(() => cachedA.run(1).run());
   const o1 = observe(cachedA, 1)
@@ -93,8 +93,7 @@ it('should reuse the same pending (primitive inputs)', async () => {
 it('should reuse the same pending (non-primitive inputs)', async () => {
   const spyObj = { a: (input: { foo: string }) => taskEither.of(input) };
   const aSpy = jest.spyOn(spyObj, 'a');
-  const cachedA = query(
-    spyObj.a,
+  const cachedA = query(spyObj.a)(
     available(getStructSetoid({ foo: setoidString }))
   );
   const input1 = { foo: 'bar' };
@@ -119,7 +118,7 @@ it('should reuse the same pending (non-primitive inputs)', async () => {
 });
 
 it('should notify on failures', async () => {
-  const a = query((_: string) => fromLeft('nope'), available(setoidString));
+  const a = query((_: string) => fromLeft('nope'))(available(setoidString));
   requestAnimationFrame(() => a.run('foo').run());
   const results = await observe(a, 'foo')
     .pipe(
@@ -134,12 +133,10 @@ it('should notify on failures', async () => {
 });
 
 it('compose', async () => {
-  const master = query(
-    (s: string) => taskEither.of(s.length),
+  const master = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const slave = query(
-    (n: number) => taskEither.of(n * 2),
+  const slave = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const composition = compose(
@@ -161,12 +158,10 @@ it('compose', async () => {
 });
 
 it("compose - master's observer is notified when composition is run", async () => {
-  const master = query(
-    (s: string) => taskEither.of(s.length),
+  const master = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const slave = query(
-    (n: number) => taskEither.of(n * 2),
+  const slave = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const composition = compose(
@@ -192,12 +187,10 @@ it("compose - master's observer is notified when composition is run", async () =
 });
 
 it("compose - slave's observer is notified when composition is run", async () => {
-  const master = query(
-    (s: string) => taskEither.of(s.length),
+  const master = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const slave = query(
-    (n: number) => taskEither.of(n * 2),
+  const slave = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const composition = compose(
@@ -222,12 +215,10 @@ it("compose - slave's observer is notified when composition is run", async () =>
 });
 
 it("compose - composition's observer is notified when master is run", async () => {
-  const master = query(
-    (s: string) => taskEither.of(s.length),
+  const master = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const slave = query(
-    (n: number) => taskEither.of(n * 2),
+  const slave = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const composition = compose(
@@ -249,12 +240,10 @@ it("compose - composition's observer is notified when master is run", async () =
 });
 
 it("compose - composition's observer is notified with failure on master failure", async () => {
-  const master = query(
-    (_: string) => fromLeft<string, number>('nope'),
+  const master = query((_: string) => fromLeft<string, number>('nope'))(
     available(setoidString)
   );
-  const slave = query(
-    (n: number) => taskEither.of(n * 2),
+  const slave = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const composition = compose(
@@ -276,12 +265,10 @@ it("compose - composition's observer is notified with failure on master failure"
 });
 
 it("compose - composition's observer is notified with failure on slave failure", async () => {
-  const master = query(
-    (s: string) => taskEither.of(s.length),
+  const master = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const slave = query(
-    (_: number) => fromLeft<string, number>('nope'),
+  const slave = query((_: number) => fromLeft<string, number>('nope'))(
     available(setoidNumber)
   );
   const composition = compose(
@@ -303,12 +290,10 @@ it("compose - composition's observer is notified with failure on slave failure",
 });
 
 it('product', async () => {
-  const f1 = query(
-    (s: string) => taskEither.of(s.length),
+  const f1 = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const f2 = query(
-    (n: number) => taskEither.of(n * 2),
+  const f2 = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const p = product({ f1, f2 });
@@ -326,12 +311,10 @@ it('product', async () => {
 });
 
 it('product - f<n> observer is notified when product is run', async () => {
-  const f1 = query(
-    (s: string) => taskEither.of(s.length),
+  const f1 = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const f2 = query(
-    (n: number) => taskEither.of(n * 2),
+  const f2 = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const p = product({ f1, f2 });
@@ -349,12 +332,10 @@ it('product - f<n> observer is notified when product is run', async () => {
 });
 
 it('product - product observer is notified when f<n> is run', async () => {
-  const f1 = query(
-    (s: string) => taskEither.of(s.length),
+  const f1 = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const f2 = query(
-    (n: number) => taskEither.of(n * 2),
+  const f2 = query((n: number) => taskEither.of(n * 2))(
     available(setoidNumber)
   );
   const p = product({ f1, f2 });
@@ -372,12 +353,10 @@ it('product - product observer is notified when f<n> is run', async () => {
 });
 
 it('product - product observer is notified with failure on f<n> failure', async () => {
-  const f1 = query(
-    (s: string) => taskEither.of(s.length),
+  const f1 = query((s: string) => taskEither.of(s.length))(
     available(setoidString)
   );
-  const f2 = query(
-    (_: number) => fromLeft<string, number>('nope'),
+  const f2 = query((_: number) => fromLeft<string, number>('nope'))(
     available(setoidNumber)
   );
   const p = product({ f1, f2 });

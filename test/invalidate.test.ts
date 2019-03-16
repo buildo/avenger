@@ -11,8 +11,8 @@ describe('invalidate', () => {
     };
     const aSpy = jest.spyOn(obj, 'a');
     const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a, available(setoidNumber));
-    const b = query(obj.b, available(setoidString));
+    const a = query(obj.a)(available(setoidNumber));
+    const b = query(obj.b)(available(setoidString));
 
     // run once
     await Promise.all([a.run(1).run(), b.run('foo').run()]);

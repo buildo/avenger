@@ -11,9 +11,7 @@ const sequenceRecordTaskEither: <K extends string, L, A>(
   ta: Record<K, TaskEither<L, A>>
 ) => TaskEither<L, Record<K, A>> = sequence(taskEither);
 
-export interface Fetch<A = void, L = unknown, P = unknown> {
-  (input: A): TaskEither<L, P>;
-}
+export type Fetch<A, L, P> = (input: A) => TaskEither<L, P>;
 
 interface BaseQuery<A, L, P> {
   _A: A;
@@ -27,46 +25,40 @@ function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {
   return null as any;
 }
 
-export interface CachedQuery<A = void, L = unknown, P = unknown>
-  extends BaseQuery<A, L, P> {
+export interface CachedQuery<A, L, P> extends BaseQuery<A, L, P> {
   type: 'cached';
   cache: Cache<A, L, P>;
 }
 
-export interface Composition<
-  A1 = void,
-  L1 = unknown,
-  P1 = unknown,
-  L2 = unknown,
-  P2 = unknown
-> extends BaseQuery<A1, L1 | L2, P2> {
+export interface Composition<A1, L1, P1, L2, P2>
+  extends BaseQuery<A1, L1 | L2, P2> {
   type: 'composition';
   master: ObservableQuery<A1, L1, P1>;
   slave: ObservableQuery<P1, L2, P2>;
 }
 
-export interface Product<A = void, L = unknown, P = unknown>
-  extends BaseQuery<A, L, P> {
+export interface Product<A, L, P> extends BaseQuery<A, L, P> {
   type: 'product';
   queries: Record<string, ObservableQuery<A, L, P>>;
 }
 
-export type ObservableQuery<A = void, L = unknown, P = unknown> =
+export type ObservableQuery<A, L, P> =
   | CachedQuery<A, L, P>
-  | Composition<A, L, P>
+  | Composition<A, L, unknown, L, P>
   | Product<A, L, P>;
 
-export function query<A = void, L = unknown, P = unknown>(
-  fetch: Fetch<A, L, P>,
-  strategy: Strategy<A, L, P>
-): CachedQuery<A, L, P> {
-  const cache = new Cache<A, L, P>(fetch, strategy);
-  return {
-    type: 'cached',
-    ...queryPhantoms<A, L, P>(),
-    cache,
-    run: cache.getOrFetch,
-    invalidate: cache.invalidate
+export function query<A, L, P>(
+  fetch: Fetch<A, L, P>
+): (strategy: Strategy<A, L, P>) => CachedQuery<A, L, P> {
+  return strategy => {
+    const cache = new Cache<A, L, P>(fetch, strategy);
+    return {
+      type: 'cached',
+      ...queryPhantoms<A, L, P>(),
+      cache,
+      run: cache.getOrFetch,
+      invalidate: cache.invalidate
+    };
   };
 }
 

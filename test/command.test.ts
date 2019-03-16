@@ -12,8 +12,8 @@ describe('command', () => {
     };
     const aSpy = jest.spyOn(obj, 'a');
     const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a, available(setoidNumber));
-    const b = query(obj.b, available(setoidString));
+    const a = query(obj.a)(available(setoidNumber));
+    const b = query(obj.b)(available(setoidString));
     const c: Fetch<string, string, number> = () => taskEither.of(1);
     const cmd = command(c, { a, b });
 
@@ -35,8 +35,8 @@ describe('command', () => {
     };
     const aSpy = jest.spyOn(obj, 'a');
     const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a, available(setoidNumber));
-    const b = query(obj.b, available(setoidString));
+    const a = query(obj.a)(available(setoidNumber));
+    const b = query(obj.b)(available(setoidString));
     const c: Fetch<string, string, number> = () => fromLeft('nope');
     const cmd = command(c, { a, b });
 
