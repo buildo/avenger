@@ -7,7 +7,7 @@ import {
   cacheValueInitial
 } from './CacheValue';
 import { Fetch } from './Query';
-import { member, lookup, remove } from 'fp-ts/lib/Map';
+import { lookup, remove } from 'fp-ts/lib/Map';
 import { Option } from 'fp-ts/lib/Option';
 import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
@@ -15,23 +15,37 @@ import { Strategy } from './Strategy';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
-  private readonly member: <T>(input: A, map: Map<A, T>) => boolean;
-  private readonly lookup: <T>(input: A, map: Map<A, T>) => Option<T>;
   private readonly remove: <T>(input: A, map: Map<A, T>) => Map<A, T>;
-  private readonly unsafeLookup: <T>(input: A, map: Map<A, T>) => T;
+  private readonly _lookup: <T>(input: A, map: Map<A, T>) => Option<T>;
 
   constructor(
     readonly fetch: Fetch<A, L, P>,
     readonly strategy: Strategy<A, L, P>
   ) {
-    this.member = member(strategy.inputSetoid);
-    this.lookup = lookup(strategy.inputSetoid);
     this.remove = remove(strategy.inputSetoid);
-    this.unsafeLookup = (input, map) =>
-      this.lookup(input, map).getOrElseL(() => {
-        throw new Error('unsafe lookup failed');
-      });
+    this._lookup = lookup(strategy.inputSetoid);
   }
+
+  private readonly lookup = (
+    input: A,
+    map: Map<A, BehaviorSubject<CacheValue<L, P>>>
+  ) =>
+    this._lookup(input, map).filter(subject =>
+      this.strategy.filter(subject.value)
+    );
+
+  private readonly member = (
+    input: A,
+    map: Map<A, BehaviorSubject<CacheValue<L, P>>>
+  ) => this.lookup(input, map).isSome();
+
+  private readonly unsafeLookup = (
+    input: A,
+    map: Map<A, BehaviorSubject<CacheValue<L, P>>>
+  ) =>
+    this.lookup(input, map).getOrElseL(() => {
+      throw new Error('unsafe lookup failed');
+    });
 
   private emitEvent(input: A, cacheValue: CacheValue<L, P>): void {
     this.lookup(input, this.subjects).map(s => s.next(cacheValue));
