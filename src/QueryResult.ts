@@ -1,5 +1,7 @@
 import { Applicative2 } from 'fp-ts/lib/Applicative';
 import { Functor2 } from 'fp-ts/lib/Functor';
+import { Setoid, fromEquals } from 'fp-ts/lib/Setoid';
+import { constFalse } from 'fp-ts/lib/function';
 
 declare module 'fp-ts/lib/HKT' {
   interface URI2HKT2<L, A> {
@@ -132,3 +134,16 @@ export const queryResult: Functor2<URI> & Applicative2<URI> = {
   ap,
   of
 };
+
+export function getSetoid<L, A>(
+  Sl: Setoid<L>,
+  Sa: Setoid<A>
+): Setoid<QueryResult<L, A>> {
+  return fromEquals((a, b) =>
+    a.fold(
+      b.type === 'Loading',
+      fa => b.fold(false, fb => Sl.equals(fa, fb), constFalse),
+      sa => b.fold(false, constFalse, sb => Sa.equals(sa, sb))
+    )
+  );
+}
