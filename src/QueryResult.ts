@@ -1,5 +1,5 @@
 import { Applicative2 } from 'fp-ts/lib/Applicative';
-import { Functor2 } from 'fp-ts/lib/Functor';
+import { Bifunctor2 } from 'fp-ts/lib/Bifunctor';
 import { Setoid, fromEquals } from 'fp-ts/lib/Setoid';
 import { constFalse } from 'fp-ts/lib/function';
 
@@ -21,7 +21,7 @@ export class Loading<L, A> {
   readonly _A!: A;
   readonly _L!: L;
   readonly _URI!: URI;
-  private constructor() {}
+  constructor() {}
 
   fold<R>(
     onLoading: R,
@@ -35,10 +35,17 @@ export class Loading<L, A> {
     return this as any;
   }
 
+  bimap<B, C>(
+    _whenFailure: (value: L) => B,
+    _whenSuccess: (value: A) => C
+  ): QueryResult<B, C> {
+    return this as any;
+  }
+
   ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
     return fab.fold<QueryResult<L, B>>(
       this as any, // loading
-      () => fab as any, // failure. Do we want to aggregate loadings here?
+      value => new Failure<L, B>(value, true), // fab's failure
       () => this as any // loading
     );
   }
@@ -63,10 +70,17 @@ export class Failure<L, A> {
     return this as any;
   }
 
+  bimap<B, C>(
+    whenFailure: (value: L) => B,
+    _whenSuccess: (value: A) => C
+  ): QueryResult<B, C> {
+    return new Failure<B, C>(whenFailure(this.value), this.loading);
+  }
+
   ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
     return fab.fold<QueryResult<L, B>>(
       this as any, // failure
-      () => fab as any, // fab's failure. Do we want to aggregate loadings here?
+      () => fab as any, // fab's failure
       () => this as any // failure
     );
   }
@@ -91,10 +105,17 @@ export class Success<L, A> {
     return new Success(f(this.value), this.loading);
   }
 
+  bimap<B, C>(
+    _whenFailure: (value: L) => B,
+    whenSuccess: (value: A) => C
+  ): QueryResult<B, C> {
+    return new Success<B, C>(whenSuccess(this.value), this.loading);
+  }
+
   ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
     return fab.fold<QueryResult<L, B>>(
       fab as any, // loading
-      () => fab as any, // fab's failure. Do we want to aggregate loadings here?
+      () => fab as any, // fab's failure
       value => this.map(value) // success
     );
   }
@@ -128,11 +149,20 @@ const of = <L, A>(value: A): QueryResult<L, A> => {
   return success(value, false);
 };
 
-export const queryResult: Functor2<URI> & Applicative2<URI> = {
+const bimap = <L, A, B, C>(
+  fa: QueryResult<L, A>,
+  l: (l: L) => B,
+  r: (a: A) => C
+): QueryResult<B, C> => {
+  return fa.bimap(l, r);
+};
+
+export const queryResult: Bifunctor2<URI> & Applicative2<URI> = {
   URI,
   map,
   ap,
-  of
+  of,
+  bimap
 };
 
 export function getSetoid<L, A>(

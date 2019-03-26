@@ -1,21 +1,40 @@
 import { CacheValue } from './CacheValue';
-import { Setoid } from 'fp-ts/lib/Setoid';
+import { Setoid, contramap as setoidContramap } from 'fp-ts/lib/Setoid';
 import { Function1, constTrue, constFalse } from 'fp-ts/lib/function';
+import { Contravariant3 } from 'fp-ts/lib/Contravariant';
 
-export interface Strategy<A, L, P> {
-  inputSetoid: Setoid<A>;
-  filter: Function1<CacheValue<L, P>, boolean>;
+declare module 'fp-ts/lib/HKT' {
+  interface URI2HKT3<U, L, A> {
+    Strategy: Strategy<A, L, U>;
+  }
+}
+
+export const URI = 'Strategy';
+
+export type URI = typeof URI;
+
+export class Strategy<A, L, P> {
+  readonly _A!: A;
+  readonly _L!: L;
+  readonly _P!: P;
+  readonly _URI!: URI;
+  constructor(
+    readonly inputSetoid: Setoid<A>,
+    readonly filter: Function1<CacheValue<L, P>, boolean>
+  ) {}
+
+  contramap<B>(f: (b: B) => A): Strategy<B, L, P> {
+    return new Strategy(setoidContramap(f, this.inputSetoid), this.filter);
+  }
 }
 
 export function fromSuccessFilter<A, L, P>(
   inputSetoid: Setoid<A>,
   filter: (value: P, updated: Date) => boolean
 ): Strategy<A, L, P> {
-  return {
-    inputSetoid,
-    filter: cacheValue =>
-      cacheValue.fold(constTrue, constTrue, constFalse, filter)
-  };
+  return new Strategy(inputSetoid, (cacheValue: CacheValue<L, P>) =>
+    cacheValue.fold(constTrue, constTrue, constFalse, filter)
+  );
 }
 
 export function available<A, L, P>(inputSetoid: Setoid<A>): Strategy<A, L, P> {
@@ -34,3 +53,15 @@ export function expire(afterMs: number) {
     );
   };
 }
+
+function contramap<A, L, P, B>(
+  fa: Strategy<A, L, P>,
+  f: (b: B) => A
+): Strategy<B, L, P> {
+  return fa.contramap(f);
+}
+
+export const strategy: Contravariant3<URI> = {
+  URI,
+  contramap
+};
