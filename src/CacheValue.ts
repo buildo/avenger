@@ -1,4 +1,17 @@
 import { Either } from 'fp-ts/lib/Either';
+import { Functor2 } from 'fp-ts/lib/Functor';
+import { Setoid, fromEquals } from 'fp-ts/lib/Setoid';
+import { constFalse, constant } from 'fp-ts/lib/function';
+
+declare module 'fp-ts/lib/HKT' {
+  interface URI2HKT2<L, A> {
+    CacheValue: CacheValue<L, A>;
+  }
+}
+
+export const URI = 'CacheValue';
+
+export type URI = typeof URI;
 
 export type CacheValue<L, A> =
   | CacheValueInitial<L, A>
@@ -10,6 +23,7 @@ class CacheValueInitial<L, A> {
   readonly type: 'Initial' = 'Initial';
   readonly _A!: A;
   readonly _L!: L;
+  readonly _URI!: URI;
   constructor() {}
 
   fold<R>(
@@ -20,12 +34,17 @@ class CacheValueInitial<L, A> {
   ): R {
     return onCacheValueInitial();
   }
+
+  map<B>(_f: (a: A) => B): CacheValue<L, B> {
+    return this as any;
+  }
 }
 
 class CacheValuePending<L, A> {
   readonly type: 'Pending' = 'Pending';
   readonly _A!: A;
   readonly _L!: L;
+  readonly _URI!: URI;
   constructor(readonly value: Promise<Either<L, A>>, readonly updated: Date) {}
 
   fold<R>(
@@ -36,12 +55,17 @@ class CacheValuePending<L, A> {
   ): R {
     return onCacheValuePending(this.value, this.updated);
   }
+
+  map<B>(_f: (a: A) => B): CacheValue<L, B> {
+    return this as any;
+  }
 }
 
 class CacheValueError<L, A> {
   readonly type: 'Error' = 'Error';
   readonly _A!: A;
   readonly _L!: L;
+  readonly _URI!: URI;
   constructor(readonly value: L, readonly updated: Date) {}
 
   fold<R>(
@@ -52,12 +76,17 @@ class CacheValueError<L, A> {
   ): R {
     return onCacheValueError(this.value, this.updated);
   }
+
+  map<B>(_f: (a: A) => B): CacheValue<L, B> {
+    return this as any;
+  }
 }
 
 class CacheValueResolved<L, A> {
   readonly type: 'Resolved' = 'Resolved';
   readonly _A!: A;
   readonly _L!: L;
+  readonly _URI!: URI;
   constructor(readonly value: A, readonly updated: Date) {}
 
   fold<R>(
@@ -67,6 +96,10 @@ class CacheValueResolved<L, A> {
     onCacheValueResolved: (value: A, updated: Date) => R
   ): R {
     return onCacheValueResolved(this.value, this.updated);
+  }
+
+  map<B>(f: (a: A) => B): CacheValue<L, B> {
+    return cacheValueResolved(f(this.value), this.updated);
   }
 }
 
@@ -93,4 +126,27 @@ export function cacheValueResolved<L, A>(
   updated: Date
 ): CacheValue<L, A> {
   return new CacheValueResolved(value, updated);
+}
+
+function map<L, A, B>(fa: CacheValue<L, A>, f: (a: A) => B): CacheValue<L, B> {
+  return fa.map(f);
+}
+
+export const cacheValue: Functor2<URI> = {
+  URI,
+  map
+};
+
+export function getSetoid<L, A>(
+  Sl: Setoid<L>,
+  Sa: Setoid<A>
+): Setoid<CacheValue<L, A>> {
+  return fromEquals((a, b) =>
+    a.fold(
+      constant(b.type === 'Initial'),
+      constant(b.type === 'Pending'),
+      ea => b.fold(constFalse, constFalse, eb => Sl.equals(ea, eb), constFalse),
+      sa => b.fold(constFalse, constFalse, constFalse, sb => Sa.equals(sa, sb))
+    )
+  );
 }
