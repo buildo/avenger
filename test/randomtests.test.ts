@@ -144,7 +144,6 @@ it('compose', async () => {
     slave
   );
   requestAnimationFrame(() => composition.run('foo').run());
-  // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
       take(2),
@@ -169,11 +168,9 @@ it("compose - master's observer is notified when composition is run", async () =
     slave
   );
   requestAnimationFrame(() => {
-    // @ts-ignore
     observe(composition, 'foo').subscribe();
     composition.run('foo').run();
   });
-  // @ts-ignore
   const results = await observe(master, 'foo')
     .pipe(
       take(2),
@@ -198,7 +195,6 @@ it("compose - slave's observer is notified when composition is run", async () =>
     slave
   );
   requestAnimationFrame(() => {
-    // @ts-ignore
     observe(composition, 'foo').subscribe();
     composition.run('foo').run();
   });
@@ -226,7 +222,6 @@ it("compose - composition's observer is notified when master is run", async () =
     slave
   );
   requestAnimationFrame(() => master.run('foo').run());
-  // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
       take(2),
@@ -251,7 +246,6 @@ it("compose - composition's observer is notified with failure on master failure"
     slave
   );
   requestAnimationFrame(() => master.run('foo').run());
-  // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
       take(2),
@@ -276,7 +270,6 @@ it("compose - composition's observer is notified with failure on slave failure",
     slave
   );
   requestAnimationFrame(() => slave.run(3).run());
-  // @ts-ignore
   const results = await observe(composition, 'foo')
     .pipe(
       take(2),

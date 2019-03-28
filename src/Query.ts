@@ -6,12 +6,6 @@ import { Setoid, fromEquals, strictEqual } from 'fp-ts/lib/Setoid';
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
 
-// these type annotations are needed because fp-ts can't add stricter
-// overloads yet due to https://github.com/Microsoft/TypeScript/issues/29246
-const sequenceRecordTaskEither: <K extends string, L, A>(
-  ta: Record<K, TaskEither<L, A>>
-) => TaskEither<L, Record<K, A>> = sequence(taskEither);
-
 export type Fetch<A, L, P> = (input: A) => TaskEither<L, P>;
 
 interface BaseQuery<A, L, P> {
@@ -31,11 +25,10 @@ export interface CachedQuery<A, L, P> extends BaseQuery<A, L, P> {
   cache: Cache<A, L, P>;
 }
 
-export interface Composition<A1, L1, P1, L2, P2>
-  extends BaseQuery<A1, L1 | L2, P2> {
+export interface Composition<A, L, P> extends BaseQuery<A, L, P> {
   type: 'composition';
-  master: ObservableQuery<A1, L1, P1>;
-  slave: ObservableQuery<P1, L2, P2>;
+  master: ObservableQuery<A, L, unknown>;
+  slave: ObservableQuery<unknown, L, P>;
 }
 
 export interface Product<A, L, P> extends BaseQuery<A, L, P> {
@@ -45,7 +38,7 @@ export interface Product<A, L, P> extends BaseQuery<A, L, P> {
 
 export type ObservableQuery<A, L, P> =
   | CachedQuery<A, L, P>
-  | Composition<A, L, unknown, L, P>
+  | Composition<A, L, P>
   | Product<A, L, P>;
 
 export function query<A, L, P>(
@@ -87,12 +80,12 @@ export function queryJSONStringify<A extends JSON, L, P>(
 export function compose<A1, L1, P1, L2, P2>(
   master: ObservableQuery<A1, L1, P1>,
   slave: ObservableQuery<P1, L2, P2>
-): Composition<A1, L1, P1, L2, P2> {
+): Composition<A1, L1 | L2, P2> {
   return {
     type: 'composition',
     ...queryPhantoms<A1, L1 | L2, P2>(),
-    master,
-    slave,
+    master: master as ObservableQuery<A1, L1 | L2, unknown>,
+    slave: slave as ObservableQuery<unknown, L1 | L2, P2>,
     run: (a1: A1) =>
       (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
         (slave.run as Fetch<P1, L2, P2>)(a2)
@@ -104,6 +97,10 @@ export function compose<A1, L1, P1, L2, P2>(
   };
 }
 
+const sequenceRecordTaskEither: <K extends string, L, A>(
+  ta: Record<K, TaskEither<L, A>>
+) => TaskEither<L, Record<K, A>> = sequence(taskEither);
+
 export function product<
   R extends Record<string, ObservableQuery<any, any, any>>
 >(
@@ -113,22 +110,21 @@ export function product<
   { [K in keyof R]: R[K]['_L'] }[keyof R],
   { [K in keyof R]: R[K]['_P'] }
 > {
-  type A = { [K in keyof R]: R[K]['_A'] };
+  type K = keyof R;
+  type A = { [k in K]: R[k]['_A'] };
+  type L = { [k in K]: R[k]['_L'] }[K];
+  type P = { [k in K]: R[k]['_P'] };
   const runQueries = (a: A) =>
     mapWithKey(queries, (k, query) => query.run(a[k]));
+  const run = (a: A) => sequenceRecordTaskEither(runQueries(a));
   const invalidateQueries = (a: A) =>
     mapWithKey(queries, (k, query) => query.run(a[k]));
+  const invalidate = (a: A) => sequenceRecordTaskEither(invalidateQueries(a));
   return {
     type: 'product',
-    ...queryPhantoms<
-      A,
-      { [K in keyof R]: R[K]['_L'] }[keyof R],
-      { [K in keyof R]: R[K]['_P'] }
-    >(),
+    ...queryPhantoms<A, L, P>(),
     queries,
-    // @ts-ignore
-    run: (a: A) => sequenceRecordTaskEither(runQueries(a)),
-    // @ts-ignore
-    invalidate: (a: A) => sequenceRecordTaskEither(invalidateQueries(a))
+    run: run as any,
+    invalidate: invalidate as any
   };
 }
