@@ -4,9 +4,10 @@
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "test": "jest",
-    "prettier": "prettier --check \"{src,test}/**/*.{ts,tsx}\"",
+    "prettier": "prettier --check \"{src,test,dtslint}/**/*.{ts,tsx}\"",
     "build": "rm -rf lib && mkdir lib && tsc",
-    "preversion": "npm test && npm run prettier",
+    "dtslint": "dtslint dtslint",
+    "preversion": "npm test && npm run prettier && npm run dtslint",
     "prepublish": "npm run build"
   },
   "main": "lib",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@types/jest": "^24.0.9",
+    "dtslint": "github:gcanti/dtslint",
     "fast-check": "^1.13.0",
     "fp-ts-laws": "0.0.2",
     "jest": "^24.1.0",
