@@ -20,7 +20,7 @@ it('does something', async () => {
   ]);
 });
 
-it('caches indefinitely (temporarily since no strategies - will change)', async () => {
+it('caches indefinitely with strategy=available', async () => {
   const a = (input: number) => taskEither.of(input);
   const cachedA = query(a)(available(setoidNumber));
   requestAnimationFrame(() => cachedA.run(1).run());
