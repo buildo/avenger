@@ -52,8 +52,7 @@ function getCacheValue<L, A>(
 
 describe('CacheValue', () => {
   it('Functor', () => {
-    functor(
-      cacheValue,
+    functor(cacheValue)(
       a => getCacheValue(fc.string(), a),
       Sa => getSetoid(setoidString, Sa)
     );

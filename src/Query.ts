@@ -1,8 +1,15 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
 import { mapWithKey, sequence } from 'fp-ts/lib/Record';
-import { Strategy, shallowEqual, JSON, JSONStringifyEqual } from './Strategy';
-import { Setoid, fromEquals, strictEqual } from 'fp-ts/lib/Setoid';
+import {
+  Strategy,
+  JSONT,
+  setoidStrict,
+  setoidShallow,
+  setoidJSON
+} from './Strategy';
+import { Setoid } from 'fp-ts/lib/Setoid';
+import { CacheValue, getSetoid } from './CacheValue';
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
 
@@ -41,7 +48,7 @@ export type ObservableQuery<A, L, P> =
   | Composition<A, L, P>
   | Product<A, L, P>;
 
-export function query<A, L, P>(
+export function query<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>
 ): (strategy: Strategy<A, L, P>) => CachedQuery<A, L, P> {
   return strategy => {
@@ -56,25 +63,36 @@ export function query<A, L, P>(
   };
 }
 
-export function queryStrict<A, L, P>(
+export type MakeStrategy<A, L, P> = (
+  inputSetoid: Setoid<A>,
+  cacheValueSetoid: Setoid<CacheValue<L, P>>
+) => Strategy<A, L, P>;
+
+export function queryStrict<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: (inputSetoid: Setoid<A>) => Strategy<A, L, P>
+  makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
-  return query(fetch)(makeStrategy(fromEquals(strictEqual)));
+  return query(fetch)(
+    makeStrategy(setoidStrict, getSetoid(setoidStrict, setoidStrict))
+  );
 }
 
-export function queryShallow<A, L, P>(
+export function queryShallow<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: (inputSetoid: Setoid<A>) => Strategy<A, L, P>
+  makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
-  return query(fetch)(makeStrategy(fromEquals(shallowEqual)));
+  return query(fetch)(
+    makeStrategy(setoidShallow, getSetoid(setoidShallow, setoidShallow))
+  );
 }
 
-export function queryJSONStringify<A extends JSON, L, P>(
+export function queryJSON<A extends JSONT, L extends JSONT, P extends JSONT>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: (inputSetoid: Setoid<A>) => Strategy<A, L, P>
+  makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
-  return query(fetch)(makeStrategy(fromEquals(JSONStringifyEqual)));
+  return query(fetch)(
+    makeStrategy(setoidJSON, getSetoid(setoidJSON, setoidJSON))
+  );
 }
 
 export function compose<A1, L1, P1, L2, P2>(
@@ -101,12 +119,26 @@ const sequenceRecordTaskEither: <K extends string, L, A>(
   ta: Record<K, TaskEither<L, A>>
 ) => TaskEither<L, Record<K, A>> = sequence(taskEither);
 
+// helpers from https://github.com/tycho01/typical
+type MatchingPropNames<T, X> = {
+  [K in keyof T]: T[K] extends X ? K : never
+}[keyof T];
+type NonMatchingPropNames<T, X> = {
+  [K in keyof T]: T[K] extends X ? never : K
+}[keyof T];
+
 export function product<
   R extends Record<string, ObservableQuery<any, any, any>>
 >(
   queries: EnforceNonEmptyRecord<R>
 ): Product<
-  { [K in keyof R]: R[K]['_A'] },
+  { [K in MatchingPropNames<R, ObservableQuery<void, any, any>>]?: never } &
+    {
+      [K in NonMatchingPropNames<
+        R,
+        ObservableQuery<void, any, any>
+      >]: R[K]['_A']
+    },
   { [K in keyof R]: R[K]['_L'] }[keyof R],
   { [K in keyof R]: R[K]['_P'] }
 > {

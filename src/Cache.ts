@@ -12,6 +12,7 @@ import { Option } from 'fp-ts/lib/Option';
 import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
 import { Strategy } from './Strategy';
+import { distinctUntilChanged } from 'rxjs/operators';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
@@ -89,6 +90,12 @@ export class Cache<A, L, P> {
   };
 
   observe(input: A): Observable<CacheValue<L, P>> {
-    return this.getSubject(input).asObservable();
+    return this.getSubject(input)
+      .asObservable()
+      .pipe(distinctUntilChanged(this.strategy.cacheValueSetoid.equals));
+  }
+
+  get(input: A): Option<CacheValue<L, P>> {
+    return this.lookup(input, this.subjects).map(s => s.value);
   }
 }

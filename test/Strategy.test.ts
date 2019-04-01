@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { shallowEqual, JSONStringifyEqual } from '../src/Strategy';
+import { shallowEqual, JSONEqual } from '../src/Strategy';
 
 describe('Strategy', () => {
   describe('shallowEqual', () => {
@@ -21,15 +21,13 @@ describe('Strategy', () => {
     });
   });
 
-  describe('JSONStringifyEqual', () => {
+  describe('JSONEqual', () => {
     it('is reflexive and simmetric', () => {
-      const reflexivity = fc.property(fc.anything(), a =>
-        JSONStringifyEqual(a, a)
-      );
+      const reflexivity = fc.property(fc.anything(), a => JSONEqual(a, a));
       const simmetry = fc.property(
         fc.anything(),
         fc.anything(),
-        (a, b) => JSONStringifyEqual(a, b) === JSONStringifyEqual(b, a)
+        (a, b) => JSONEqual(a, b) === JSONEqual(b, a)
       );
 
       fc.assert(reflexivity);
@@ -37,12 +35,8 @@ describe('Strategy', () => {
     });
 
     it('should work', () => {
-      expect(JSONStringifyEqual({ foo: { bar: 1 } }, { foo: { bar: 1 } })).toBe(
-        true
-      );
-      expect(JSONStringifyEqual({ foo: { bar: 1 } }, { foo: { bar: 2 } })).toBe(
-        false
-      );
+      expect(JSONEqual({ foo: { bar: 1 } }, { foo: { bar: 1 } })).toBe(true);
+      expect(JSONEqual({ foo: { bar: 1 } }, { foo: { bar: 2 } })).toBe(false);
     });
   });
 });

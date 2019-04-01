@@ -1,15 +1,23 @@
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { observe } from '../src/observe';
-import { queryStrict, queryShallow, queryJSONStringify } from '../src/Query';
-import { available } from '../src/Strategy';
+import { queryStrict, queryShallow, queryJSON } from '../src/Query';
+import {
+  available,
+  JSONT,
+  setoidStrict,
+  setoidJSON,
+  setoidShallow
+} from '../src/Strategy';
 import { take, toArray } from 'rxjs/operators';
+import { getSetoid } from '../src/QueryResult';
 
 describe('queryStrict', () => {
   it('caches indefinitely with strategy=available', async () => {
     const a = (input: number) => taskEither.of(input);
     const cachedA = queryStrict(a, available);
+    const resultSetoid = getSetoid(setoidStrict, setoidStrict);
     requestAnimationFrame(() => cachedA.run(1).run());
-    const results1 = await observe(cachedA, 1)
+    const results1 = await observe(cachedA, 1, resultSetoid)
       .pipe(
         take(2),
         toArray()
@@ -20,7 +28,7 @@ describe('queryStrict', () => {
       { type: 'Success', value: 1, loading: false }
     ]);
     requestAnimationFrame(() => cachedA.run(1).run());
-    const results2 = await observe(cachedA, 1)
+    const results2 = await observe(cachedA, 1, resultSetoid)
       .pipe(
         take(1),
         toArray()
@@ -34,8 +42,9 @@ describe('queryShallow', () => {
   it('caches indefinitely with strategy=available', async () => {
     const a = (input: Record<string, number>) => taskEither.of(input);
     const cachedA = queryShallow(a, available);
+    const resultSetoid = getSetoid(setoidShallow, setoidShallow);
     requestAnimationFrame(() => cachedA.run({ foo: 1 }).run());
-    const results1 = await observe(cachedA, { foo: 1 })
+    const results1 = await observe(cachedA, { foo: 1 }, resultSetoid)
       .pipe(
         take(2),
         toArray()
@@ -46,7 +55,7 @@ describe('queryShallow', () => {
       { type: 'Success', value: { foo: 1 }, loading: false }
     ]);
     requestAnimationFrame(() => cachedA.run({ foo: 1 }).run());
-    const results2 = await observe(cachedA, { foo: 1 })
+    const results2 = await observe(cachedA, { foo: 1 }, resultSetoid)
       .pipe(
         take(1),
         toArray()
@@ -57,13 +66,13 @@ describe('queryShallow', () => {
     ]);
   });
 
-  describe('queryJSONStringify', () => {
+  describe('queryJSON', () => {
     it('caches indefinitely with strategy=available', async () => {
-      const a = (input: Record<string, Record<string, number>>) =>
-        taskEither.of(input);
-      const cachedA = queryJSONStringify(a, available);
+      const a = (input: JSONT) => taskEither.of<JSONT, JSONT>(input);
+      const cachedA = queryJSON(a, available);
+      const resultSetoid = getSetoid(setoidJSON, setoidJSON);
       requestAnimationFrame(() => cachedA.run({ foo: { bar: 1 } }).run());
-      const results1 = await observe(cachedA, { foo: { bar: 1 } })
+      const results1 = await observe(cachedA, { foo: { bar: 1 } }, resultSetoid)
         .pipe(
           take(2),
           toArray()
@@ -74,7 +83,7 @@ describe('queryShallow', () => {
         { type: 'Success', value: { foo: { bar: 1 } }, loading: false }
       ]);
       requestAnimationFrame(() => cachedA.run({ foo: { bar: 1 } }).run());
-      const results2 = await observe(cachedA, { foo: { bar: 1 } })
+      const results2 = await observe(cachedA, { foo: { bar: 1 } }, resultSetoid)
         .pipe(
           take(1),
           toArray()
