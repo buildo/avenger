@@ -1,4 +1,4 @@
-import { Applicative2 } from 'fp-ts/lib/Applicative';
+import { Monad2 } from 'fp-ts/lib/Monad';
 import { Bifunctor2 } from 'fp-ts/lib/Bifunctor';
 import { Setoid, fromEquals } from 'fp-ts/lib/Setoid';
 import { constFalse } from 'fp-ts/lib/function';
@@ -49,6 +49,10 @@ export class Loading<L, A> {
       () => this as any // loading
     );
   }
+
+  chain<B>(_f: (value: A) => QueryResult<L, B>): QueryResult<L, B> {
+    return this as any;
+  }
 }
 
 export class Failure<L, A> {
@@ -84,6 +88,10 @@ export class Failure<L, A> {
       () => this as any // failure
     );
   }
+
+  chain<B>(_f: (value: A) => QueryResult<L, B>): QueryResult<L, B> {
+    return this as any;
+  }
 }
 
 export class Success<L, A> {
@@ -118,6 +126,10 @@ export class Success<L, A> {
       () => fab as any, // fab's failure
       value => this.map(value) // success
     );
+  }
+
+  chain<B>(f: (value: A) => QueryResult<L, B>): QueryResult<L, B> {
+    return f(this.value);
   }
 }
 
@@ -157,12 +169,20 @@ const bimap = <L, A, B, C>(
   return fa.bimap(l, r);
 };
 
-export const queryResult: Bifunctor2<URI> & Applicative2<URI> = {
+const chain = <L, A, B>(
+  fa: QueryResult<L, A>,
+  f: (a: A) => QueryResult<L, B>
+): QueryResult<L, B> => {
+  return fa.chain(f);
+};
+
+export const queryResult: Bifunctor2<URI> & Monad2<URI> = {
   URI,
   map,
   ap,
   of,
-  bimap
+  bimap,
+  chain
 };
 
 export function getSetoid<L, A>(

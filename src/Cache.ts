@@ -94,4 +94,10 @@ export class Cache<A, L, P> {
       .asObservable()
       .pipe(distinctUntilChanged(this.strategy.cacheValueSetoid.equals));
   }
+
+  get(input: A): CacheValue<L, P> {
+    return this.lookup(input, this.subjects)
+      .map(s => s.value)
+      .getOrElseL(cacheValueInitial);
+  }
 }
