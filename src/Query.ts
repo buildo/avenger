@@ -40,7 +40,7 @@ export interface Composition<A, L, P> extends BaseQuery<A, L, P> {
 
 export interface Product<A, L, P> extends BaseQuery<A, L, P> {
   type: 'product';
-  queries: Record<string, ObservableQuery<A, L, P>>;
+  queries: Record<string, ObservableQuery<A[keyof A], L, P[keyof P]>>;
 }
 
 export type ObservableQuery<A, L, P> =
@@ -48,7 +48,7 @@ export type ObservableQuery<A, L, P> =
   | Composition<A, L, P>
   | Product<A, L, P>;
 
-export function query<A, L, P>(
+export function query<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>
 ): (strategy: Strategy<A, L, P>) => CachedQuery<A, L, P> {
   return strategy => {
@@ -68,7 +68,7 @@ export type MakeStrategy<A, L, P> = (
   cacheValueSetoid: Setoid<CacheValue<L, P>>
 ) => Strategy<A, L, P>;
 
-export function queryStrict<A, L, P>(
+export function queryStrict<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
   makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
@@ -77,7 +77,7 @@ export function queryStrict<A, L, P>(
   );
 }
 
-export function queryShallow<A, L, P>(
+export function queryShallow<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
   makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
@@ -117,12 +117,26 @@ export function compose<A1, L1, P1, L2, P2>(
 
 const sequenceRecordTaskEither = sequence(taskEither);
 
+// helpers from https://github.com/tycho01/typical
+type MatchingPropNames<T, X> = {
+  [K in keyof T]: T[K] extends X ? K : never
+}[keyof T];
+type NonMatchingPropNames<T, X> = {
+  [K in keyof T]: T[K] extends X ? never : K
+}[keyof T];
+
 export function product<
   R extends Record<string, ObservableQuery<any, any, any>>
 >(
   queries: EnforceNonEmptyRecord<R>
 ): Product<
-  { [K in keyof R]: R[K]['_A'] },
+  { [K in MatchingPropNames<R, ObservableQuery<void, any, any>>]?: never } &
+    {
+      [K in NonMatchingPropNames<
+        R,
+        ObservableQuery<void, any, any>
+      >]: R[K]['_A']
+    },
   { [K in keyof R]: R[K]['_L'] }[keyof R],
   { [K in keyof R]: R[K]['_P'] }
 > {
