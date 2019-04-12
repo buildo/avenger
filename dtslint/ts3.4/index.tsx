@@ -3,7 +3,9 @@ import { query, compose, product, queryShallow } from '../../src/Query';
 import { Strategy, available, expire } from '../../src/Strategy';
 import { param } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
-import { useQuery } from '../../src/react/useQuery';
+import { useQuery, WithQuery } from '../../src/react';
+import * as React from 'react';
+import { constNull } from 'fp-ts/lib/function';
 
 declare const af: (input: string) => TaskEither<string, number>;
 declare const as: Strategy<string, string, number>;
@@ -91,6 +93,11 @@ const postWithTags = compose(
   addTags
 );
 
+useQuery(a); // $ExpectError
 useQuery(b); // $ExpectType QueryResult<string, number>
 useQuery(b, 3); // $ExpectError
 useQuery(b, undefined); // $ExpectType QueryResult<string, number>
+
+<WithQuery query={a} render={constNull} />; // $ExpectError
+<WithQuery query={b} render={constNull} />;
+<WithQuery query={b} input={3} render={constNull} />; // $ExpectError

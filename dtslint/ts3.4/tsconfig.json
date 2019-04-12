@@ -9,6 +9,7 @@
     "noFallthroughCasesInSwitch": true,
     "pretty": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["esnext", "dom"]
+    "lib": ["esnext", "dom"],
+    "jsx": "react"
   }
 }
