@@ -1,8 +1,15 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
 import { mapWithKey, sequence } from 'fp-ts/lib/Record';
-import { Strategy, shallowEqual, JSON, JSONStringifyEqual } from './Strategy';
-import { Setoid, fromEquals, strictEqual } from 'fp-ts/lib/Setoid';
+import {
+  Strategy,
+  JSON,
+  setoidStrict,
+  setoidShallow,
+  setoidJSON
+} from './Strategy';
+import { Setoid } from 'fp-ts/lib/Setoid';
+import { CacheValue, getSetoid } from './CacheValue';
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
 
@@ -56,25 +63,36 @@ export function query<A, L, P>(
   };
 }
 
+export type MakeStrategy<A, L, P> = (
+  inputSetoid: Setoid<A>,
+  cacheValueSetoid: Setoid<CacheValue<L, P>>
+) => Strategy<A, L, P>;
+
 export function queryStrict<A, L, P>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: (inputSetoid: Setoid<A>) => Strategy<A, L, P>
+  makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
-  return query(fetch)(makeStrategy(fromEquals(strictEqual)));
+  return query(fetch)(
+    makeStrategy(setoidStrict, getSetoid(setoidStrict, setoidStrict))
+  );
 }
 
 export function queryShallow<A, L, P>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: (inputSetoid: Setoid<A>) => Strategy<A, L, P>
+  makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
-  return query(fetch)(makeStrategy(fromEquals(shallowEqual)));
+  return query(fetch)(
+    makeStrategy(setoidShallow, getSetoid(setoidShallow, setoidShallow))
+  );
 }
 
-export function queryJSONStringify<A extends JSON, L, P>(
+export function queryJSON<A extends JSON, L extends JSON, P extends JSON>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: (inputSetoid: Setoid<A>) => Strategy<A, L, P>
+  makeStrategy: MakeStrategy<A, L, P>
 ): CachedQuery<A, L, P> {
-  return query(fetch)(makeStrategy(fromEquals(JSONStringifyEqual)));
+  return query(fetch)(
+    makeStrategy(setoidJSON, getSetoid(setoidJSON, setoidJSON))
+  );
 }
 
 export function compose<A1, L1, P1, L2, P2>(
@@ -97,9 +115,7 @@ export function compose<A1, L1, P1, L2, P2>(
   };
 }
 
-const sequenceRecordTaskEither: <K extends string, L, A>(
-  ta: Record<K, TaskEither<L, A>>
-) => TaskEither<L, Record<K, A>> = sequence(taskEither);
+const sequenceRecordTaskEither = sequence(taskEither);
 
 export function product<
   R extends Record<string, ObservableQuery<any, any, any>>

@@ -1,9 +1,10 @@
 import { Cache } from '../src/Cache';
 import { taskEither, TaskEither } from 'fp-ts/lib/TaskEither';
-import { setoidString } from 'fp-ts/lib/Setoid';
+import { setoidString, setoidNumber } from 'fp-ts/lib/Setoid';
 import { delay } from 'fp-ts/lib/Task';
-import { available, refetch, expire } from '../src/Strategy';
+import { available, refetch, expire, setoidStrict } from '../src/Strategy';
 import { right } from 'fp-ts/lib/Either';
+import { getSetoid } from '../src/CacheValue';
 
 describe('Cache', () => {
   describe('getOrFetch', () => {
@@ -12,7 +13,10 @@ describe('Cache', () => {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, available(setoidString));
+      const cache = new Cache(
+        fetchObj.fetch,
+        available(setoidString, getSetoid(setoidStrict, setoidNumber))
+      );
       await cache.getOrFetch('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await delay(20, void 0).run();
@@ -26,7 +30,10 @@ describe('Cache', () => {
           new TaskEither<string, number>(delay(20, right(s.length)))
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, refetch(setoidString));
+      const cache = new Cache(
+        fetchObj.fetch,
+        refetch(setoidString, getSetoid(setoidStrict, setoidNumber))
+      );
       await Promise.all([
         cache.getOrFetch('foo').run(),
         cache.getOrFetch('foo').run()
@@ -39,7 +46,10 @@ describe('Cache', () => {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, refetch(setoidString));
+      const cache = new Cache(
+        fetchObj.fetch,
+        refetch(setoidString, getSetoid(setoidStrict, setoidNumber))
+      );
       await cache.getOrFetch('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await delay(20, void 0).run();
@@ -52,7 +62,10 @@ describe('Cache', () => {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, expire(20)(setoidString));
+      const cache = new Cache(
+        fetchObj.fetch,
+        expire(20)(setoidString, getSetoid(setoidStrict, setoidNumber))
+      );
       await cache.getOrFetch('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await cache.getOrFetch('foo').run();
@@ -72,7 +85,10 @@ describe('Cache', () => {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
       const fetchSpy = jest.spyOn(fetchObj, 'fetch');
-      const cache = new Cache(fetchObj.fetch, available(setoidString));
+      const cache = new Cache(
+        fetchObj.fetch,
+        available(setoidString, getSetoid(setoidStrict, setoidNumber))
+      );
       await cache.getOrFetch('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await cache.invalidate('foo').run();
