@@ -1,5 +1,10 @@
 import { CacheValue } from './CacheValue';
-import { Setoid, contramap as setoidContramap } from 'fp-ts/lib/Setoid';
+import {
+  Setoid,
+  contramap as setoidContramap,
+  fromEquals,
+  strictEqual
+} from 'fp-ts/lib/Setoid';
 import { Function1, constTrue, constFalse } from 'fp-ts/lib/function';
 import { Contravariant3 } from 'fp-ts/lib/Contravariant';
 
@@ -20,46 +25,60 @@ export class Strategy<A, L, P> {
   readonly _URI!: URI;
   constructor(
     readonly inputSetoid: Setoid<A>,
-    readonly filter: Function1<CacheValue<L, P>, boolean>
+    readonly filter: Function1<CacheValue<L, P>, boolean>,
+    readonly cacheValueSetoid: Setoid<CacheValue<L, P>>
   ) {}
 
   contramap<B>(f: (b: B) => A): Strategy<B, L, P> {
-    return new Strategy(setoidContramap(f, this.inputSetoid), this.filter);
+    return new Strategy(
+      setoidContramap(f, this.inputSetoid),
+      this.filter,
+      this.cacheValueSetoid
+    );
   }
 }
 
 export function fromSuccessFilter<A, L, P>(
   inputSetoid: Setoid<A>,
-  filter: (value: P, updated: Date) => boolean
+  filter: (value: P, updated: Date) => boolean,
+  cacheValueSetoid: Setoid<CacheValue<L, P>>
 ): Strategy<A, L, P> {
-  return new Strategy(inputSetoid, (cacheValue: CacheValue<L, P>) =>
-    cacheValue.fold(constTrue, constTrue, constFalse, filter)
+  return new Strategy(
+    inputSetoid,
+    (cacheValue: CacheValue<L, P>) =>
+      cacheValue.fold(constTrue, constTrue, constFalse, filter),
+    cacheValueSetoid
   );
 }
 
-export function available<A, L, P>(inputSetoid: Setoid<A>): Strategy<A, L, P> {
-  return fromSuccessFilter(inputSetoid, constTrue);
+export function available<A, L, P>(
+  inputSetoid: Setoid<A>,
+  cacheValueSetoid: Setoid<CacheValue<L, P>>
+): Strategy<A, L, P> {
+  return fromSuccessFilter(inputSetoid, constTrue, cacheValueSetoid);
 }
 
-export function refetch<A, L, P>(inputSetoid: Setoid<A>): Strategy<A, L, P> {
-  return fromSuccessFilter(inputSetoid, constFalse);
+export function refetch<A, L, P>(
+  inputSetoid: Setoid<A>,
+  cacheValueSetoid: Setoid<CacheValue<L, P>>
+): Strategy<A, L, P> {
+  return fromSuccessFilter(inputSetoid, constFalse, cacheValueSetoid);
 }
 
 export function expire(afterMs: number) {
-  return <A, L, P>(inputSetoid: Setoid<A>): Strategy<A, L, P> => {
+  return <A, L, P>(
+    inputSetoid: Setoid<A>,
+    cacheValueSetoid: Setoid<CacheValue<L, P>>
+  ): Strategy<A, L, P> => {
     return fromSuccessFilter(
       inputSetoid,
-      (_, updated) => updated.getTime() >= Date.now() - afterMs
+      (_, updated) => updated.getTime() >= Date.now() - afterMs,
+      cacheValueSetoid
     );
   };
 }
 
-function contramap<A, L, P, B>(
-  fa: Strategy<A, L, P>,
-  f: (b: B) => A
-): Strategy<B, L, P> {
-  return fa.contramap(f);
-}
+export const setoidStrict = fromEquals(strictEqual);
 
 export function shallowEqual(a: unknown, b: unknown): boolean {
   if (a === b) {
@@ -90,12 +109,23 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
+export const setoidShallow = fromEquals(shallowEqual);
+
 export type JSONObject = { [key: string]: JSON };
 export interface JSONArray extends Array<JSON> {}
 export type JSON = null | string | number | boolean | JSONArray | JSONObject;
 
-export function JSONStringifyEqual<A extends JSON>(a: A, b: A): boolean {
+export function JSONEqual<A extends JSON>(a: A, b: A): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+export const setoidJSON = fromEquals<JSON>(JSONEqual);
+
+function contramap<A, L, P, B>(
+  fa: Strategy<A, L, P>,
+  f: (b: B) => A
+): Strategy<B, L, P> {
+  return fa.contramap(f);
 }
 
 export const strategy: Contravariant3<URI> = {

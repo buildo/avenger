@@ -41,8 +41,7 @@ function getQueryResult<L, A>(
 
 describe('QueryResult', () => {
   it('Applicative', () => {
-    applicative(
-      queryResult,
+    applicative(queryResult)(
       a => getQueryResult(fc.string(), a),
       Sa => getSetoid(setoidString, Sa)
     );
