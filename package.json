@@ -20,11 +20,13 @@
   },
   "devDependencies": {
     "@types/jest": "^24.0.11",
+    "@types/react": "^16.8.13",
     "dtslint": "github:gcanti/dtslint",
     "fast-check": "^1.13.0",
     "fp-ts-laws": "0.1.0",
     "jest": "^24.7.1",
     "prettier": "^1.16.4",
+    "react": "^16.8.6",
     "ts-jest": "^24.0.2",
     "typescript": "^3.4.3"
   },
