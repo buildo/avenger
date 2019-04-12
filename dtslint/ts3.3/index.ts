@@ -7,9 +7,8 @@ declare const as: Strategy<string, string, number>;
 const a = query(af)(as); // $ExpectType CachedQuery<string, string, number>
 
 declare const bf: () => TaskEither<string, number>;
-declare const bs: Strategy<void, string, string>;
-// it would be nice to suppor this:
-const b = query(bf)(bs); // $ExpectError
+declare const bs: Strategy<void, string, number>;
+const b = query(bf)(bs); // $ExpectType CachedQuery<void, string, number>
 
 declare const cf: (input: number) => TaskEither<string, boolean>;
 declare const cs: Strategy<number, string, boolean>;
@@ -40,8 +39,14 @@ const composeae = compose(
   e // $ExpectError
 );
 
-// $ExpectType Product<{ a: string; c: number; }, string, { a: number; c: boolean; }>
+// $expectType Composition<never, string, boolean>
+const composebc = compose(
+  b,
+  c
+);
+
+// $ExpectType Product<{} & { a: string; c: number; }, string, { a: number; c: boolean; }>
 const productac = product({ a, c });
 
-// $ExpectType Product<{ a: string; c: number; e: string; }, string | number, { a: number; c: boolean; e: boolean; }>
+// $ExpectType Product<{} & { a: string; c: number; e: string; }, string | number, { a: number; c: boolean; e: boolean; }>
 const productace = product({ a, c, e });
