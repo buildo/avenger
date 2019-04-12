@@ -87,3 +87,19 @@ export function observeJSON<A, L extends JSON, P extends JSON>(
     distinctUntilChanged(getSetoid<L, P>(setoidJSON, setoidJSON).equals)
   );
 }
+
+export function read<A, L, P>(
+  query: ObservableQuery<A, L, P>,
+  input: A
+): QueryResult<L, P> {
+  switch (query.type) {
+    case 'cached':
+      return cacheValueToQueryResult(query.cache.get(input));
+    case 'composition':
+      return read(query.master, input).chain(p1 => read(query.slave, p1));
+    case 'product':
+      return sequenceRecordQueryResult(
+        mapWithKey(query.queries, (k, q) => read(q, (input as any)[k]))
+      ) as any;
+  }
+}
