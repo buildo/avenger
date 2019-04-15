@@ -7,6 +7,7 @@ import { useQuery, WithQuery, declareQueries } from '../../src/react';
 import * as React from 'react';
 import { constNull } from 'fp-ts/lib/function';
 import { QueryResult } from '../../src/QueryResult';
+import { invalidate } from '../../src/invalidate';
 
 declare const af: (input: string) => TaskEither<string, number>;
 declare const as: Strategy<string, string, number>;
@@ -122,3 +123,9 @@ const DCAB = declareAB(CAB);
 <DCAB a="foo" />;
 <DCAB />; // $ExpectError
 <DCAB b={1} />; // $ExpectError
+
+invalidate({ a }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; }>
+invalidate({ a }, {}); // $ExpectError
+invalidate({ b }, {}); // $ExpectType TaskEither<string, { b: number; }>
+invalidate({ a, b }, {}); // $ExpectError
+invalidate({ a, b }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; b: number; }>
