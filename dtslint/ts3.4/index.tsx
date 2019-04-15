@@ -3,9 +3,10 @@ import { query, compose, product, queryShallow } from '../../src/Query';
 import { Strategy, available, expire } from '../../src/Strategy';
 import { param } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
-import { useQuery, WithQuery } from '../../src/react';
+import { useQuery, WithQuery, declareQueries } from '../../src/react';
 import * as React from 'react';
 import { constNull } from 'fp-ts/lib/function';
+import { QueryResult } from '../../src/QueryResult';
 
 declare const af: (input: string) => TaskEither<string, number>;
 declare const as: Strategy<string, string, number>;
@@ -50,13 +51,13 @@ const composebc = compose(
   c
 );
 
-// $ExpectType Product<{} & { a: string; c: number; }, string, { a: number; c: boolean; }>
+// $ExpectType Product<Pick<{} & { a: string; c: number; }, "a" | "c">, string, { a: number; c: boolean; }>
 const productac = product({ a, c });
 
-// $ExpectType Product<{} & { a: string; c: number; e: string; }, string | number, { a: number; c: boolean; e: boolean; }>
+// $ExpectType Product<Pick<{} & { a: string; c: number; e: string; }, "a" | "c" | "e">, string | number, { a: number; c: boolean; e: boolean; }>
 const productace = product({ a, c, e });
 
-// $ExpectType Product<{ b?: undefined; } & { a: string; }, string, { a: number; b: number; }>
+// $ExpectType Product<Pick<{ b?: undefined; } & { a: string; }, "a" | "b">, string, { a: number; b: number; }>
 const productab = product({ a, b });
 observeShallow(productab, { a: 'foo' });
 // $ExpectError
@@ -87,7 +88,8 @@ declare function _addTags(input: {
   posts: Post[];
 }): TaskEither<InvalidToken | NotFound, PostWithTags>;
 const addTags = queryShallow(_addTags, expire(2000));
-// $ExpectType Composition<{ token?: undefined; } & { postId: number; posts: { token?: undefined; } & { limit: number; }; }, void | "invalid token" | "not found", PostWithTags>
+// tslint:disable-next-line:max-line-length
+// $ExpectType Composition<Pick<{ token?: undefined; } & { postId: number; posts: Pick<{ token?: undefined; } & { limit: number; }, "token" | "limit">; }, "token" | "postId" | "posts">, void | "invalid token" | "not found", PostWithTags>
 const postWithTags = compose(
   product({ token, postId, posts }),
   addTags
@@ -101,3 +103,18 @@ useQuery(b, undefined); // $ExpectType QueryResult<string, number>
 <WithQuery query={a} render={constNull} />; // $ExpectError
 <WithQuery query={b} render={constNull} />;
 <WithQuery query={b} input={3} render={constNull} />; // $ExpectError
+
+declare const CA: React.ComponentType<{ a: QueryResult<string, number> }>;
+const DCA = declareQueries({ a })(CA);
+<DCA a="foo" />;
+<DCA />; // $ExpectError
+<DCA a={1} />; // $ExpectError
+
+declare const CAB: React.ComponentType<{
+  a: QueryResult<string, number>;
+  b: QueryResult<string, number>;
+}>;
+const DCAB = declareQueries({ a, b })(CAB);
+<DCAB a="foo" />;
+<DCAB />; // $ExpectError
+<DCAB b={1} />; // $ExpectError

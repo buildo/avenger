@@ -10,8 +10,7 @@ import {
 } from './Strategy';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { CacheValue, getSetoid } from './CacheValue';
-
-export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
+import { EnforceNonEmptyRecord, ObservableQueries, ProductA } from './util';
 
 export type Fetch<A, L, P> = (input: A) => TaskEither<L, P>;
 
@@ -117,26 +116,10 @@ export function compose<A1, L1, P1, L2, P2>(
 
 const sequenceRecordTaskEither = sequence(taskEither);
 
-// helpers from https://github.com/tycho01/typical
-type MatchingPropNames<T, X> = {
-  [K in keyof T]: T[K] extends X ? K : never
-}[keyof T];
-type NonMatchingPropNames<T, X> = {
-  [K in keyof T]: T[K] extends X ? never : K
-}[keyof T];
-
-export function product<
-  R extends Record<string, ObservableQuery<any, any, any>>
->(
+export function product<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>
 ): Product<
-  { [K in MatchingPropNames<R, ObservableQuery<void, any, any>>]?: never } &
-    {
-      [K in NonMatchingPropNames<
-        R,
-        ObservableQuery<void, any, any>
-      >]: R[K]['_A']
-    },
+  ProductA<R>,
   { [K in keyof R]: R[K]['_L'] }[keyof R],
   { [K in keyof R]: R[K]['_P'] }
 > {
