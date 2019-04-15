@@ -1,6 +1,7 @@
-import { Fetch, ObservableQuery, EnforceNonEmptyRecord } from './Query';
+import { Fetch, ObservableQuery } from './Query';
 import { invalidate } from './invalidate';
 import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { EnforceNonEmptyRecord } from './util';
 
 export function command<
   A,

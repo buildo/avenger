@@ -1,6 +1,7 @@
-import { ObservableQuery, EnforceNonEmptyRecord } from './Query';
+import { ObservableQuery } from './Query';
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { sequence, mapWithKey } from 'fp-ts/lib/Record';
+import { EnforceNonEmptyRecord } from './util';
 
 export function invalidate<
   K extends string,
