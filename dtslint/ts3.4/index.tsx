@@ -105,7 +105,9 @@ useQuery(b, undefined); // $ExpectType QueryResult<string, number>
 <WithQuery query={b} input={3} render={constNull} />; // $ExpectError
 
 declare const CA: React.ComponentType<{ a: QueryResult<string, number> }>;
-const DCA = declareQueries({ a })(CA);
+const declareA = declareQueries({ a });
+declareA.Props; // $ExpectType Pick<{ a: QueryResult<string, number>; }, "a">
+const DCA = declareA(CA);
 <DCA a="foo" />;
 <DCA />; // $ExpectError
 <DCA a={1} />; // $ExpectError
@@ -114,7 +116,9 @@ declare const CAB: React.ComponentType<{
   a: QueryResult<string, number>;
   b: QueryResult<string, number>;
 }>;
-const DCAB = declareQueries({ a, b })(CAB);
+const declareAB = declareQueries({ a, b });
+declareAB.Props; // $ExpectType Pick<{ a: QueryResult<string, number>; b: QueryResult<string, number>; }, "a" | "b">
+const DCAB = declareAB(CAB);
 <DCAB a="foo" />;
 <DCAB />; // $ExpectError
 <DCAB b={1} />; // $ExpectError

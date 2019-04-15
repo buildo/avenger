@@ -8,22 +8,32 @@ import {
   EnforceNonEmptyRecord,
   Omit,
   ObservableQueries,
-  ProductA
+  ProductA,
+  Simplify
 } from '../util';
 
 type InputProps<R extends ObservableQueries> = ProductA<R>;
 
-type OutputProps<R extends ObservableQueries> = {
-  [K in keyof R]: QueryResult<
-    { [K in keyof R]: R[K]['_L'] }[keyof R],
-    R[K]['_P']
-  >
+type OutputProps<R extends ObservableQueries> = Simplify<
+  {
+    [K in keyof R]: QueryResult<
+      { [K in keyof R]: R[K]['_L'] }[keyof R],
+      R[K]['_P']
+    >
+  }
+>;
+
+type DeclareQueriesReturn<R extends ObservableQueries> = {
+  Props: OutputProps<R>;
+  <P extends OutputProps<R>>(C: ComponentType<P>): ComponentType<
+    Omit<P, keyof OutputProps<R>> & InputProps<R>
+  >;
 };
 
 export function declareQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>
-) {
-  return <P extends OutputProps<R>>(
+): DeclareQueriesReturn<R> {
+  return (<P extends OutputProps<R>>(
     C: ComponentType<P>
   ): ComponentType<
     Omit<P, keyof OutputProps<R>> & InputProps<R>
@@ -34,5 +44,5 @@ export function declareQueries<R extends ObservableQueries>(
       ...queryResults
     } as any;
     return <C {...outputProps} />;
-  };
+  }) as any;
 }
