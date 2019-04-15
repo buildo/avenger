@@ -1,16 +1,15 @@
-import { ObservableQuery } from './Query';
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { sequence, mapWithKey } from 'fp-ts/lib/Record';
-import { EnforceNonEmptyRecord } from './util';
+import { EnforceNonEmptyRecord, ObservableQueries, ProductA } from './util';
 
-export function invalidate<
-  K extends string,
-  I extends Record<K, ObservableQuery<any, any, any>>
->(
+export function invalidate<I extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<I>,
-  input: { [k in K]: I[k]['_A'] }
-): TaskEither<{ [k in K]: I[k]['_L'] }[K], { [k in K]: I[k]['_P'] }> {
+  input: ProductA<I>
+): TaskEither<
+  { [K in keyof I]: I[K]['_L'] }[keyof I],
+  { [K in keyof I]: I[K]['_P'] }
+> {
   return sequence(taskEither)(
-    mapWithKey(queries, (k, query) => query.invalidate(input[k]))
-  );
+    mapWithKey(queries, (k, query) => query.invalidate((input as any)[k]))
+  ) as any;
 }
