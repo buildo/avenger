@@ -16,10 +16,16 @@
   "license": "MIT",
   "dependencies": {
     "fp-ts": "^1.16.1",
+    "history": "^4.9.0",
+    "lodash.trim": "^4.5.1",
+    "qs": "^6.7.0",
     "rxjs": "^6.4.0"
   },
   "devDependencies": {
+    "@types/history": "^4.7.2",
     "@types/jest": "^24.0.11",
+    "@types/lodash.trim": "^4.5.6",
+    "@types/qs": "^6.5.3",
     "@types/react": "^16.8.13",
     "dtslint": "github:gcanti/dtslint",
     "fast-check": "^1.13.0",

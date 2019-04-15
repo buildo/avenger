@@ -11,7 +11,8 @@ type MatchingPropNames<T, X> = {
 type NonMatchingPropNames<T, X> = {
   [K in keyof T]: T[K] extends X ? never : K
 }[keyof T];
-type Simplify<T> = Pick<T, keyof T>;
+
+export type Simplify<T> = Pick<T, keyof T>;
 
 export type ObservableQueries = Record<string, ObservableQuery<any, any, any>>;
 
