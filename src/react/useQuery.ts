@@ -19,7 +19,7 @@ export function useQuery<A, L, P>(
 
   useEffect(() => {
     const subscription = observeShallow(query, input).subscribe(setState);
-    return subscription.unsubscribe;
+    return subscription.unsubscribe.bind(subscription);
   }, [input, query, setState]);
 
   return state;
