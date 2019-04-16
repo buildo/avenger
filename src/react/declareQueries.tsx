@@ -1,9 +1,8 @@
 import * as React from 'react';
-import { product } from '../Query';
 import { QueryResult } from '../QueryResult';
 import { ComponentType } from 'react';
 import { useQuery } from './useQuery';
-import { filterWithKey } from 'fp-ts/lib/Record';
+import { filterWithKey, mapWithKey } from 'fp-ts/lib/Record';
 import {
   EnforceNonEmptyRecord,
   Omit,
@@ -38,7 +37,11 @@ export function declareQueries<R extends ObservableQueries>(
   ): ComponentType<
     Omit<P, keyof OutputProps<R>> & InputProps<R>
   > => inputProps => {
-    const queryResults = useQuery(product(queries), inputProps);
+    // TODO: this does not comply with hooks rules, it will break changing `queries`
+    // maybe change the api by doing a single useQuery(product(queries))?
+    const queryResults = mapWithKey(queries, (k, query) =>
+      useQuery(query, (inputProps as any)[k])
+    );
     const outputProps: P = {
       ...filterWithKey(inputProps, k => !(k in queries)),
       ...queryResults
