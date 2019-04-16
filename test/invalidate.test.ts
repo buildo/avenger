@@ -1,9 +1,11 @@
 import { query, queryStrict } from '../src/Query';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { setoidNumber, setoidString } from 'fp-ts/lib/Setoid';
-import { available, setoidStrict } from '../src/Strategy';
+import { available, setoidStrict, refetch } from '../src/Strategy';
 import { getSetoid } from '../src/CacheValue';
 import { invalidate } from '../src/invalidate';
+import { observeStrict } from '../src/observe';
+import { take, toArray } from 'rxjs/operators';
 
 describe('invalidate', () => {
   it('should invalidate a set of queries', async () => {
@@ -62,5 +64,25 @@ describe('invalidate', () => {
     await invalidate({ a, b }, { b: 'foo' }).run();
     expect(aSpy.mock.calls.length).toBe(2);
     expect(bSpy.mock.calls.length).toBe(2);
+  });
+
+  it('observers should see update events after an invalidate', async () => {
+    const af = jest.fn(() => taskEither.of(2));
+    const a = queryStrict(af, refetch);
+    setTimeout(() => a.run().run());
+    setTimeout(() => a.invalidate().run(), 20);
+    const results = await observeStrict(a, undefined)
+      .pipe(
+        take(4),
+        toArray()
+      )
+      .toPromise();
+    expect(results).toEqual([
+      { type: 'Loading' },
+      { type: 'Success', value: 2, loading: false },
+      { type: 'Loading' },
+      { type: 'Success', value: 2, loading: false }
+    ]);
+    expect(af.mock.calls.length).toBe(2);
   });
 });

@@ -7,8 +7,8 @@ import {
   cacheValueInitial
 } from './CacheValue';
 import { Fetch } from './Query';
-import { lookup, remove } from 'fp-ts/lib/Map';
-import { Option } from 'fp-ts/lib/Option';
+import { lookup } from 'fp-ts/lib/Map';
+import { Option, some } from 'fp-ts/lib/Option';
 import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
 import { Strategy } from './Strategy';
@@ -16,48 +16,34 @@ import { distinctUntilChanged } from 'rxjs/operators';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
-  private readonly remove: <T>(input: A, map: Map<A, T>) => Map<A, T>;
   private readonly _lookup: <T>(input: A, map: Map<A, T>) => Option<T>;
 
   constructor(
     readonly fetch: Fetch<A, L, P>,
     readonly strategy: Strategy<A, L, P>
   ) {
-    this.remove = remove(strategy.inputSetoid);
     this._lookup = lookup(strategy.inputSetoid);
   }
 
-  private readonly lookup = (
-    input: A,
-    map: Map<A, BehaviorSubject<CacheValue<L, P>>>
-  ) =>
-    this._lookup(input, map).filter(subject =>
-      this.strategy.filter(subject.value)
-    );
+  private readonly lookup = (input: A) => this._lookup(input, this.subjects);
 
-  private readonly member = (
-    input: A,
-    map: Map<A, BehaviorSubject<CacheValue<L, P>>>
-  ) => this.lookup(input, map).isSome();
+  private readonly member = (input: A) => this.lookup(input).isSome();
 
-  private readonly unsafeLookup = (
-    input: A,
-    map: Map<A, BehaviorSubject<CacheValue<L, P>>>
-  ) =>
-    this.lookup(input, map).getOrElseL(() => {
+  private readonly unsafeLookup = (input: A) =>
+    this.lookup(input).getOrElseL(() => {
       throw new Error('unsafe lookup failed');
     });
 
   private emitEvent(input: A, cacheValue: CacheValue<L, P>): void {
-    this.lookup(input, this.subjects).map(s => s.next(cacheValue));
+    this.lookup(input).map(s => s.next(cacheValue));
   }
 
-  private getSubject(input: A): BehaviorSubject<CacheValue<L, P>> {
-    if (!this.member(input, this.subjects)) {
+  private getOrCreateSubject(input: A): BehaviorSubject<CacheValue<L, P>> {
+    if (!this.member(input)) {
       this.subjects.set(input, new BehaviorSubject(cacheValueInitial<L, P>()));
       this.createPending(input);
     }
-    return this.unsafeLookup(input, this.subjects);
+    return this.unsafeLookup(input);
   }
 
   private createPending = (input: A): TaskEither<L, P> => {
@@ -76,27 +62,33 @@ export class Cache<A, L, P> {
   };
 
   getOrFetch = (input: A): TaskEither<L, P> => {
-    return this.getSubject(input).value.fold(
-      () => this.createPending(input),
-      pending => new TaskEither(new Task(() => pending)),
-      error => fromLeft<L, P>(error),
-      value => taskEither.of<L, P>(value)
-    );
+    return some(this.getOrCreateSubject(input).value)
+      .filter(this.strategy.filter)
+      .foldL(
+        () => this.createPending(input),
+        cacheValue =>
+          cacheValue.fold(
+            () => this.createPending(input),
+            pending => new TaskEither(new Task(() => pending)),
+            error => fromLeft<L, P>(error),
+            value => taskEither.of<L, P>(value)
+          )
+      );
   };
 
   invalidate = (input: A): TaskEither<L, P> => {
-    this.subjects = this.remove(input, this.subjects);
+    this.lookup(input).map(s => s.next(cacheValueInitial<L, P>()));
     return this.getOrFetch(input);
   };
 
   observe(input: A): Observable<CacheValue<L, P>> {
-    return this.getSubject(input)
+    return this.getOrCreateSubject(input)
       .asObservable()
       .pipe(distinctUntilChanged(this.strategy.cacheValueSetoid.equals));
   }
 
   get(input: A): CacheValue<L, P> {
-    return this.lookup(input, this.subjects)
+    return this.lookup(input)
       .map(s => s.value)
       .getOrElseL(cacheValueInitial);
   }
