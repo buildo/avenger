@@ -1,7 +1,7 @@
 import { TaskEither } from 'fp-ts/lib/TaskEither';
 import { query, compose, product, queryShallow } from '../../src/Query';
 import { Strategy, available, expire } from '../../src/Strategy';
-import { param } from '../../src/DSL';
+import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
 import { useQuery, WithQuery, declareQueries } from '../../src/react';
 import * as React from 'react';
@@ -126,6 +126,23 @@ const DCAB = declareAB(CAB);
 
 invalidate({ a }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; }>
 invalidate({ a }, {}); // $ExpectError
+invalidate({ a }); // $ExpectError
 invalidate({ b }, {}); // $ExpectType TaskEither<string, { b: number; }>
+invalidate({ b }); // $ExpectType TaskEither<string, { b: number; }>
 invalidate({ a, b }, {}); // $ExpectError
 invalidate({ a, b }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; b: number; }>
+
+declare const caf: (input: string) => TaskEither<string, number>;
+declare const cbf: (input: number) => TaskEither<string, number>;
+
+command(caf, {}); // $ExpectError
+const cmda = command(caf, { a }); // $ExpectType (a: string, ia: Pick<{} & { a: string; }, "a">) => TaskEither<string, number>
+cmda(1, { a: 'foo' }); // $ExpectError
+cmda('foo', {}); // $ExpectError
+cmda('foo'); // $ExpectError
+cmda('foo', { a: 'foo' });
+const cmdb = command(cbf, { b }); // $ExpectType (a: number, ia?: Pick<{ b?: undefined; } & {}, "b"> | undefined) => TaskEither<string, number>
+cmdb('foo', {}); // $ExpectError
+cmdb('foo'); // $ExpectError
+cmdb('foo', { b: 1 }); // $ExpectError
+cmdb(1);
