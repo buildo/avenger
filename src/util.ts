@@ -16,6 +16,11 @@ export type Simplify<T> = Pick<T, keyof T>;
 
 export type ObservableQueries = Record<string, ObservableQuery<any, any, any>>;
 
+export type VoidInputObservableQueries = Record<
+  string,
+  ObservableQuery<void, any, any>
+>;
+
 export type ProductA<R extends ObservableQueries> = Simplify<
   { [K in MatchingPropNames<R, ObservableQuery<void, any, any>>]?: never } &
     {
