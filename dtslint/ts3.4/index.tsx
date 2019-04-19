@@ -1,6 +1,13 @@
-import { TaskEither } from 'fp-ts/lib/TaskEither';
-import { query, compose, product, queryShallow } from '../../src/Query';
-import { Strategy, available, expire } from '../../src/Strategy';
+import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
+import {
+  query,
+  compose,
+  product,
+  queryShallow,
+  ObservableQuery,
+  queryStrict
+} from '../../src/Query';
+import { Strategy, available, expire, refetch } from '../../src/Strategy';
 import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
 import { useQuery, WithQuery, declareQueries } from '../../src/react';
@@ -50,6 +57,25 @@ const composeae = compose(
 const composebc = compose(
   b,
   c
+);
+
+interface Loc {
+  pathname: string;
+  search: Record<string, string>;
+}
+declare const location: ObservableQuery<void, void, Loc>;
+interface View {
+  view: string;
+}
+declare function locationToView(location: Loc): View;
+
+// $ExpectType Composition<void, void, View>
+const currentView = compose(
+  location,
+  queryStrict(
+    location => taskEither.of<void, View>(locationToView(location)),
+    refetch
+  )
 );
 
 // $ExpectType Product<Pick<{} & { a: string; c: number; }, "a" | "c">, string, { a: number; c: boolean; }>
