@@ -15,6 +15,7 @@ import * as React from 'react';
 import { constNull } from 'fp-ts/lib/function';
 import { QueryResult } from '../../src/QueryResult';
 import { invalidate } from '../../src/invalidate';
+import { ProductA } from '../../src/util';
 
 declare const af: (input: string) => TaskEither<string, number>;
 declare const as: Strategy<string, string, number>;
@@ -153,7 +154,7 @@ const DCAB = declareAB(CAB);
 invalidate({ a }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; }>
 invalidate({ a }, {}); // $ExpectError
 invalidate({ a }); // $ExpectError
-invalidate({ b }, {}); // $ExpectType TaskEither<string, { b: number; }>
+invalidate({ b }, {}); // $ExpectError
 invalidate({ b }); // $ExpectType TaskEither<string, { b: number; }>
 invalidate({ a, b }, {}); // $ExpectError
 invalidate({ a, b }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; b: number; }>
@@ -167,8 +168,29 @@ cmda(1, { a: 'foo' }); // $ExpectError
 cmda('foo', {}); // $ExpectError
 cmda('foo'); // $ExpectError
 cmda('foo', { a: 'foo' });
-const cmdb = command(cbf, { b }); // $ExpectType (a: number, ia?: Pick<{ b?: undefined; } & {}, "b"> | undefined) => TaskEither<string, number>
+const cmdb = command(cbf, { b }); // $ExpectType (a: number, ia?: void | undefined) => TaskEither<string, number>
 cmdb('foo', {}); // $ExpectError
 cmdb('foo'); // $ExpectError
 cmdb('foo', { b: 1 }); // $ExpectError
 cmdb(1);
+
+// tslint:disable-next-line:interface-over-type-literal
+type RA = {
+  a: ObservableQuery<string, void, number>;
+  b: ObservableQuery<void, void, number>;
+};
+type PA = ProductA<RA>; // $ExpectType Pick<{ b?: undefined; } & { a: string; }, "a" | "b">
+
+// tslint:disable-next-line:interface-over-type-literal
+type RB = {
+  a: ObservableQuery<void, void, number>;
+  b: ObservableQuery<void, void, number>;
+};
+type PB = ProductA<RB>; // $ExpectType void
+
+// tslint:disable-next-line:interface-over-type-literal
+type RC = {
+  a: ObservableQuery<string, void, number>;
+  b: ObservableQuery<number, void, number>;
+};
+type PC = ProductA<RC>; // $ExpectType Pick<{} & { a: string; b: number; }, "a" | "b">
