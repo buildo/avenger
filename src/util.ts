@@ -21,7 +21,7 @@ export type VoidInputObservableQueries = Record<
   ObservableQuery<void, any, any>
 >;
 
-export type ProductA<R extends ObservableQueries> = Simplify<
+type _ProductA<R extends ObservableQueries> = Simplify<
   { [K in MatchingPropNames<R, ObservableQuery<void, any, any>>]?: never } &
     {
       [K in NonMatchingPropNames<
@@ -30,3 +30,10 @@ export type ProductA<R extends ObservableQueries> = Simplify<
       >]: R[K]['_A']
     }
 >;
+
+export type ProductA<R extends ObservableQueries> = NonMatchingPropNames<
+  R,
+  ObservableQuery<void, any, any>
+> extends never
+  ? void
+  : _ProductA<R>;
