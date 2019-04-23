@@ -128,10 +128,10 @@ export function product<R extends ObservableQueries>(
   type L = { [k in K]: R[k]['_L'] }[K];
   type P = { [k in K]: R[k]['_P'] };
   const runQueries = (a: A) =>
-    mapWithKey(queries, (k, query) => query.run((a as any)[k]));
+    mapWithKey(queries, (k, query) => query.run(((a || {}) as any)[k]));
   const run = (a: A) => sequenceRecordTaskEither(runQueries(a));
   const invalidateQueries = (a: A) =>
-    mapWithKey(queries, (k, query) => query.run((a as any)[k]));
+    mapWithKey(queries, (k, query) => query.run(((a || {}) as any)[k]));
   const invalidate = (a: A) => sequenceRecordTaskEither(invalidateQueries(a));
   return {
     type: 'product',
