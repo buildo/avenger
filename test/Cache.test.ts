@@ -80,7 +80,7 @@ describe('Cache', () => {
   });
 
   describe('invalidate', () => {
-    it('Should delete the cached result before requesting it again', async () => {
+    it('should delete the cached result before requesting it again', async () => {
       const fetchObj = {
         fetch: (s: string) => taskEither.of<string, number>(s.length)
       };
