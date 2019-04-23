@@ -45,7 +45,7 @@ function _observe<A, L, P>(
     case 'product':
       return sequenceRecordObservable(
         mapWithKey(query.queries, (k, query) =>
-          _observe(query, (input as any)[k])
+          _observe(query, ((input || {}) as any)[k])
         )
       ).pipe(map(sequenceRecordQueryResult)) as any;
     case 'cached':
@@ -99,7 +99,7 @@ export function read<A, L, P>(
       return read(query.master, input).chain(p1 => read(query.slave, p1));
     case 'product':
       return sequenceRecordQueryResult(
-        mapWithKey(query.queries, (k, q) => read(q, (input as any)[k]))
+        mapWithKey(query.queries, (k, q) => read(q, ((input || {}) as any)[k]))
       ) as any;
   }
 }
