@@ -29,6 +29,8 @@ export function invalidate<I extends ObservableQueries>(
   { [K in keyof I]: I[K]['_P'] }
 > {
   return sequence(taskEither)(
-    mapWithKey(queries, (k, query) => query.invalidate((input as any)[k]))
+    mapWithKey(queries, (k, query) =>
+      query.invalidate(((input || {}) as any)[k])
+    )
   ) as any;
 }

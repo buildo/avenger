@@ -38,32 +38,24 @@ describe('invalidate', () => {
     expect(bSpy.mock.calls.length).toBe(2);
   });
 
-  it('should work when omitting void-queries input params', async () => {
+  it('should work when omitting void query input params', async () => {
     const obj = {
-      a: () => taskEither.of(2),
-      b: (b: string) => taskEither.of(b.length)
+      a: () => taskEither.of(2)
     };
     const aSpy = jest.spyOn(obj, 'a');
-    const bSpy = jest.spyOn(obj, 'b');
     const a = queryStrict(obj.a, available);
-    const b = query(obj.b)(
-      available(setoidString, getSetoid(setoidStrict, setoidNumber))
-    );
 
     // run once
-    await Promise.all([a.run().run(), b.run('foo').run()]);
+    await a.run().run();
     expect(aSpy.mock.calls.length).toBe(1);
-    expect(bSpy.mock.calls.length).toBe(1);
 
     // run again, without invalidating
-    await Promise.all([a.run().run(), b.run('foo').run()]);
+    await a.run().run();
     expect(aSpy.mock.calls.length).toBe(1);
-    expect(bSpy.mock.calls.length).toBe(1);
 
     // invalidate
-    await invalidate({ a, b }, { b: 'foo' }).run();
+    await invalidate({ a }).run();
     expect(aSpy.mock.calls.length).toBe(2);
-    expect(bSpy.mock.calls.length).toBe(2);
   });
 
   it('observers should see update events after an invalidate', async () => {
