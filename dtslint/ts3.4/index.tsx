@@ -10,7 +10,7 @@ import {
 import { Strategy, available, expire, refetch } from '../../src/Strategy';
 import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
-import { useQuery, WithQuery, declareQueries } from '../../src/react';
+import { useQuery, WithQuery, declareQuery } from '../../src/react';
 import * as React from 'react';
 import { constNull } from 'fp-ts/lib/function';
 import { QueryResult } from '../../src/QueryResult';
@@ -132,24 +132,39 @@ useQuery(b, undefined); // $ExpectType QueryResult<string, number>
 <WithQuery query={b} render={constNull} />;
 <WithQuery query={b} input={3} render={constNull} />; // $ExpectError
 
-declare const CA: React.ComponentType<{ a: QueryResult<string, number> }>;
-const declareA = declareQueries({ a });
-declareA.Props; // $ExpectType Pick<{ a: QueryResult<string, number>; }, "a">
+const declareA = declareQuery(a);
+declareA.inputProps; // $ExpectType { query: string; }
+declareA.outputProps; // $ExpectType QueryOutputProps<string, number>
+declare const CA: React.ComponentType<{ query: QueryResult<string, number> }>;
 const DCA = declareA(CA);
-<DCA a="foo" />;
+<DCA query="foo" />;
 <DCA />; // $ExpectError
-<DCA a={1} />; // $ExpectError
-
-declare const CAB: React.ComponentType<{
-  a: QueryResult<string, number>;
-  b: QueryResult<string, number>;
+<DCA query={1} />; // $ExpectError
+declare const CAA: React.ComponentType<{
+  query: QueryResult<string, number>;
+  foo: number;
 }>;
-const declareAB = declareQueries({ a, b });
-declareAB.Props; // $ExpectType Pick<{ a: QueryResult<string, number>; b: QueryResult<string, number>; }, "a" | "b">
-const DCAB = declareAB(CAB);
-<DCAB a="foo" />;
-<DCAB />; // $ExpectError
-<DCAB b={1} />; // $ExpectError
+const DCAA = declareA(CAA);
+<DCAA query="foo" foo={1} />;
+<DCAA query="foo" />; // $ExpectError
+<DCAA foo={1} />; // $ExpectError
+<DCAA query={1} foo={1} />; // $ExpectError
+
+const declareB = declareQuery(b);
+declareB.inputProps; // $ExpectType {}
+declareB.outputProps; // $ExpectType QueryOutputProps<string, number>
+declare const CB: React.ComponentType<{ query: QueryResult<string, number> }>;
+const DCB = declareB(CB);
+<DCB query={undefined} />; // $ExpectError
+<DCB />;
+declare const CBB: React.ComponentType<{
+  query: QueryResult<string, number>;
+  foo: number;
+}>;
+const DCBB = declareB(CBB);
+<DCBB query={undefined} foo={1} />; // $ExpectError
+<DCBB query={undefined} />; // $ExpectError
+<DCBB foo={1} />;
 
 invalidate({ a }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; }>
 invalidate({ a }, {}); // $ExpectError

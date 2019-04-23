@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ObservableQuery } from '../Query';
 import { QueryResult, loading } from '../QueryResult';
-import { observeShallow /*, read*/ } from '../observe';
+import { observeShallow } from '../observe';
 
 export function useQuery<A extends void, L, P>(
   query: ObservableQuery<A, L, P>,
