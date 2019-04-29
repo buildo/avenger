@@ -1,8 +1,13 @@
 import { taskEither, fromLeft } from 'fp-ts/lib/TaskEither';
 import { take, toArray } from 'rxjs/operators';
-import { getStructSetoid, setoidString, setoidNumber } from 'fp-ts/lib/Setoid';
+import {
+  getStructSetoid,
+  setoidString,
+  setoidNumber,
+  fromEquals
+} from 'fp-ts/lib/Setoid';
 import { available, setoidStrict, setoidShallow } from '../src/Strategy';
-import { getSetoid as getCacheValueSetoid } from '../src/CacheValue';
+import { getSetoid as getCacheValueSetoid, getSetoid } from '../src/CacheValue';
 import { getSetoid as getQueryResultSetoid } from '../src/QueryResult';
 import { query, compose, product } from '../src/Query';
 import { observe } from '../src/observe';
@@ -486,5 +491,45 @@ describe('observe', () => {
       { type: 'Loading' },
       { type: 'Success', value: { a: 3 }, loading: false }
     ]);
+  });
+
+  it('compose - composition slave should not re-fetch if master result is the same according to its cacheValue setoid', async () => {
+    const fmaster = jest.fn(() => taskEither.of<void, string>('foo'));
+    const fslave = jest.fn((input: string) =>
+      taskEither.of<void, number>(input.length)
+    );
+    const master = query(fmaster)(
+      available(
+        setoidStrict as any,
+        getSetoid(setoidStrict as any, setoidString)
+      )
+    );
+    const slave = query(fslave)(
+      available(setoidString, getSetoid(setoidStrict as any, setoidNumber))
+    );
+    const composition = compose(
+      master,
+      slave
+    );
+    requestAnimationFrame(() => master.run().run());
+    setTimeout(() => master.invalidate().run(), 10);
+    const results = await observe(
+      composition,
+      undefined,
+      fromEquals(() => false)
+    )
+      .pipe(
+        take(4),
+        toArray()
+      )
+      .toPromise();
+    expect(results).toEqual([
+      { type: 'Loading' },
+      { type: 'Success', loading: false, value: 3 },
+      { type: 'Loading' },
+      { type: 'Success', loading: false, value: 3 }
+    ]);
+    expect(fmaster.mock.calls.length).toBe(2);
+    expect(fslave.mock.calls.length).toBe(1);
   });
 });
