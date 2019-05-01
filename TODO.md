@@ -4,7 +4,7 @@
 - [ ] Try to remove some unsafe `any` casts
 - [x] Add `invalidate` to `Cache`
 - [x] Add top-level `invalidate`. Should invalidate a set of queries
-- [ ] Add topo-sort to top-level `invalidate`
+- [x] I don't think this is needed anymore: Add topo-sort to top-level `invalidate`
 - [x] Add `command(cmd: Fetch<A, L, P>, invalidates: Record<K, ObservableQ>)`. Implement the old `runCommand` as the result of `command.run()`
 - [x] Add support for `Strategy` (and maybe some default ones)
 - [x] Start porting some real world usages as tests
