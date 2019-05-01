@@ -9,16 +9,12 @@ import { take, toArray } from 'rxjs/operators';
 
 describe('invalidate', () => {
   it('should invalidate a set of queries', async () => {
-    const obj = {
-      a: (a: number) => taskEither.of(a * 2),
-      b: (b: string) => taskEither.of(b.length)
-    };
-    const aSpy = jest.spyOn(obj, 'a');
-    const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a)(
+    const aSpy = jest.fn((a: number) => taskEither.of(a * 2));
+    const bSpy = jest.fn((b: string) => taskEither.of(b.length));
+    const a = query(aSpy)(
       available(setoidNumber, getSetoid(setoidStrict, setoidNumber))
     );
-    const b = query(obj.b)(
+    const b = query(bSpy)(
       available(setoidString, getSetoid(setoidStrict, setoidNumber))
     );
 
@@ -39,11 +35,8 @@ describe('invalidate', () => {
   });
 
   it('should work when omitting void query input params', async () => {
-    const obj = {
-      a: () => taskEither.of(2)
-    };
-    const aSpy = jest.spyOn(obj, 'a');
-    const a = queryStrict(obj.a, available);
+    const aSpy = jest.fn(() => taskEither.of(2));
+    const a = queryStrict(aSpy, available);
 
     // run once
     await a.run().run();

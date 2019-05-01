@@ -7,16 +7,12 @@ import { getSetoid } from '../src/CacheValue';
 
 describe('command', () => {
   it('should run a command and then invalidate if it was successful', async () => {
-    const obj = {
-      a: (a: number) => taskEither.of(a * 2),
-      b: (b: string) => taskEither.of(b.length)
-    };
-    const aSpy = jest.spyOn(obj, 'a');
-    const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a)(
+    const aSpy = jest.fn((a: number) => taskEither.of(a * 2));
+    const bSpy = jest.fn((b: string) => taskEither.of(b.length));
+    const a = query(aSpy)(
       available(setoidNumber, getSetoid(setoidStrict, setoidNumber))
     );
-    const b = query(obj.b)(
+    const b = query(bSpy)(
       available(setoidString, getSetoid(setoidStrict, setoidNumber))
     );
     const c: Fetch<string, string, number> = () => taskEither.of(1);
@@ -34,16 +30,12 @@ describe('command', () => {
   });
 
   it('should run a command and skip invalidation if it fails', async () => {
-    const obj = {
-      a: (a: number) => taskEither.of(a * 2),
-      b: (b: string) => taskEither.of(b.length)
-    };
-    const aSpy = jest.spyOn(obj, 'a');
-    const bSpy = jest.spyOn(obj, 'b');
-    const a = query(obj.a)(
+    const aSpy = jest.fn((a: number) => taskEither.of(a * 2));
+    const bSpy = jest.fn((b: string) => taskEither.of(b.length));
+    const a = query(aSpy)(
       available(setoidNumber, getSetoid(setoidStrict, setoidNumber))
     );
-    const b = query(obj.b)(
+    const b = query(bSpy)(
       available(setoidString, getSetoid(setoidStrict, setoidNumber))
     );
     const c: Fetch<string, string, number> = () => fromLeft('nope');
