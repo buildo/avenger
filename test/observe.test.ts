@@ -103,9 +103,8 @@ describe('observe', () => {
   });
 
   it('should reuse the same pending (primitive inputs)', async () => {
-    const spyObj = { a: (input: number) => taskEither.of(input) };
-    const aSpy = jest.spyOn(spyObj, 'a');
-    const cachedA = query(spyObj.a)(
+    const aSpy = jest.fn((input: number) => taskEither.of(input));
+    const cachedA = query(aSpy)(
       available(setoidNumber, getCacheValueSetoid(setoidStrict, setoidNumber))
     );
     requestAnimationFrame(() => cachedA.run(1).run());
@@ -136,10 +135,9 @@ describe('observe', () => {
   });
 
   it('should reuse the same pending (non-primitive inputs)', async () => {
-    const spyObj = { a: (input: { foo: string }) => taskEither.of(input) };
     const fooSetoid = getStructSetoid({ foo: setoidString });
-    const aSpy = jest.spyOn(spyObj, 'a');
-    const cachedA = query(spyObj.a)(
+    const aSpy = jest.fn((input: { foo: string }) => taskEither.of(input));
+    const cachedA = query(aSpy)(
       available(fooSetoid, getCacheValueSetoid(setoidStrict, fooSetoid))
     );
     const input1 = { foo: 'bar' };

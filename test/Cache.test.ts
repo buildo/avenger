@@ -9,12 +9,11 @@ import { getSetoid } from '../src/CacheValue';
 describe('Cache', () => {
   describe('getOrFetch', () => {
     it('available: should cache results idefinitely', async () => {
-      const fetchObj = {
-        fetch: (s: string) => taskEither.of<string, number>(s.length)
-      };
-      const fetchSpy = jest.spyOn(fetchObj, 'fetch');
+      const fetchSpy = jest.fn((s: string) =>
+        taskEither.of<string, number>(s.length)
+      );
       const cache = new Cache(
-        fetchObj.fetch,
+        fetchSpy,
         available(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
       await cache.getOrFetch('foo').run();
@@ -25,13 +24,12 @@ describe('Cache', () => {
     });
 
     it('refetch: should reuse current pending', async () => {
-      const fetchObj = {
-        fetch: (s: string) =>
+      const fetchSpy = jest.fn(
+        (s: string) =>
           new TaskEither<string, number>(delay(20, right(s.length)))
-      };
-      const fetchSpy = jest.spyOn(fetchObj, 'fetch');
+      );
       const cache = new Cache(
-        fetchObj.fetch,
+        fetchSpy,
         refetch(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
       await Promise.all([
@@ -42,12 +40,11 @@ describe('Cache', () => {
     });
 
     it('refetch: should never cache results', async () => {
-      const fetchObj = {
-        fetch: (s: string) => taskEither.of<string, number>(s.length)
-      };
-      const fetchSpy = jest.spyOn(fetchObj, 'fetch');
+      const fetchSpy = jest.fn((s: string) =>
+        taskEither.of<string, number>(s.length)
+      );
       const cache = new Cache(
-        fetchObj.fetch,
+        fetchSpy,
         refetch(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
       await cache.getOrFetch('foo').run();
@@ -58,12 +55,11 @@ describe('Cache', () => {
     });
 
     it('expire: should reuse cache result up to n ms after', async () => {
-      const fetchObj = {
-        fetch: (s: string) => taskEither.of<string, number>(s.length)
-      };
-      const fetchSpy = jest.spyOn(fetchObj, 'fetch');
+      const fetchSpy = jest.fn((s: string) =>
+        taskEither.of<string, number>(s.length)
+      );
       const cache = new Cache(
-        fetchObj.fetch,
+        fetchSpy,
         expire(20)(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
       await cache.getOrFetch('foo').run();
@@ -81,12 +77,11 @@ describe('Cache', () => {
 
   describe('invalidate', () => {
     it('should delete the cached result before requesting it again', async () => {
-      const fetchObj = {
-        fetch: (s: string) => taskEither.of<string, number>(s.length)
-      };
-      const fetchSpy = jest.spyOn(fetchObj, 'fetch');
+      const fetchSpy = jest.fn((s: string) =>
+        taskEither.of<string, number>(s.length)
+      );
       const cache = new Cache(
-        fetchObj.fetch,
+        fetchSpy,
         available(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
       await cache.getOrFetch('foo').run();
