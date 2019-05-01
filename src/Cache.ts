@@ -76,8 +76,16 @@ export class Cache<A, L, P> {
       );
   };
 
+  private sameInvalidationFrame = false;
+
   invalidate = (input: A): TaskEither<L, P> => {
-    this.lookup(input).map(s => s.next(cacheValueInitial<L, P>()));
+    if (!this.sameInvalidationFrame) {
+      this.lookup(input).map(s => s.next(cacheValueInitial<L, P>()));
+      this.sameInvalidationFrame = true;
+      Promise.resolve().then(() => {
+        this.sameInvalidationFrame = false;
+      });
+    }
     return this.getOrFetch(input);
   };
 
