@@ -1,6 +1,6 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
-import { mapWithKey, sequence } from 'fp-ts/lib/Record';
+import { mapWithKey, sequence, map } from 'fp-ts/lib/Record';
 import {
   Strategy,
   JSON,
@@ -20,6 +20,7 @@ interface BaseQuery<A, L, P> {
   _P: P;
   run: (input: A) => TaskEither<L, P>;
   invalidate: (input: A) => TaskEither<L, P>;
+  gc: () => void;
 }
 
 function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {
@@ -57,7 +58,8 @@ export function query<A = void, L = unknown, P = unknown>(
       ...queryPhantoms<A, L, P>(),
       cache,
       run: cache.getOrFetch,
-      invalidate: cache.invalidate
+      invalidate: cache.invalidate,
+      gc: cache.gc
     };
   };
 }
@@ -110,7 +112,11 @@ export function compose<A1, L1, P1, L2, P2>(
     invalidate: (a1: A1) =>
       (master.invalidate as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
         (slave.invalidate as Fetch<P1, L2, P2>)(a2)
-      )
+      ),
+    gc: () => {
+      slave.gc();
+      master.gc();
+    }
   };
 }
 
@@ -138,6 +144,11 @@ export function product<R extends ObservableQueries>(
     ...queryPhantoms<A, L, P>(),
     queries,
     run: run as any,
-    invalidate: invalidate as any
+    invalidate: invalidate as any,
+    gc: () => {
+      map(queries, q => {
+        q.gc();
+      });
+    }
   };
 }
