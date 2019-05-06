@@ -41,3 +41,10 @@ export function command<
   return (a, ia) =>
     cmd(a).chain(p => invalidate(queries, (ia || {}) as any).map(() => p));
 }
+
+export function contramap<U, L, A, B>(
+  fa: (a: U) => TaskEither<L, A>,
+  f: (a: B) => U
+): (a: B) => TaskEither<L, A> {
+  return a => fa(f(a));
+}
