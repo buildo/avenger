@@ -1,11 +1,11 @@
 import { createBrowserHistory } from 'history';
 import { invalidate } from '../invalidate';
-import { query } from '../Query';
+import { query, map } from '../Query';
 import { taskEither, TaskEither } from 'fp-ts/lib/TaskEither';
 import { refetch, setoidStrict, setoidJSON } from '../Strategy';
 import { getSetoid } from '../CacheValue';
 import { getStructSetoid, setoidString } from 'fp-ts/lib/Setoid';
-import { command } from '../command';
+import { command, contramap } from '../command';
 import { Task } from 'fp-ts/lib/Task';
 import { right } from 'fp-ts/lib/Either';
 import { parse, stringify } from 'qs';
@@ -76,3 +76,13 @@ export const doUpdateLocation = command(
     ),
   { location }
 );
+
+export function getCurrentView<A>(f: (location: HistoryLocation) => A) {
+  return map(location, f);
+}
+
+export function getDoUpdateCurrentView<A>(
+  f: (currentView: A) => HistoryLocation
+) {
+  return contramap(doUpdateLocation, f);
+}
