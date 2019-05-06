@@ -1,12 +1,13 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
-import { mapWithKey, sequence, map } from 'fp-ts/lib/Record';
+import { mapWithKey, sequence, map as mapRecord } from 'fp-ts/lib/Record';
 import {
   Strategy,
   JSON,
   setoidStrict,
   setoidShallow,
-  setoidJSON
+  setoidJSON,
+  refetch
 } from './Strategy';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { CacheValue, getSetoid } from './CacheValue';
@@ -146,9 +147,19 @@ export function product<R extends ObservableQueries>(
     run: run as any,
     invalidate: invalidate as any,
     gc: () => {
-      map(queries, q => {
+      mapRecord(queries, q => {
         q.gc();
       });
     }
   };
+}
+
+export function map<U, L, A, B>(
+  fa: ObservableQuery<U, L, A>,
+  f: (a: A) => B
+): ObservableQuery<U, L, B> {
+  return compose(
+    fa,
+    queryStrict(a => taskEither.of<L, B>(f(a)), refetch)
+  );
 }
