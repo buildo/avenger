@@ -1,7 +1,7 @@
 import { QueryResult } from '../QueryResult';
 import { ReactNode } from 'react';
 import { ObservableQuery } from '../Query';
-import { useQuery, useQueryM } from './useQuery';
+import { useQuery, useQueryMonoid } from './useQuery';
 import { Monoid } from 'fp-ts/lib/Monoid';
 
 type InputProps<A> = A extends void
@@ -18,7 +18,7 @@ type Props<A, L, P, R extends ReactNode> = {
 
 export function WithQuery<A, L, P, R>(props: Props<A, L, P, R>) {
   const queryResult = props.resultMonoid
-    ? useQueryM(props.query, props.resultMonoid, (props as any).input)
+    ? useQueryMonoid(props.query, props.resultMonoid, (props as any).input)
     : useQuery(props.query, (props as any).input);
   return props.render(queryResult);
 }

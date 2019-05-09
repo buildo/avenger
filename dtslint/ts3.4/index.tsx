@@ -133,8 +133,8 @@ useQuery(b, undefined); // $ExpectType QueryResult<string, number>
 <WithQuery query={b} input={3} render={constNull} />; // $ExpectError
 
 const declareA = declareQuery(a);
-declareA.inputProps; // $ExpectType { query: string; }
-declareA.outputProps; // $ExpectType QueryOutputProps<string, number>
+declareA.InputProps; // $ExpectType { query: string; }
+declareA.Props; // $ExpectType QueryOutputProps<string, number>
 declare const CA: React.ComponentType<{ query: QueryResult<string, number> }>;
 const DCA = declareA(CA);
 <DCA query="foo" />;
@@ -151,8 +151,8 @@ const DCAA = declareA(CAA);
 <DCAA query={1} foo={1} />; // $ExpectError
 
 const declareB = declareQuery(b);
-declareB.inputProps; // $ExpectType {}
-declareB.outputProps; // $ExpectType QueryOutputProps<string, number>
+declareB.InputProps; // $ExpectType {}
+declareB.Props; // $ExpectType QueryOutputProps<string, number>
 declare const CB: React.ComponentType<{ query: QueryResult<string, number> }>;
 const DCB = declareB(CB);
 <DCB query={undefined} />; // $ExpectError

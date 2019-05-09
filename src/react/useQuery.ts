@@ -5,17 +5,17 @@ import { observeShallow } from '../observe';
 import { Monoid } from 'fp-ts/lib/Monoid';
 import { observable } from '../Observable';
 
-export function useQueryM<A extends void, L, P>(
+export function useQueryMonoid<A extends void, L, P>(
   query: ObservableQuery<A, L, P>,
   resultMonoid: Monoid<QueryResult<L, P>>,
   input?: A
 ): QueryResult<L, P>;
-export function useQueryM<A, L, P>(
+export function useQueryMonoid<A, L, P>(
   query: ObservableQuery<A, L, P>,
   resultMonoid: Monoid<QueryResult<L, P>>,
   input: A
 ): QueryResult<L, P>;
-export function useQueryM<A, L, P>(
+export function useQueryMonoid<A, L, P>(
   query: ObservableQuery<A, L, P>,
   resultMonoid: Monoid<QueryResult<L, P>>,
   input: A
@@ -54,5 +54,5 @@ export function useQuery<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A
 ): QueryResult<L, P> {
-  return useQueryM(query, defaultMonoidResult<L, P>(), input);
+  return useQueryMonoid(query, defaultMonoidResult<L, P>(), input);
 }
