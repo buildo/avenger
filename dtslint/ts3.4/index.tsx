@@ -14,7 +14,8 @@ import {
   useQuery,
   WithQuery,
   declareQuery,
-  declareQueries
+  declareQueries,
+  useQueries
 } from '../../src/react';
 import * as React from 'react';
 import { constNull } from 'fp-ts/lib/function';
@@ -133,6 +134,11 @@ useQuery(a); // $ExpectError
 useQuery(b); // $ExpectType QueryResult<string, number>
 useQuery(b, 3); // $ExpectError
 useQuery(b, undefined); // $ExpectType QueryResult<string, number>
+
+useQueries({ a }); // $ExpectError
+useQueries({ b }); // $ExpectType QueryResult<string, ProductP<{ b: CachedQuery<void, string, number>; }>>
+useQueries({ b }, { b: 3 }); // $ExpectError
+useQueries({ b }, undefined); // $ExpectType QueryResult<string, ProductP<{ b: CachedQuery<void, string, number>; }>>
 
 <WithQuery query={a} render={constNull} />; // $ExpectError
 <WithQuery query={b} render={constNull} />;

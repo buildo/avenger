@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react';
-import { ObservableQuery } from '../Query';
+import { ObservableQuery, product } from '../Query';
 import { QueryResult, loading, success } from '../QueryResult';
 import { observeShallow } from '../observe';
 import { Monoid } from 'fp-ts/lib/Monoid';
 import { observable } from '../Observable';
+import {
+  ObservableQueries,
+  EnforceNonEmptyRecord,
+  ProductA,
+  ProductL,
+  ProductP,
+  VoidInputObservableQueries
+} from '../util';
 
 export function useQueryMonoid<A extends void, L, P>(
   query: ObservableQuery<A, L, P>,
@@ -55,4 +63,37 @@ export function useQuery<A, L, P>(
   input: A
 ): QueryResult<L, P> {
   return useQueryMonoid(query, defaultMonoidResult<L, P>(), input);
+}
+
+export function useQueriesMonoid<R extends VoidInputObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>,
+  resultMonoid: Monoid<QueryResult<ProductL<R>, ProductP<R>>>,
+  input?: ProductA<R>
+): QueryResult<ProductL<R>, ProductP<R>>;
+export function useQueriesMonoid<R extends ObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>,
+  resultMonoid: Monoid<QueryResult<ProductL<R>, ProductP<R>>>,
+  input: ProductA<R>
+): QueryResult<ProductL<R>, ProductP<R>>;
+export function useQueriesMonoid<R extends ObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>,
+  resultMonoid: Monoid<QueryResult<ProductL<R>, ProductP<R>>>,
+  input?: ProductA<R>
+): QueryResult<ProductL<R>, ProductP<R>> {
+  return useQueryMonoid(product(queries), resultMonoid, input as any);
+}
+
+export function useQueries<R extends VoidInputObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>,
+  input?: ProductA<R>
+): QueryResult<ProductL<R>, ProductP<R>>;
+export function useQueries<R extends ObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>,
+  input: ProductA<R>
+): QueryResult<ProductL<R>, ProductP<R>>;
+export function useQueries<R extends ObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>,
+  input?: ProductA<R>
+): QueryResult<ProductL<R>, ProductP<R>> {
+  return useQuery(product(queries), input as any);
 }
