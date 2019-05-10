@@ -10,7 +10,12 @@ import {
 import { Strategy, available, expire, refetch } from '../../src/Strategy';
 import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
-import { useQuery, WithQuery, declareQuery } from '../../src/react';
+import {
+  useQuery,
+  WithQuery,
+  declareQuery,
+  declareQueries
+} from '../../src/react';
 import * as React from 'react';
 import { constNull } from 'fp-ts/lib/function';
 import { QueryResult } from '../../src/QueryResult';
@@ -79,13 +84,14 @@ const currentView = compose(
   )
 );
 
-// $ExpectType Product<Pick<{} & { a: string; c: number; }, "a" | "c">, string, { a: number; c: boolean; }>
+// $ExpectType Product<Pick<{} & { a: string; c: number; }, "a" | "c">, string, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; }>>
 const productac = product({ a, c });
 
-// $ExpectType Product<Pick<{} & { a: string; c: number; e: string; }, "a" | "c" | "e">, string | number, { a: number; c: boolean; e: boolean; }>
+// tslint:disable-next-line:max-line-length
+// $ExpectType Product<Pick<{} & { a: string; c: number; e: string; }, "a" | "c" | "e">, string | number, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; e: CachedQuery<string, number, boolean>; }>>
 const productace = product({ a, c, e });
 
-// $ExpectType Product<Pick<{ b?: undefined; } & { a: string; }, "a" | "b">, string, { a: number; b: number; }>
+// $ExpectType Product<Pick<{ b?: undefined; } & { a: string; }, "a" | "b">, string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
 const productab = product({ a, b });
 observeShallow(productab, { a: 'foo' });
 // $ExpectError
@@ -166,13 +172,24 @@ const DCBB = declareB(CBB);
 <DCBB query={undefined} />; // $ExpectError
 <DCBB foo={1} />;
 
-invalidate({ a }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; }>
+const declareAB = declareQueries({ a, b });
+declareAB.InputProps; // $ExpectType { query: Pick<{ b?: undefined; } & { a: string; }, "a" | "b">; }
+declareAB.Props; // $ExpectType QueryOutputProps<string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
+declare const AB: React.ComponentType<{
+  query: QueryResult<string, { a: number; b: number }>;
+}>;
+const DAB = declareAB(AB);
+<DAB query={undefined} />; // $ExpectError
+<DAB />; // $ExpectError
+<DAB query={{ a: 'foo' }} />;
+
+invalidate({ a }, { a: 'foo' }); // $ExpectType TaskEither<string, ProductP<{ a: CachedQuery<string, string, number>; }>>
 invalidate({ a }, {}); // $ExpectError
 invalidate({ a }); // $ExpectError
 invalidate({ b }, {}); // $ExpectError
-invalidate({ b }); // $ExpectType TaskEither<string, { b: number; }>
+invalidate({ b }); // $ExpectType TaskEither<string, ProductP<{ b: CachedQuery<void, string, number>; }>>
 invalidate({ a, b }, {}); // $ExpectError
-invalidate({ a, b }, { a: 'foo' }); // $ExpectType TaskEither<string, { a: number; b: number; }>
+invalidate({ a, b }, { a: 'foo' }); // $ExpectType TaskEither<string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
 
 declare const caf: (input: string) => TaskEither<string, number>;
 declare const cbf: (input: number) => TaskEither<string, number>;

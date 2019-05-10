@@ -37,3 +37,11 @@ export type ProductA<R extends ObservableQueries> = NonMatchingPropNames<
 > extends never
   ? void
   : _ProductA<R>;
+
+export type ProductL<R extends ObservableQueries> = {
+  [K in keyof R]: R[K]['_L']
+}[keyof R];
+
+export type ProductP<R extends ObservableQueries> = {
+  [K in keyof R]: R[K]['_P']
+};
