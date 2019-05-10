@@ -11,7 +11,13 @@ import {
 } from './Strategy';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { CacheValue, getSetoid } from './CacheValue';
-import { EnforceNonEmptyRecord, ObservableQueries, ProductA } from './util';
+import {
+  EnforceNonEmptyRecord,
+  ObservableQueries,
+  ProductA,
+  ProductL,
+  ProductP
+} from './util';
 
 export type Fetch<A, L, P> = (input: A) => TaskEither<L, P>;
 
@@ -125,15 +131,8 @@ const sequenceRecordTaskEither = sequence(taskEither);
 
 export function product<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>
-): Product<
-  ProductA<R>,
-  { [K in keyof R]: R[K]['_L'] }[keyof R],
-  { [K in keyof R]: R[K]['_P'] }
-> {
-  type K = keyof R;
+): Product<ProductA<R>, ProductL<R>, ProductP<R>> {
   type A = ProductA<R>;
-  type L = { [k in K]: R[k]['_L'] }[K];
-  type P = { [k in K]: R[k]['_P'] };
   const runQueries = (a: A) =>
     mapWithKey(queries, (k, query) => query.run(((a || {}) as any)[k]));
   const run = (a: A) => sequenceRecordTaskEither(runQueries(a));
@@ -142,7 +141,7 @@ export function product<R extends ObservableQueries>(
   const invalidate = (a: A) => sequenceRecordTaskEither(invalidateQueries(a));
   return {
     type: 'product',
-    ...queryPhantoms<A, L, P>(),
+    ...queryPhantoms<A, ProductL<R>, ProductP<R>>(),
     queries,
     run: run as any,
     invalidate: invalidate as any,

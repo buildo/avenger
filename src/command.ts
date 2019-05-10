@@ -5,7 +5,8 @@ import {
   EnforceNonEmptyRecord,
   ObservableQueries,
   ProductA,
-  VoidInputObservableQueries
+  VoidInputObservableQueries,
+  ProductL
 } from './util';
 
 export function command<
@@ -13,7 +14,7 @@ export function command<
   L,
   P,
   I extends VoidInputObservableQueries,
-  IL extends { [k in keyof I]: I[k]['_L'] }[keyof I]
+  IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
   queries: EnforceNonEmptyRecord<I>
@@ -23,7 +24,7 @@ export function command<
   L,
   P,
   I extends ObservableQueries,
-  IL extends { [k in keyof I]: I[k]['_L'] }[keyof I]
+  IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
   queries: EnforceNonEmptyRecord<I>
@@ -33,7 +34,7 @@ export function command<
   L,
   P,
   I extends ObservableQueries,
-  IL extends { [k in keyof I]: I[k]['_L'] }[keyof I]
+  IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
   queries: EnforceNonEmptyRecord<I>

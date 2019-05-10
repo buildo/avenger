@@ -1,7 +1,14 @@
 import * as React from 'react';
 import { QueryResult } from '../QueryResult';
-import { Omit } from '../util';
-import { ObservableQuery } from '../Query';
+import {
+  Omit,
+  ObservableQueries,
+  EnforceNonEmptyRecord,
+  ProductA,
+  ProductL,
+  ProductP
+} from '../util';
+import { ObservableQuery, product } from '../Query';
 import { useQuery, useQueryMonoid } from './useQuery';
 import { Monoid } from 'fp-ts/lib/Monoid';
 
@@ -30,4 +37,11 @@ export function declareQuery<A, L, P>(
       : useQuery(query, input);
     return <Component {...props} query={queryResult} />;
   }) as any;
+}
+
+export function declareQueries<R extends ObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>,
+  resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>
+): DeclareQueryReturn<ProductA<R>, ProductL<R>, ProductP<R>> {
+  return declareQuery(product(queries), resultMonoid);
 }
