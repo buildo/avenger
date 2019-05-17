@@ -13,7 +13,6 @@ import { observeShallow } from '../../src/observe';
 import {
   useQuery,
   WithQuery,
-  declareQuery,
   declareQueries,
   useQueries
 } from '../../src/react';
@@ -144,50 +143,54 @@ useQueries({ b }, undefined); // $ExpectType QueryResult<string, ProductP<{ b: C
 <WithQuery query={b} render={constNull} />;
 <WithQuery query={b} input={3} render={constNull} />; // $ExpectError
 
-const declareA = declareQuery(a);
-declareA.InputProps; // $ExpectType { query: string; }
-declareA.Props; // $ExpectType QueryOutputProps<string, number>
-declare const CA: React.ComponentType<{ query: QueryResult<string, number> }>;
+const declareA = declareQueries({ a });
+declareA.InputProps; // $ExpectType { queries: Pick<{} & { a: string; }, "a">; }
+declareA.Props; // $ExpectType QueryOutputProps<string, ProductP<{ a: CachedQuery<string, string, number>; }>>
+declare const CA: React.ComponentType<{
+  queries: QueryResult<string, { a: number }>;
+}>;
 const DCA = declareA(CA);
-<DCA query="foo" />;
+<DCA queries={{ a: 'foo' }} />;
 <DCA />; // $ExpectError
-<DCA query={1} />; // $ExpectError
+<DCA queries={{ a: 1 }} />; // $ExpectError
 declare const CAA: React.ComponentType<{
-  query: QueryResult<string, number>;
+  queries: QueryResult<string, { a: number }>;
   foo: number;
 }>;
 const DCAA = declareA(CAA);
-<DCAA query="foo" foo={1} />;
-<DCAA query="foo" />; // $ExpectError
+<DCAA queries={{ a: 'foo' }} foo={1} />;
+<DCAA queries={{ a: 'foo' }} />; // $ExpectError
 <DCAA foo={1} />; // $ExpectError
-<DCAA query={1} foo={1} />; // $ExpectError
+<DCAA queries={{ a: 1 }} foo={1} />; // $ExpectError
 
-const declareB = declareQuery(b);
+const declareB = declareQueries({ b });
 declareB.InputProps; // $ExpectType {}
-declareB.Props; // $ExpectType QueryOutputProps<string, number>
-declare const CB: React.ComponentType<{ query: QueryResult<string, number> }>;
+declareB.Props; // $ExpectType QueryOutputProps<string, ProductP<{ b: CachedQuery<void, string, number>; }>>
+declare const CB: React.ComponentType<{
+  queries: QueryResult<string, { b: number }>;
+}>;
 const DCB = declareB(CB);
-<DCB query={undefined} />; // $ExpectError
+<DCB queries={undefined} />; // $ExpectError
 <DCB />;
 declare const CBB: React.ComponentType<{
-  query: QueryResult<string, number>;
+  queries: QueryResult<string, { b: number }>;
   foo: number;
 }>;
 const DCBB = declareB(CBB);
-<DCBB query={undefined} foo={1} />; // $ExpectError
-<DCBB query={undefined} />; // $ExpectError
+<DCBB queries={{}} foo={1} />; // $ExpectError
+<DCBB queries={{}} />; // $ExpectError
 <DCBB foo={1} />;
 
 const declareAB = declareQueries({ a, b });
-declareAB.InputProps; // $ExpectType { query: Pick<{ b?: undefined; } & { a: string; }, "a" | "b">; }
+declareAB.InputProps; // $ExpectType { queries: Pick<{ b?: undefined; } & { a: string; }, "a" | "b">; }
 declareAB.Props; // $ExpectType QueryOutputProps<string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
 declare const AB: React.ComponentType<{
-  query: QueryResult<string, { a: number; b: number }>;
+  queries: QueryResult<string, { a: number; b: number }>;
 }>;
 const DAB = declareAB(AB);
-<DAB query={undefined} />; // $ExpectError
+<DAB queries={{}} />; // $ExpectError
 <DAB />; // $ExpectError
-<DAB query={{ a: 'foo' }} />;
+<DAB queries={{ a: 'foo' }} />;
 
 invalidate({ a }, { a: 'foo' }); // $ExpectType TaskEither<string, ProductP<{ a: CachedQuery<string, string, number>; }>>
 invalidate({ a }, {}); // $ExpectError

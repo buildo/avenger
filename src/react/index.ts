@@ -1,3 +1,3 @@
 export * from './useQuery';
 export * from './WithQuery';
-export * from './declareQuery';
+export * from './declareQueries';
