@@ -200,6 +200,8 @@ invalidate({ a, b }, { a: 'foo' }); // $ExpectType TaskEither<string, ProductP<{
 declare const caf: (input: string) => TaskEither<string, number>;
 declare const cbf: (input: number) => TaskEither<string, number>;
 
+const cmdcaf = command(caf); // $ExpectType (a: string, ia?: undefined) => TaskEither<string, number>
+cmdcaf('foo'); // $ExpectType TaskEither<string, number>
 command(caf, {}); // $ExpectError
 const cmda = command(caf, { a }); // $ExpectType (a: string, ia: Pick<{} & { a: string; }, "a">) => TaskEither<string, number>
 cmda(1, { a: 'foo' }); // $ExpectError
