@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ObservableQuery, product } from '../Query';
 import { QueryResult, loading, success } from '../QueryResult';
 import { observeShallow } from '../observe';
@@ -80,7 +80,8 @@ export function useQueriesMonoid<R extends ObservableQueries>(
   resultMonoid: Monoid<QueryResult<ProductL<R>, ProductP<R>>>,
   input?: ProductA<R>
 ): QueryResult<ProductL<R>, ProductP<R>> {
-  return useQueryMonoid(product(queries), resultMonoid, input as any);
+  const queryProduct = useMemo(() => product(queries), [queries]);
+  return useQueryMonoid(queryProduct, resultMonoid, input as any);
 }
 
 export function useQueries<R extends VoidInputObservableQueries>(
@@ -95,5 +96,6 @@ export function useQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   input?: ProductA<R>
 ): QueryResult<ProductL<R>, ProductP<R>> {
-  return useQuery(product(queries), input as any);
+  const queryProduct = useMemo(() => product(queries), [queries]);
+  return useQuery(queryProduct, input as any);
 }
