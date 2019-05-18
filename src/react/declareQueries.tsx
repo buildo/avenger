@@ -8,8 +8,7 @@ import {
   ProductL,
   ProductP
 } from '../util';
-import { product } from '../Query';
-import { useQuery, useQueryMonoid } from './useQuery';
+import { useQueries, useQueriesMonoid } from './useQuery';
 import { Monoid } from 'fp-ts/lib/Monoid';
 
 type QueryInputProps<A> = A extends void ? {} : { queries: A };
@@ -33,8 +32,8 @@ export function declareQueries<R extends ObservableQueries>(
   return ((Component: any) => (inputProps: any) => {
     const { queries: input, ...props } = inputProps;
     const queryResult = resultMonoid
-      ? useQueryMonoid(product(queries), resultMonoid, input)
-      : useQuery(product(queries), input);
+      ? useQueriesMonoid(queries, resultMonoid, input)
+      : useQueries(queries, input);
     return <Component {...props} queries={queryResult} />;
   }) as any;
 }
