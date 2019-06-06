@@ -43,7 +43,6 @@ export class Cache<A, L, P> {
   ): BehaviorSubject<CacheValue<L, P>> => {
     if (!this.member(input)) {
       this.subjects.set(input, new BehaviorSubject(cacheValueInitial<L, P>()));
-      this.createPending(input);
     }
     return this.unsafeLookup(input);
   };
