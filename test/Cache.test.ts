@@ -16,10 +16,10 @@ describe('Cache', () => {
         fetchSpy,
         available(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await delay(20, void 0).run();
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
     });
 
@@ -32,10 +32,7 @@ describe('Cache', () => {
         fetchSpy,
         refetch(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
-      await Promise.all([
-        cache.getOrFetch('foo').run(),
-        cache.getOrFetch('foo').run()
-      ]);
+      await Promise.all([cache.run('foo').run(), cache.run('foo').run()]);
       expect(fetchSpy.mock.calls.length).toBe(1);
     });
 
@@ -47,10 +44,10 @@ describe('Cache', () => {
         fetchSpy,
         refetch(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await delay(20, void 0).run();
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(2);
     });
 
@@ -62,15 +59,15 @@ describe('Cache', () => {
         fetchSpy,
         expire(20)(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
-      await cache.getOrFetch('foo').run();
-      expect(fetchSpy.mock.calls.length).toBe(1);
-      await delay(10, void 0).run();
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await delay(10, void 0).run();
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
+      expect(fetchSpy.mock.calls.length).toBe(1);
+      await delay(10, void 0).run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(2);
     });
   });
@@ -84,7 +81,7 @@ describe('Cache', () => {
         fetchSpy,
         available(setoidString, getSetoid(setoidStrict, setoidNumber))
       );
-      await cache.getOrFetch('foo').run();
+      await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       await cache.invalidate('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(2);
