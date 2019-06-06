@@ -14,6 +14,15 @@ import { Task } from 'fp-ts/lib/Task';
 import { Strategy } from './Strategy';
 import { distinctUntilChanged } from 'rxjs/operators';
 
+/**
+ * Cache is a smart way of storing key value pairs.
+ *
+ * @param fetch  the function of type `Fetch` used to fetch the data.
+ * @param strategy the `Strategy` used to decide if new data should be fetched or you can use the Cache.
+ * @typeparam A  represent the input of the Fetch function, it will be used as the key of our Cache map.
+ * @typeparam L  represent the Error returned bu the fetch function is something goes wrong.
+ * @typeparam P  represent the value returned by the Fetch function if everything goes well.
+ */
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
   private readonly _lookup: <T>(input: A, map: Map<A, T>) => Option<T>;
@@ -101,6 +110,9 @@ export class Cache<A, L, P> {
       .map(s => s.value)
       .getOrElseL(cacheValueInitial);
 
+  /**
+    * Cache is a smart way of storing key value pairs.
+  */
   gc = (): void => {
     this.subjects = map.filter(this.subjects, s => s.observers.length > 0);
   };
