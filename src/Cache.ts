@@ -63,7 +63,7 @@ export class Cache<A, L, P> {
     return pending;
   };
 
-  getOrFetch = (input: A): TaskEither<L, P> => {
+  run = (input: A): TaskEither<L, P> => {
     return some(this.getOrCreateSubject(input).value)
       .filter(this.strategy.filter)
       .foldL(
@@ -88,7 +88,7 @@ export class Cache<A, L, P> {
         this.sameInvalidationFrame = false;
       });
     }
-    return this.getOrFetch(input);
+    return this.run(input);
   };
 
   observe = (input: A): Observable<CacheValue<L, P>> =>

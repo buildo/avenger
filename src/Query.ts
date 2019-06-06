@@ -63,7 +63,7 @@ export function query<A = void, L = unknown, P = unknown>(
       type: 'cached',
       ...queryPhantoms<A, L, P>(),
       cache,
-      run: cache.getOrFetch,
+      run: cache.run,
       invalidate: cache.invalidate
     };
   };
