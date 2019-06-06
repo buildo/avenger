@@ -90,23 +90,4 @@ describe('Cache', () => {
       expect(fetchSpy.mock.calls.length).toBe(2);
     });
   });
-
-  describe('gc', () => {
-    it('should remove all subjects that are not currently observed', async () => {
-      const af = jest.fn((s: string) =>
-        taskEither.of<string, number>(s.length)
-      );
-      const cache = new Cache(
-        af,
-        refetch(setoidString, getSetoid(setoidString, setoidNumber))
-      );
-      const sfoo = cache.observe('foo').subscribe();
-      cache.observe('bar').subscribe();
-      cache.observe('baz').subscribe();
-      sfoo.unsubscribe();
-      expect((cache as any).subjects.size).toBe(3);
-      cache.gc();
-      expect((cache as any).subjects.size).toBe(2);
-    });
-  });
 });
