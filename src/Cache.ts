@@ -7,7 +7,7 @@ import {
   cacheValueInitial
 } from './CacheValue';
 import { Fetch } from './Query';
-import { lookup, map } from 'fp-ts/lib/Map';
+import { lookup } from 'fp-ts/lib/Map';
 import { Option, some } from 'fp-ts/lib/Option';
 import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
@@ -100,8 +100,4 @@ export class Cache<A, L, P> {
     this.lookup(input)
       .map(s => s.value)
       .getOrElseL(cacheValueInitial);
-
-  gc = (): void => {
-    this.subjects = map.filter(this.subjects, s => s.observers.length > 0);
-  };
 }
