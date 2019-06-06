@@ -69,14 +69,14 @@ export function query<A = void, L = unknown, P = unknown>(
   };
 }
 
-export type MakeStrategy<A, L, P> = (
+export type StrategyBuilder<A, L, P> = (
   inputSetoid: Setoid<A>,
   cacheValueSetoid: Setoid<CacheValue<L, P>>
 ) => Strategy<A, L, P>;
 
 export function queryStrict<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: MakeStrategy<A, L, P>
+  makeStrategy: StrategyBuilder<A, L, P>
 ): CachedQuery<A, L, P> {
   return query(fetch)(
     makeStrategy(setoidStrict, getSetoid(setoidStrict, setoidStrict))
@@ -85,7 +85,7 @@ export function queryStrict<A = void, L = unknown, P = unknown>(
 
 export function queryShallow<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: MakeStrategy<A, L, P>
+  makeStrategy: StrategyBuilder<A, L, P>
 ): CachedQuery<A, L, P> {
   return query(fetch)(
     makeStrategy(setoidShallow, getSetoid(setoidShallow, setoidShallow))
@@ -94,7 +94,7 @@ export function queryShallow<A = void, L = unknown, P = unknown>(
 
 export function queryJSON<A extends JSON, L extends JSON, P extends JSON>(
   fetch: Fetch<A, L, P>,
-  makeStrategy: MakeStrategy<A, L, P>
+  makeStrategy: StrategyBuilder<A, L, P>
 ): CachedQuery<A, L, P> {
   return query(fetch)(
     makeStrategy(setoidJSON, getSetoid(setoidJSON, setoidJSON))
