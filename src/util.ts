@@ -6,10 +6,10 @@ export type Omit<O, K> = Pick<O, Exclude<keyof O, K>>;
 
 // helpers from https://github.com/tycho01/typical
 type MatchingPropNames<T, X> = {
-  [K in keyof T]: T[K] extends X ? K : never
+  [K in keyof T]: T[K] extends X ? K : never;
 }[keyof T];
 type NonMatchingPropNames<T, X> = {
-  [K in keyof T]: T[K] extends X ? never : K
+  [K in keyof T]: T[K] extends X ? never : K;
 }[keyof T];
 
 export type Simplify<T> = Pick<T, keyof T>;
@@ -27,7 +27,7 @@ type _ProductA<R extends ObservableQueries> = Simplify<
       [K in NonMatchingPropNames<
         R,
         ObservableQuery<void, any, any>
-      >]: R[K]['_A']
+      >]: R[K]['_A'];
     }
 >;
 
@@ -39,9 +39,9 @@ export type ProductA<R extends ObservableQueries> = NonMatchingPropNames<
   : _ProductA<R>;
 
 export type ProductL<R extends ObservableQueries> = {
-  [K in keyof R]: R[K]['_L']
+  [K in keyof R]: R[K]['_L'];
 }[keyof R];
 
 export type ProductP<R extends ObservableQueries> = {
-  [K in keyof R]: R[K]['_P']
+  [K in keyof R]: R[K]['_P'];
 };
