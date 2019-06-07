@@ -8,7 +8,8 @@
     "build": "rm -rf lib && mkdir lib && tsc",
     "dtslint": "dtslint dtslint",
     "preversion": "npm test && npm run prettier && npm run dtslint",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "test-r": " jest test/CachedQuery.test.ts --watch --reporters jest-skipped-reporter"
   },
   "main": "lib",
   "typings": "lib/index.d.ts",
@@ -32,6 +33,7 @@
     "fast-check": "^1.15.1",
     "fp-ts-laws": "0.1.0",
     "jest": "^24.8.0",
+    "jest-skipped-reporter": "^0.0.4",
     "prettier": "^1.18.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
