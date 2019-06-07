@@ -25,6 +25,14 @@ interface DeclareQueriesReturn<A, L, P> {
   Props: QueryOutputProps<L, P>;
 }
 
+/**
+ * A React HOC-factory to observe a record of `ObservableQueries`,
+ * receiving input values via Props,
+ * and passing the latest available `QueryResult` to the wrapped component
+ * @param queries A record of observable queries to observe
+ * @param resultMonoid A monoid used to aggregate `QueryResult`s
+ * @returns A React component receiving query inputs via the `query` prop
+ */
 export function declareQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>

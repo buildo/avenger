@@ -5,10 +5,21 @@ import { refetch } from './Strategy';
 import { command as _command } from './command';
 import { IO } from 'fp-ts/lib/IO';
 
+/**
+ * An helper to create a memory value/ref that can be operated upon using the query/command interface
+ *
+ * @param initialValue Initial value to store in memory
+ */
 export function memoryValue<T>(
   initialValue: T
 ): {
+  /**
+   * `ObservableQuery` to read the currently stored value
+   */
   query: ObservableQuery<void, void, T>;
+  /**
+   * command to request an update to the stored value
+   */
   command: (a: T) => TaskEither<void, void>;
   get: IO<T>;
   set: (value: T) => IO<void>;

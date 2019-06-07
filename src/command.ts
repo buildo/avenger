@@ -9,6 +9,14 @@ import {
   ProductL
 } from './util';
 
+/**
+ * Constructs a command,
+ * that is an asynchrnous action that is typically non-idempotent and yields no results.
+ * A command, when successful, can invalidate a set of queries,
+ * typically used to read the updated results of the command request.
+ * @param cmd The asynchronous and possibly failing action
+ * @param queries An optional record of queries to invalidate upon success of `cmd`
+ */
 export function command<
   A,
   L,

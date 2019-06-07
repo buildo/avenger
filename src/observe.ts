@@ -53,6 +53,14 @@ function _observe<A, L, P>(
   }
 }
 
+/**
+ * Given an `ObservableQuery`, returns an observable stream of `QueryResult`s
+ * representing the latest available value for such query
+ *
+ * @param query The `ObservableQuery` to `observe`
+ * @param input Input for `query`
+ * @param resultSetoid The `Setoid` used to aggregate subsequent `QueryResult` payloads
+ */
 export function observe<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A,
@@ -61,6 +69,14 @@ export function observe<A, L, P>(
   return _observe(query, input).pipe(distinctUntilChanged(resultSetoid.equals));
 }
 
+/**
+ * Given an `ObservableQuery`, returns an observable stream of `QueryResult`s
+ * representing the latest available value for such query,
+ * using strict equality to compare and potentially aggregate subsequent results
+ *
+ * @param query The `ObservableQuery` to `observe`
+ * @param input Input for `query`
+ */
 export function observeStrict<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A
@@ -70,6 +86,14 @@ export function observeStrict<A, L, P>(
   );
 }
 
+/**
+ * Given an `ObservableQuery`, returns an observable stream of `QueryResult`s
+ * representing the latest available value for such query,
+ * using shallow equality to compare and potentially aggregate subsequent results
+ *
+ * @param query The `ObservableQuery` to `observe`
+ * @param input Input for `query`
+ */
 export function observeShallow<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A
@@ -79,6 +103,14 @@ export function observeShallow<A, L, P>(
   );
 }
 
+/**
+ * Given an `ObservableQuery`, returns an observable stream of `QueryResult`s
+ * representing the latest available value for such query,
+ * using `JSON.stringify` to compare and potentially aggregate subsequent results
+ *
+ * @param query The `ObservableQuery` to `observe`
+ * @param input Input for `query`
+ */
 export function observeJSON<A, L extends JSON, P extends JSON>(
   query: ObservableQuery<A, L, P>,
   input: A

@@ -13,6 +13,9 @@ export const URI = 'CacheValue';
 
 export type URI = typeof URI;
 
+/**
+ * Represents a value stored in an `ObservableQuery` cache
+ */
 export type CacheValue<L, A> =
   | CacheValueInitial<L, A>
   | CacheValuePending<L, A>
@@ -103,10 +106,16 @@ class CacheValueResolved<L, A> {
   }
 }
 
+/**
+ * Constructs a `CacheValueInitial`
+ */
 export function cacheValueInitial<L, A>(): CacheValue<L, A> {
   return new CacheValueInitial();
 }
 
+/**
+ * Constructs a `CacheValuePending`
+ */
 export function cacheValuePending<L, A>(
   value: Promise<Either<L, A>>,
   updated: Date
@@ -114,6 +123,9 @@ export function cacheValuePending<L, A>(
   return new CacheValuePending(value, updated);
 }
 
+/**
+ * Constructs a `CacheValueError`
+ */
 export function cacheValueError<L, A>(
   value: L,
   updated: Date
@@ -121,6 +133,9 @@ export function cacheValueError<L, A>(
   return new CacheValueError(value, updated);
 }
 
+/**
+ * Constructs a `CacheValueResolved`
+ */
 export function cacheValueResolved<L, A>(
   value: A,
   updated: Date
@@ -137,6 +152,11 @@ export const cacheValue: Functor2<URI> = {
   map
 };
 
+/**
+ * Constructs the Setoid for `CacheValue` given Setoids to compare errors and resolved values
+ * @param Sl Setoid to compare error values
+ * @param Sa Setoid to compare resolved values
+ */
 export function getSetoid<L, A>(
   Sl: Setoid<L>,
   Sa: Setoid<A>
