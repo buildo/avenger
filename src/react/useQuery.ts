@@ -13,6 +13,12 @@ import {
   VoidInputObservableQueries
 } from '../util';
 
+/**
+ * React hook to `observe` an `ObservableQuery`
+ * @param query The ObservableQuery to observe
+ * @param resultMonoid A monoid used to aggregate `QueryResult` payloads
+ * @param input Input for the observed query
+ */
 export function useQueryMonoid<A extends void, L, P>(
   query: ObservableQuery<A, L, P>,
   resultMonoid: Monoid<QueryResult<L, P>>,
@@ -50,6 +56,11 @@ function defaultMonoidResult<L, P>() {
   };
 }
 
+/**
+ * React hook to `observe` an `ObservableQuery` using the default aggregation strategy for subsequent `QueryResult` payloads
+ * @param query The ObservableQuery to observe
+ * @param input Input for the observed query
+ */
 export function useQuery<A extends void, L, P>(
   query: ObservableQuery<A, L, P>,
   input?: A
@@ -65,6 +76,12 @@ export function useQuery<A, L, P>(
   return useQueryMonoid(query, defaultMonoidResult<L, P>(), input);
 }
 
+/**
+ * React hook to `observe` a record of observable queries
+ * @param query The record of queries to observe
+ * @param resultMonoid A monoid used to aggregate `QueryResult` payloads
+ * @param input Input for the observed queries
+ */
 export function useQueriesMonoid<R extends VoidInputObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   resultMonoid: Monoid<QueryResult<ProductL<R>, ProductP<R>>>,
@@ -84,6 +101,11 @@ export function useQueriesMonoid<R extends ObservableQueries>(
   return useQueryMonoid(queryProduct, resultMonoid, input as any);
 }
 
+/**
+ * React hook to `observe` a record of observable queries using the default aggregation strategy for subsequent `QueryResult` payloads
+ * @param query The record of queries to observe
+ * @param input Input for the observed queries
+ */
 export function useQueries<R extends VoidInputObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   input?: ProductA<R>

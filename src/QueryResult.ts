@@ -13,6 +13,11 @@ export const URI = 'QueryResult';
 
 export type URI = typeof URI;
 
+/**
+ * Represents a result obtained by observing a query.
+ *
+ * `observe` returns an observable stream of such results.
+ */
 export type QueryResult<L, A> = Loading<L, A> | Failure<L, A> | Success<L, A>;
 
 export class Loading<L, A> {
@@ -133,12 +138,21 @@ export class Success<L, A> {
   }
 }
 
+/**
+ * A `Loading` `QueryResult`
+ */
 export const loading: QueryResult<never, never> = Loading.value;
 
+/**
+ * Constructs a `Failure` `QueryResult`
+ */
 export function failure<L, A>(value: L, loading: boolean): QueryResult<L, A> {
   return new Failure(value, loading);
 }
 
+/**
+ * Constructs a `Success` `QueryResult`
+ */
 export function success<L, A>(value: A, loading: boolean): QueryResult<L, A> {
   return new Success(value, loading);
 }

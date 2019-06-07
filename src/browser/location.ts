@@ -19,6 +19,9 @@ export type HistoryLocation = {
 let _setListener = false;
 const history = createBrowserHistory();
 
+/**
+ * A query that never fails and returns the current `HistoryLocation`
+ */
 export const location = query(
   (): TaskEither<void, HistoryLocation> => {
     if (!_setListener) {
@@ -52,6 +55,9 @@ function setListener() {
   _setListener = true;
 }
 
+/**
+ * A command that never fails and updates the current `HistoryLocation`
+ */
 export const doUpdateLocation = command(
   ({ search, pathname }: HistoryLocation): TaskEither<void, void> =>
     new TaskEither(
@@ -77,10 +83,18 @@ export const doUpdateLocation = command(
   { location }
 );
 
+/**
+ * Returns an `ObservableQuery` for the current `HistoryLocation` mapped to a custom type `CurrentView`
+ * @param f Function to transform the current `HistoryLocation`
+ */
 export function getCurrentView<A>(f: (location: HistoryLocation) => A) {
   return map(location, f);
 }
 
+/**
+ * returns a command that updates the current `HistoryLocation` and receives as input a custom type `CurrentView`
+ * @param f Function to transform a value to an `HistoryLocation`
+ */
 export function getDoUpdateCurrentView<A>(
   f: (currentView: A) => HistoryLocation
 ) {

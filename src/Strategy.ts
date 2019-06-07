@@ -51,6 +51,12 @@ export function fromSuccessFilter<A, L, P>(
   );
 }
 
+/**
+ * A cache strategy builder that always return the cached value, if available
+ *
+ * @param inputSetoid A `Setoid` used to comopare input values when reading from the cache
+ * @param cacheValueSetoid A `Setoid` used to compare `CacheValue`s when available in the cache
+ */
 export function available<A, L, P>(
   inputSetoid: Setoid<A>,
   cacheValueSetoid: Setoid<CacheValue<L, P>>
@@ -58,6 +64,12 @@ export function available<A, L, P>(
   return fromSuccessFilter(inputSetoid, constTrue, cacheValueSetoid);
 }
 
+/**
+ * A cache strategy builder that always ignores the cached values and requests an update, re-fetching
+ *
+ * @param inputSetoid A `Setoid` used to comopare input values when reading from the cache
+ * @param cacheValueSetoid A `Setoid` used to compare `CacheValue`s when available in the cache
+ */
 export function refetch<A, L, P>(
   inputSetoid: Setoid<A>,
   cacheValueSetoid: Setoid<CacheValue<L, P>>
@@ -65,6 +77,10 @@ export function refetch<A, L, P>(
   return fromSuccessFilter(inputSetoid, constFalse, cacheValueSetoid);
 }
 
+/**
+ * Returns a cache strategy builder that returns the cached value up to `afterMs` milliseconds old,
+ * if available, and otherwise re-fetches
+ */
 export function expire(afterMs: number) {
   return <A, L, P>(
     inputSetoid: Setoid<A>,
