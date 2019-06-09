@@ -6,34 +6,47 @@ export namespace StatefulFetch {
     | 'failureFirst'
     | 'alwaysSuccess'
     | 'alwaysFailure';
-  export type Result = 'alwaysDifferent' | 'alwaysTheSame';
+  export type Result = 'alwaysTheSame' | 'alwaysDifferent';
   export type OrderSequence = {
     even: () => TaskEither<string, string>;
     odd: () => TaskEither<string, string>;
   };
 }
 
+type CacheConstructor = {
+  order: StatefulFetch.Order;
+  resultType: StatefulFetch.Result;
+  resultTag?: string;
+};
+
 export class StatefulFetch {
-  private result: StatefulFetch.Result;
-  private staticSuccess = taskEither.of<string, string>('staticSuccess');
-  private staticFailure = fromLeft<string, string>('staticFailure');
+  private resultType: StatefulFetch.Result;
+  private resultTag: string;
+  private getStaticSuccess = () =>
+    taskEither.of<string, string>(this.resultTag + (this.state + 1).toString());
+  private getStaticFailure = () =>
+    fromLeft<string, string>(this.resultTag + (this.state + 1).toString());
   private order: StatefulFetch.OrderSequence;
 
   private getRandomSuccess = () =>
-    taskEither.of<string, string>(Math.random().toString());
+    taskEither.of<string, string>(
+      this.resultTag + (this.state + 1).toString() + Math.random().toString()
+    );
 
   private getRandomFailure = () =>
-    fromLeft<string, string>(Math.random().toString());
+    fromLeft<string, string>(
+      this.resultTag + (this.state + 1).toString() + Math.random().toString()
+    );
 
   private getSuccess = () => {
-    return this.result === 'alwaysTheSame'
-      ? this.staticSuccess
+    return this.resultType === 'alwaysTheSame'
+      ? this.getStaticSuccess()
       : this.getRandomSuccess();
   };
 
   private getFailure = () => {
-    return this.result === 'alwaysTheSame'
-      ? this.staticFailure
+    return this.resultType === 'alwaysTheSame'
+      ? this.getStaticFailure()
       : this.getRandomFailure();
   };
 
@@ -58,8 +71,9 @@ export class StatefulFetch {
     }
   };
 
-  constructor(order: StatefulFetch.Order, result: StatefulFetch.Result) {
-    this.result = result;
+  constructor({ order, resultType, resultTag = 'result' }: CacheConstructor) {
+    this.resultType = resultType;
+    this.resultTag = resultTag;
     this.order = this.orders[order];
   }
 
