@@ -20,29 +20,6 @@ async function runQueryShallow<A>(
   return { masterFetch, slaveFetch, result, query };
 }
 
-// - compose
-//   - refetch
-//     - run()
-//   - available
-//     - run()
-//       - viene chiamata una volta la fetch di master e una volta la fetch di slave, e viene ritornato il risultato successful di slave
-//       - viene chiamata una volta la fetch di master che fallisce sempre, NON viene chiamata la fetch di slave, e viene ritornato il fallimento di master
-//       - viene chiamata una volta la fetch di master che ha success, viene chiamata una volta la fetch di slave che fallisce sempre, e viene ritornato il fallimento di slave
-//       - dopo avere eseguito run con successo una volta,
-//         si fa run() nuovamente e NON viene chiamata la fetch di master e NON viene chiamata la fetch di slave, e viene ritornato il precedente risultato successful di slave
-//       - dopo aver eseguito run con fallimento di master una volta,
-//         si fa run() nuovamente e viene chiamata una volta la fetch di master che fallisce sempre,
-//         NON viene chiamata la fetch di slave, e viene ritornato il fallimento di master
-//       - dopo aver eseguito run con fallimento di master una volta,
-//         si fa run() nuovamente e viene chiamata una volta la fetch di master che ha successo,
-//         viene chiamata la fetch di slave che fallisce sempre, e viene ritornato il fallimento di slave
-//       - dopo aver eseguito run con fallimento di slave una volta,
-//         si fa run() nuovamente e NON viene chiamata la fetch di master,
-//         viene chiamata la fetch di slave, e viene ritornato il success di slave
-//       - dopo aver eseguito run con fallimento di slave una volta,
-//         si fa run() nuovamente e NON viene chiamata la fetch di master,
-//         viene chiamata la fetch di slave che fallisce sempre, e viene ritornato il fallimento di slave
-
 describe('Compose', () => {
   describe('refetch', () => {
     describe('run()', () => {
@@ -188,8 +165,7 @@ describe('Compose', () => {
       `, async () => {
         const _masterFetch = new StatefulFetch({
           order: 'failureFirst',
-          resultType: 'alwaysTheSame',
-          resultTag: 'masterFail'
+          resultType: 'alwaysTheSame'
         }).fetch;
         const _slaveFetch = new StatefulFetch({
           order: 'alwaysFailure',
@@ -214,20 +190,69 @@ describe('Compose', () => {
         ).toBe(true);
       });
 
-      //       -
-      //
-      //       -
-      //
-      //
-      //       -
-      //
-      //
-      //       - dopo aver eseguito run con fallimento di slave una volta,
-      //         si fa run() nuovamente e viene chiamata una volta la fetch di master che fallisce sempre,
-      //         NON viene chiamata la fetch di slave, e viene ritornato il fallimento di master
-      //       - dopo aver eseguito run con fallimento di slave una volta,
-      //         si fa run() nuovamente e viene chiamata una volta la fetch di master che ha successo,
-      //         viene chiamata la fetch di slave che fallisce sempre, e viene ritornato il fallimento di slave
+      it(`
+        dopo aver eseguito run con fallimento di slave una volta,
+        si fa run() nuovamente e viene chiamata una volta la fetch di master che fallisce sempre,
+        NON viene chiamata la fetch di slave, e viene ritornato il fallimento di master
+      `, async () => {
+        const _masterFetch = new StatefulFetch({
+          order: 'successFirst',
+          resultType: 'alwaysTheSame',
+          resultTag: 'masterFail'
+        }).fetch;
+        const _slaveFetch = new StatefulFetch({
+          order: 'failureFirst',
+          resultType: 'alwaysDifferent'
+        }).fetch;
+        const { masterFetch, slaveFetch, query } = await runQueryShallow(
+          _masterFetch,
+          _slaveFetch,
+          refetch,
+          refetch,
+          1
+        );
+        const result2 = await query.run(1).run();
+        expect(masterFetch.mock.calls.length).toBe(2);
+        expect(slaveFetch.mock.calls.length).toBe(1);
+        expect(
+          result2
+            .swap()
+            .getOrElse('')
+            .startsWith('masterFail')
+        ).toBe(true);
+      });
+
+      it(`
+        dopo aver eseguito run con fallimento di slave una volta,
+        si fa run() nuovamente e viene chiamata una volta la fetch di master che ha successo,
+        viene chiamata la fetch di slave che fallisce sempre, e viene ritornato il secondo fallimento di slave
+      `, async () => {
+        const _masterFetch = new StatefulFetch({
+          order: 'alwaysSuccess',
+          resultType: 'alwaysTheSame'
+        }).fetch;
+        const _slaveFetch = new StatefulFetch({
+          order: 'alwaysFailure',
+          resultType: 'alwaysDifferent',
+          resultTag: 'slaveFail'
+        }).fetch;
+        const { masterFetch, slaveFetch, query } = await runQueryShallow(
+          _masterFetch,
+          _slaveFetch,
+          refetch,
+          refetch,
+          1
+        );
+        const result2 = await query.run(1).run();
+        expect(masterFetch.mock.calls.length).toBe(2);
+        expect(slaveFetch.mock.calls.length).toBe(2);
+        expect(
+          result2
+            .swap()
+            .getOrElse('')
+            .startsWith('slaveFail2')
+        ).toBe(true);
+      });
     });
   });
 });
