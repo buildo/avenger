@@ -186,6 +186,44 @@ describe('CachedQuery', () => {
         ).toBe(true);
       });
     });
+
+    describe('invalidate()', () => {
+      it('dopo avere eseguito run con successo una volta, viene chiamata invalidate, la fetch esegue nuovamente e viene ritornato il precedente risultato', async () => {
+        const fetch = new StatefulFetch({
+          order: 'alwaysSuccess',
+          resultType: 'alwaysDifferent'
+        }).fetch;
+        const { fetchFunction, result, query } = await runQueryShallow(
+          fetch,
+          1,
+          available
+        );
+        expect(fetchFunction.mock.calls.length).toBe(1);
+        expect(result.isRight()).toBe(true);
+        const result2 = await query.invalidate(1).run();
+        expect(fetchFunction.mock.calls.length).toBe(2);
+        expect(result2.getOrElse('') === result.getOrElse('')).toBe(false);
+      });
+
+      it('dopo avere eseguito run con fallimento una volta, viene chiamata invalidate, la fetch esegue nuovamente fallendo e viene ritornato il nuovo risultato di failure', async () => {
+        const fetch = new StatefulFetch({
+          order: 'alwaysFailure',
+          resultType: 'alwaysDifferent'
+        }).fetch;
+        const { fetchFunction, result, query } = await runQueryShallow(
+          fetch,
+          1,
+          available
+        );
+        expect(fetchFunction.mock.calls.length).toBe(1);
+        expect(result.isLeft()).toBe(true);
+        const result2 = await query.invalidate(1).run();
+        expect(fetchFunction.mock.calls.length).toBe(2);
+        expect(
+          result2.swap().getOrElse('') !== result.swap().getOrElse('')
+        ).toBe(true);
+      });
+    });
   });
 
   describe('expire', () => {
