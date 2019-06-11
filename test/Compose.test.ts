@@ -1,102 +1,53 @@
-import { TaskEither } from 'fp-ts/lib/TaskEither';
-import { queryShallow, StrategyBuilder, compose } from '../src/Query';
+import { taskEither, fromLeft } from 'fp-ts/lib/TaskEither';
+import { queryShallow, compose } from '../src/Query';
 import { refetch } from '../src/Strategy';
-import { StatefulFetch } from './utils/StatefulFetch';
-
-async function runQueryShallow<A>(
-  _masterFetch: () => TaskEither<string, string>,
-  _slaveFetch: () => TaskEither<string, string>,
-  masterStrategy: StrategyBuilder<A, string, string>,
-  slaveStrategy: StrategyBuilder<string, string, string>,
-  input: A
-) {
-  const masterFetch = jest.fn(_masterFetch);
-  const slaveFetch = jest.fn(_slaveFetch);
-  const query = compose(
-    queryShallow(masterFetch, masterStrategy),
-    queryShallow(slaveFetch, slaveStrategy)
-  );
-  const result = await query.run(input).run();
-  return { masterFetch, slaveFetch, result, query };
-}
+import { makeTestFetch } from './utils/testFetch';
+import { right, left } from 'fp-ts/lib/Either';
 
 describe('Compose', () => {
   describe('refetch', () => {
     describe('run()', () => {
       it('viene chiamata una volta la fetch di master e una volta la fetch di slave, e viene ritornato il risultato successful di slave', async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysTheSame'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysTheSame',
-          resultTag: 'slaveResult'
-        }).fetch;
-        const { masterFetch, slaveFetch, result } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch([(s: string) => taskEither.of(s.length)]);
+        const slave = makeTestFetch([(n: number) => taskEither.of(n * 2)]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        expect(masterFetch.mock.calls.length).toBe(1);
-        expect(slaveFetch.mock.calls.length).toBe(1);
-        expect(result.getOrElse('').startsWith('slaveResult')).toBe(true);
+        const result = await composition.run('foo').run();
+        master.assertExhausted();
+        slave.assertExhausted();
+        expect(result).toEqual(right(6));
       });
 
       it('viene chiamata una volta la fetch di master che fallisce sempre, NON viene chiamata la fetch di slave, e viene ritornato il fallimento di master', async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'alwaysFailure',
-          resultType: 'alwaysTheSame',
-          resultTag: 'masterFail'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysTheSame'
-        }).fetch;
-        const { masterFetch, slaveFetch, result } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch([
+          (_: string) => fromLeft<string, number>('nope')
+        ]);
+        const slave = makeTestFetch<number, unknown, unknown>([]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        expect(masterFetch.mock.calls.length).toBe(1);
-        expect(slaveFetch.mock.calls.length).toBe(0);
-        expect(
-          result
-            .swap()
-            .getOrElse('')
-            .startsWith('masterFail')
-        ).toBe(true);
+        const result = await composition.run('foo').run();
+        master.assertExhausted();
+        slave.assertExhausted();
+        expect(result).toEqual(left('nope'));
       });
 
       it('viene chiamata una volta la fetch di master che ha successo, viene chiamata una volta la fetch di slave che fallisce sempre, e viene ritornato il fallimento di slave', async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysTheSame'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'alwaysFailure',
-          resultType: 'alwaysTheSame',
-          resultTag: 'slaveFail'
-        }).fetch;
-        const { masterFetch, slaveFetch, result } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch([(s: string) => taskEither.of(s.length)]);
+        const slave = makeTestFetch([
+          (_: number) => fromLeft<string, number>('nope')
+        ]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        expect(masterFetch.mock.calls.length).toBe(1);
-        expect(slaveFetch.mock.calls.length).toBe(1);
-        expect(
-          result
-            .swap()
-            .getOrElse('')
-            .startsWith('slaveFail')
-        ).toBe(true);
+        const result = await composition.run('foo').run();
+        master.assertExhausted();
+        slave.assertExhausted();
+        expect(result).toEqual(left('nope'));
       });
 
       it(`
@@ -104,26 +55,24 @@ describe('Compose', () => {
         si fa run() nuovamente e viene chiamata una volta la fetch di master e una volta la fetch di slave,
         viene ritornato il risultato successful della seconda chiamata di slave
       `, async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysTheSame'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysDifferent',
-          resultTag: 'slaveSuccess'
-        }).fetch;
-        const { masterFetch, slaveFetch, query } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch([
+          (s: string) => taskEither.of(s.length),
+          (s: string) => taskEither.of(s.length)
+        ]);
+        const slave = makeTestFetch([
+          (n: number) => taskEither.of(n * 2),
+          (n: number) => taskEither.of(n / 2)
+        ]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        const result2 = await query.run(1).run();
-        expect(masterFetch.mock.calls.length).toBe(2);
-        expect(slaveFetch.mock.calls.length).toBe(2);
-        expect(result2.getOrElse('').startsWith('slaveSuccess2')).toBe(true);
+        const result = await composition.run('fooo').run();
+        expect(result).toEqual(right(8));
+        const result2 = await composition.run('fooo').run();
+        expect(result2).toEqual(right(2));
+        master.assertExhausted();
+        slave.assertExhausted();
       });
 
       it(`
@@ -131,31 +80,21 @@ describe('Compose', () => {
         si fa run() nuovamente e viene chiamata una volta la fetch di master che fallisce sempre,
         NON viene chiamata la fetch di slave, e viene ritornato il secondo fallimento di master
       `, async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'alwaysFailure',
-          resultType: 'alwaysTheSame',
-          resultTag: 'masterFail'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysDifferent'
-        }).fetch;
-        const { masterFetch, slaveFetch, query } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch<string, string, unknown>([
+          (_: string) => fromLeft('nope'),
+          (_: string) => fromLeft('nope2')
+        ]);
+        const slave = makeTestFetch<unknown, unknown, unknown>([]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        const result2 = await query.run(1).run();
-        expect(masterFetch.mock.calls.length).toBe(2);
-        expect(slaveFetch.mock.calls.length).toBe(0);
-        expect(
-          result2
-            .swap()
-            .getOrElse('')
-            .startsWith('masterFail2')
-        ).toBe(true);
+        const result = await composition.run('foo').run();
+        expect(result).toEqual(left('nope'));
+        const result2 = await composition.run('foo').run();
+        expect(result2).toEqual(left('nope2'));
+        master.assertExhausted();
+        slave.assertExhausted();
       });
 
       it(`
@@ -163,31 +102,21 @@ describe('Compose', () => {
         si fa run() nuovamente e viene chiamata una volta la fetch di master che ha successo,
         viene chiamata la fetch di slave che fallisce sempre, e viene ritornato il fallimento di slave
       `, async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'failureFirst',
-          resultType: 'alwaysTheSame'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'alwaysFailure',
-          resultType: 'alwaysDifferent',
-          resultTag: 'slaveFail'
-        }).fetch;
-        const { masterFetch, slaveFetch, query } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch<string, string, number>([
+          (_: string) => fromLeft('nope'),
+          (s: string) => taskEither.of(s.length)
+        ]);
+        const slave = makeTestFetch([(n: number) => taskEither.of(n * 2)]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        const result2 = await query.run(1).run();
-        expect(masterFetch.mock.calls.length).toBe(2);
-        expect(slaveFetch.mock.calls.length).toBe(1);
-        expect(
-          result2
-            .swap()
-            .getOrElse('')
-            .startsWith('slaveFail')
-        ).toBe(true);
+        const result = await composition.run('foo').run();
+        expect(result).toEqual(left('nope'));
+        const result2 = await composition.run('foo').run();
+        expect(result2).toEqual(right(6));
+        master.assertExhausted();
+        slave.assertExhausted();
       });
 
       it(`
@@ -195,31 +124,21 @@ describe('Compose', () => {
         si fa run() nuovamente e viene chiamata una volta la fetch di master che fallisce sempre,
         NON viene chiamata la fetch di slave, e viene ritornato il fallimento di master
       `, async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'successFirst',
-          resultType: 'alwaysTheSame',
-          resultTag: 'masterFail'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'failureFirst',
-          resultType: 'alwaysDifferent'
-        }).fetch;
-        const { masterFetch, slaveFetch, query } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch<string, string, number>([
+          (s: string) => taskEither.of(s.length),
+          (_: string) => fromLeft('nopeMaster')
+        ]);
+        const slave = makeTestFetch([(_: number) => fromLeft('nopeSlave')]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        const result2 = await query.run(1).run();
-        expect(masterFetch.mock.calls.length).toBe(2);
-        expect(slaveFetch.mock.calls.length).toBe(1);
-        expect(
-          result2
-            .swap()
-            .getOrElse('')
-            .startsWith('masterFail')
-        ).toBe(true);
+        const result = await composition.run('foo').run();
+        expect(result).toEqual(left('nopeSlave'));
+        const result2 = await composition.run('foo').run();
+        expect(result2).toEqual(left('nopeMaster'));
+        master.assertExhausted();
+        slave.assertExhausted();
       });
 
       it(`
@@ -227,31 +146,24 @@ describe('Compose', () => {
         si fa run() nuovamente e viene chiamata una volta la fetch di master che ha successo,
         viene chiamata la fetch di slave che fallisce sempre, e viene ritornato il secondo fallimento di slave
       `, async () => {
-        const _masterFetch = new StatefulFetch({
-          order: 'alwaysSuccess',
-          resultType: 'alwaysTheSame'
-        }).fetch;
-        const _slaveFetch = new StatefulFetch({
-          order: 'alwaysFailure',
-          resultType: 'alwaysDifferent',
-          resultTag: 'slaveFail'
-        }).fetch;
-        const { masterFetch, slaveFetch, query } = await runQueryShallow(
-          _masterFetch,
-          _slaveFetch,
-          refetch,
-          refetch,
-          1
+        const master = makeTestFetch<string, string, number>([
+          (s: string) => taskEither.of(s.length),
+          (s: string) => taskEither.of(s.length)
+        ]);
+        const slave = makeTestFetch([
+          (_: number) => fromLeft('nope'),
+          (_: number) => fromLeft('nope2')
+        ]);
+        const composition = compose(
+          queryShallow(master, refetch),
+          queryShallow(slave, refetch)
         );
-        const result2 = await query.run(1).run();
-        expect(masterFetch.mock.calls.length).toBe(2);
-        expect(slaveFetch.mock.calls.length).toBe(2);
-        expect(
-          result2
-            .swap()
-            .getOrElse('')
-            .startsWith('slaveFail2')
-        ).toBe(true);
+        const result = await composition.run('foo').run();
+        expect(result).toEqual(left('nope'));
+        const result2 = await composition.run('foo').run();
+        expect(result2).toEqual(left('nope2'));
+        master.assertExhausted();
+        slave.assertExhausted();
       });
     });
   });
