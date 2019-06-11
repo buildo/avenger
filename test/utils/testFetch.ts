@@ -3,8 +3,16 @@ import { fromNullable } from 'fp-ts/lib/Option';
 import { ObservableQuery } from '../../src/Query';
 import { QueryResult } from '../../src/QueryResult';
 import { observeShallow } from '../../src/observe';
-import { toArray, take, timeout } from 'rxjs/operators';
+import {
+  toArray,
+  take,
+  timeout,
+  switchMap,
+  delay,
+  bufferCount
+} from 'rxjs/operators';
 import { identity } from 'fp-ts/lib/function';
+import { throwError, race } from 'rxjs';
 
 type TestFetch<A, L, P> = (input: A) => TaskEither<L, P>;
 
@@ -42,11 +50,17 @@ export async function observeNShallow<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A
 ): Promise<Array<QueryResult<L, P>>> {
-  return observeShallow(query, input)
-    .pipe(
-      timeout(500), // fail faster than the default jest async timeout
-      take(n),
-      toArray()
-    )
+  const results = observeShallow(query, input);
+  const ok = results.pipe(
+    timeout(500), // fail faster than the default jest async timeout
+    take(n),
+    delay(50) // time window used to wait for possible additional results and fail
+  );
+  const ko = results.pipe(
+    bufferCount(n + 1), // fails as soon as an unexpected result is received
+    switchMap(() => throwError('too many results'))
+  );
+  return race(ok, ko)
+    .pipe(toArray())
     .toPromise();
 }
