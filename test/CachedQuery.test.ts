@@ -1,8 +1,9 @@
 import { taskEither, fromLeft } from 'fp-ts/lib/TaskEither';
 import { queryShallow } from '../src/Query';
 import { refetch, available, expire } from '../src/Strategy';
-import { makeTestFetch } from './utils/testFetch';
+import { makeTestFetch, observeNShallow } from './utils/testFetch';
 import { right, left } from 'fp-ts/lib/Either';
+import { loading, success, failure } from '../src/QueryResult';
 
 describe('CachedQuery', () => {
   describe('refetch', () => {
@@ -69,6 +70,92 @@ describe('CachedQuery', () => {
         const result = await query.run(1).run();
         expect(result).toEqual(left('nope2'));
         fetch.assertExhausted();
+      });
+    });
+
+    describe('observe()', async () => {
+      it('viene chiamata una volta la fetch e run torna il risultato successful', async () => {
+        const fetch = makeTestFetch([(n: number) => taskEither.of(n * 2)]);
+        const query = queryShallow(fetch, refetch);
+        const results = observeNShallow(2, query, 1);
+        await query.run(1).run();
+        expect(await results).toEqual([loading, success(2, false)]);
+      });
+
+      it('viene chiamata una volta una fetch che fallisce sempre e run ritorna il fallimento', async () => {
+        const fetch = makeTestFetch([() => fromLeft('nope')]);
+        const query = queryShallow(fetch, refetch);
+        const results = observeNShallow(2, query);
+        await query.run().run();
+        expect(await results).toEqual([loading, failure('nope', false)]);
+      });
+
+      it('dopo avere eseguito run con successo una volta, viene chiamata di nuovo run e la fetch esegue nuovamente con successo ritornando il nuovo risultato', async () => {
+        const fetch = makeTestFetch([
+          (n: number) => taskEither.of(n * 2),
+          (n: number) => taskEither.of(n / 2)
+        ]);
+        const query = queryShallow(fetch, refetch);
+        const results = observeNShallow(4, query, 2);
+        await query.run(2).run();
+        await query.run(2).run();
+        expect(await results).toEqual([
+          loading,
+          success(4, false),
+          loading,
+          success(1, false)
+        ]);
+      });
+
+      it('dopo avere eseguito run con successo una volta, viene chiamata di nuovo run e la fetch esegue nuovamente fallendo e ritornando il fallimento', async () => {
+        const fetch = makeTestFetch([
+          (n: number) => taskEither.of(n * 2),
+          () => fromLeft('nope')
+        ]);
+        const query = queryShallow(fetch, refetch);
+        const results = observeNShallow(4, query, 1);
+        await query.run(1).run();
+        await query.run(1).run();
+        expect(await results).toEqual([
+          loading,
+          success(2, false),
+          loading,
+          failure('nope', false)
+        ]);
+      });
+
+      it('dopo avere eseguito run con fallimento una volta, viene chiamata di nuovo run e la fetch esegue nuovamente con successo ritornando il nuovo valore', async () => {
+        const fetch = makeTestFetch([
+          () => fromLeft('nope'),
+          (n: number) => taskEither.of(n * 2)
+        ]);
+        const query = queryShallow(fetch, refetch);
+        const results = observeNShallow(4, query, 1);
+        await query.run(1).run();
+        await query.run(1).run();
+        expect(await results).toEqual([
+          loading,
+          failure('nope', false),
+          loading,
+          success(2, false)
+        ]);
+      });
+
+      it('dopo avere eseguito run con fallimento una volta, viene chiamata di nuovo run e la fetch riesegue fallendo nuovamente ritornando il nuovo valore di failure', async () => {
+        const fetch = makeTestFetch([
+          (_: number) => fromLeft('nope'),
+          (_: number) => fromLeft('nope2')
+        ]);
+        const query = queryShallow(fetch, refetch);
+        const results = observeNShallow(4, query, 1);
+        await query.run(1).run();
+        await query.run(1).run();
+        expect(await results).toEqual([
+          loading,
+          failure('nope', false),
+          loading,
+          failure('nope2', false)
+        ]);
       });
     });
   });
