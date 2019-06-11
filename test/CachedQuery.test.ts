@@ -29,10 +29,9 @@ describe('CachedQuery', () => {
           (n: number) => taskEither.of(n / 2)
         ]);
         const query = queryShallow(fetch, refetch);
+        await query.run(2).run();
         const result = await query.run(2).run();
-        expect(result).toEqual(right(4));
-        const result2 = await query.run(2).run();
-        expect(result2).toEqual(right(1));
+        expect(result).toEqual(right(1));
         fetch.assertExhausted();
       });
 
@@ -42,10 +41,9 @@ describe('CachedQuery', () => {
           () => fromLeft('nope')
         ]);
         const query = queryShallow(fetch, refetch);
+        await query.run(1).run();
         const result = await query.run(1).run();
-        expect(result).toEqual(right(2));
-        const result2 = await query.run(1).run();
-        expect(result2).toEqual(left('nope'));
+        expect(result).toEqual(left('nope'));
         fetch.assertExhausted();
       });
 
@@ -55,10 +53,9 @@ describe('CachedQuery', () => {
           (n: number) => taskEither.of(n * 2)
         ]);
         const query = queryShallow(fetch, refetch);
+        await query.run(1).run();
         const result = await query.run(1).run();
-        expect(result).toEqual(left('nope'));
-        const result2 = await query.run(1).run();
-        expect(result2).toEqual(right(2));
+        expect(result).toEqual(right(2));
         fetch.assertExhausted();
       });
 
@@ -68,10 +65,9 @@ describe('CachedQuery', () => {
           (_: number) => fromLeft('nope2')
         ]);
         const query = queryShallow(fetch, refetch);
+        await query.run(1).run();
         const result = await query.run(1).run();
-        expect(result).toEqual(left('nope'));
-        const result2 = await query.run(1).run();
-        expect(result2).toEqual(left('nope2'));
+        expect(result).toEqual(left('nope2'));
         fetch.assertExhausted();
       });
     });
@@ -98,10 +94,9 @@ describe('CachedQuery', () => {
       it('dopo avere eseguito run con successo una volta, viene chiamata di nuovo run, la fetch NON esegue e viene ritornato il precedente risultato', async () => {
         const fetch = makeTestFetch([(n: number) => taskEither.of(n * 2)]);
         const query = queryShallow(fetch, available);
+        await query.run(1).run();
         const result = await query.run(1).run();
         expect(result).toEqual(right(2));
-        const result2 = await query.run(1).run();
-        expect(result2).toEqual(right(2));
         fetch.assertExhausted();
       });
 
@@ -111,10 +106,9 @@ describe('CachedQuery', () => {
           (_: number) => fromLeft('nope2')
         ]);
         const query = queryShallow(fetch, available);
+        await query.run(1).run();
         const result = await query.run(1).run();
-        expect(result).toEqual(left('nope'));
-        const result2 = await query.run(1).run();
-        expect(result2).toEqual(left('nope2'));
+        expect(result).toEqual(left('nope2'));
         fetch.assertExhausted();
       });
     });
@@ -126,10 +120,9 @@ describe('CachedQuery', () => {
           (n: number) => taskEither.of(n / 2)
         ]);
         const query = queryShallow(fetch, available);
-        const result = await query.run(2).run();
-        expect(result).toEqual(right(4));
-        const result2 = await query.invalidate(2).run();
-        expect(result2).toEqual(right(1));
+        await query.run(2).run();
+        const result = await query.invalidate(2).run();
+        expect(result).toEqual(right(1));
         fetch.assertExhausted();
       });
 
@@ -139,10 +132,9 @@ describe('CachedQuery', () => {
           (_: number) => fromLeft('nope2')
         ]);
         const query = queryShallow(fetch, available);
-        const result = await query.run(2).run();
-        expect(result).toEqual(left('nope'));
-        const result2 = await query.invalidate(2).run();
-        expect(result2).toEqual(left('nope2'));
+        await query.run(2).run();
+        const result = await query.invalidate(2).run();
+        expect(result).toEqual(left('nope2'));
         fetch.assertExhausted();
       });
     });
@@ -169,11 +161,10 @@ describe('CachedQuery', () => {
       it('dopo avere eseguito run con successo una volta, viene chiamata di nuovo run prima che siano passati `ms`, la fetch NON esegue e lo stesso valore viene ritornato', async () => {
         const fetch = makeTestFetch([(n: number) => taskEither.of(n * 2)]);
         const query = queryShallow(fetch, expire(1000));
-        const result = await query.run(2).run();
-        expect(result).toEqual(right(4));
+        await query.run(2).run();
         fetch.assertExhausted();
-        const result2 = await query.run(2).run();
-        expect(result2).toEqual(result);
+        const result = await query.run(2).run();
+        expect(result).toEqual(result);
       });
 
       it('dopo avere eseguito run con successo una volta, viene chiamata di nuovo run dopo che sono passati `ms` e la fetch esegue nuovamente con successo ritornando il nuovo risultato', async () => {
@@ -182,11 +173,10 @@ describe('CachedQuery', () => {
           (n: number) => taskEither.of(n / 2)
         ]);
         const query = queryShallow(fetch, expire(10));
-        const result = await query.run(2).run();
-        expect(result).toEqual(right(4));
+        await query.run(2).run();
         await new Promise(r => setTimeout(r, 11));
-        const result2 = await query.run(2).run();
-        expect(result2).toEqual(right(1));
+        const result = await query.run(2).run();
+        expect(result).toEqual(right(1));
         fetch.assertExhausted();
       });
 
@@ -196,11 +186,10 @@ describe('CachedQuery', () => {
           (_: number) => fromLeft('nope')
         ]);
         const query = queryShallow(fetch, expire(10));
-        const result = await query.run(2).run();
-        expect(result).toEqual(right(4));
+        await query.run(2).run();
         await new Promise(r => setTimeout(r, 11));
-        const result2 = await query.run(2).run();
-        expect(result2).toEqual(left('nope'));
+        const result = await query.run(2).run();
+        expect(result).toEqual(left('nope'));
         fetch.assertExhausted();
       });
 
@@ -210,11 +199,10 @@ describe('CachedQuery', () => {
           (_: number) => fromLeft('nope2')
         ]);
         const query = queryShallow(fetch, expire(10));
-        const result = await query.run(2).run();
-        expect(result).toEqual(left('nope'));
+        await query.run(2).run();
         await new Promise(r => setTimeout(r, 11));
-        const result2 = await query.run(2).run();
-        expect(result2).toEqual(left('nope2'));
+        const result = await query.run(2).run();
+        expect(result).toEqual(left('nope2'));
         fetch.assertExhausted();
       });
 
@@ -224,11 +212,10 @@ describe('CachedQuery', () => {
           (n: number) => taskEither.of(n * 2)
         ]);
         const query = queryShallow(fetch, expire(10));
-        const result = await query.run(2).run();
-        expect(result).toEqual(left('nope'));
+        await query.run(2).run();
         await new Promise(r => setTimeout(r, 11));
-        const result2 = await query.run(2).run();
-        expect(result2).toEqual(right(4));
+        const result = await query.run(2).run();
+        expect(result).toEqual(right(4));
         fetch.assertExhausted();
       });
     });

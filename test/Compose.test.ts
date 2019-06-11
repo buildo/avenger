@@ -67,10 +67,9 @@ describe('Compose', () => {
           queryShallow(master, refetch),
           queryShallow(slave, refetch)
         );
+        await composition.run('fooo').run();
         const result = await composition.run('fooo').run();
-        expect(result).toEqual(right(8));
-        const result2 = await composition.run('fooo').run();
-        expect(result2).toEqual(right(2));
+        expect(result).toEqual(right(2));
         master.assertExhausted();
         slave.assertExhausted();
       });
@@ -89,10 +88,9 @@ describe('Compose', () => {
           queryShallow(master, refetch),
           queryShallow(slave, refetch)
         );
+        await composition.run('foo').run();
         const result = await composition.run('foo').run();
-        expect(result).toEqual(left('nope'));
-        const result2 = await composition.run('foo').run();
-        expect(result2).toEqual(left('nope2'));
+        expect(result).toEqual(left('nope2'));
         master.assertExhausted();
         slave.assertExhausted();
       });
@@ -111,10 +109,9 @@ describe('Compose', () => {
           queryShallow(master, refetch),
           queryShallow(slave, refetch)
         );
+        await composition.run('foo').run();
         const result = await composition.run('foo').run();
-        expect(result).toEqual(left('nope'));
-        const result2 = await composition.run('foo').run();
-        expect(result2).toEqual(right(6));
+        expect(result).toEqual(right(6));
         master.assertExhausted();
         slave.assertExhausted();
       });
@@ -133,10 +130,9 @@ describe('Compose', () => {
           queryShallow(master, refetch),
           queryShallow(slave, refetch)
         );
+        await composition.run('foo').run();
         const result = await composition.run('foo').run();
-        expect(result).toEqual(left('nopeSlave'));
-        const result2 = await composition.run('foo').run();
-        expect(result2).toEqual(left('nopeMaster'));
+        expect(result).toEqual(left('nopeMaster'));
         master.assertExhausted();
         slave.assertExhausted();
       });
@@ -158,10 +154,9 @@ describe('Compose', () => {
           queryShallow(master, refetch),
           queryShallow(slave, refetch)
         );
+        await composition.run('foo').run();
         const result = await composition.run('foo').run();
-        expect(result).toEqual(left('nope'));
-        const result2 = await composition.run('foo').run();
-        expect(result2).toEqual(left('nope2'));
+        expect(result).toEqual(left('nope2'));
         master.assertExhausted();
         slave.assertExhausted();
       });
