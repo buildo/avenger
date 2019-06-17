@@ -30,6 +30,7 @@ export const location = query(
     const search: HistoryLocation['search'] = parse(
       trim(history.location.search, '?')
     );
+    console.log('>> fetch location', history.location.pathname, search);
     return taskEither.of<void, HistoryLocation>({
       pathname: history.location.pathname,
       search
@@ -59,17 +60,16 @@ function setListener() {
  * A command that never fails and updates the current `HistoryLocation`
  */
 export const doUpdateLocation = command(
+  // no need to invalidate `location` since it will be invalidated by the `history` listener anyway
   ({ search, pathname }: HistoryLocation): TaskEither<void, void> =>
     new TaskEither(
       new Task(
         () =>
           new Promise(resolve => {
-            setTimeout(() => resolve(right<void, void>(undefined)));
             const searchQuery =
               Object.keys(search).length > 0
                 ? `?${stringify(search, { skipNulls: true })}`
                 : '';
-
             if (
               trim(pathname, ' /') !== trim(history.location.pathname, ' /') ||
               trim(searchQuery, ' ?') !== trim(history.location.search, ' ?')
@@ -77,10 +77,10 @@ export const doUpdateLocation = command(
               const url = `/${trim(pathname, ' /')}${searchQuery}`;
               history.push(url);
             }
+            resolve(right<void, void>(undefined));
           })
       )
-    ),
-  { location }
+    )
 );
 
 /**
