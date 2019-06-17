@@ -38,20 +38,9 @@ export function useQueryMonoid<A, L, P>(
 
   useEffect(() => {
     const subscription = observable
-      .map(
-        observable.map(observeShallow(query, input), r =>
-          resultMonoid.concat(state, r)
-        ),
-        v => {
-          console.log('>> useQuery map', input, v);
-          return v;
-        }
-      )
+      .map(observeShallow(query, input), r => resultMonoid.concat(state, r))
       .subscribe(setState);
-    console.log('>> useQuery run', input);
-    query.run(input).run();
     return () => {
-      console.log('>> useQuery unsubscribe', input);
       subscription.unsubscribe();
     };
   }, [input, query, setState]);

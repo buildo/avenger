@@ -66,7 +66,7 @@ describe('Cache', () => {
       await delay(10, void 0).run();
       await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(1);
-      await delay(10, void 0).run();
+      await delay(11, void 0).run();
       await cache.run('foo').run();
       expect(fetchSpy.mock.calls.length).toBe(2);
     });

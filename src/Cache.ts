@@ -36,15 +36,9 @@ export class Cache<A, L, P> {
     });
 
   private emitEvent = (input: A, cacheValue: CacheValue<L, P>): void => {
-    this.lookup(input).foldL(
-      () => {
-        console.log('>> emitEvent failed for', input);
-      },
-      s => {
-        console.log('>> emitEvent', input, cacheValue);
-        s.next(cacheValue);
-      }
-    );
+    this.lookup(input).map(s => {
+      s.next(cacheValue);
+    });
   };
 
   private getOrCreateSubject = (
@@ -108,8 +102,13 @@ export class Cache<A, L, P> {
     ).chain(() => this.run(input));
   };
 
-  observe = (input: A): Observable<CacheValue<L, P>> =>
-    this.getOrCreateSubject(input)
+  observe = (input: A): Observable<CacheValue<L, P>> => {
+    const observable = this.getOrCreateSubject(input)
       .asObservable()
       .pipe(distinctUntilChanged(this.strategy.cacheValueSetoid.equals));
+    // TODO: the following line makes this method eager and not referntially transparent.
+    // Should either: make it happen only on `subscribe()` or return a type different than `Observable`
+    this.run(input).run();
+    return observable;
+  };
 }

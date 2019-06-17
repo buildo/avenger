@@ -30,7 +30,6 @@ export const location = query(
     const search: HistoryLocation['search'] = parse(
       trim(history.location.search, '?')
     );
-    console.log('>> fetch location', history.location.pathname, search);
     return taskEither.of<void, HistoryLocation>({
       pathname: history.location.pathname,
       search
