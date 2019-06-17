@@ -9,10 +9,11 @@ import {
 import { Fetch } from './Query';
 import { lookup } from 'fp-ts/lib/Map';
 import { Option, some } from 'fp-ts/lib/Option';
-import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither, fromLeft, taskEither, fromIO } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
 import { Strategy } from './Strategy';
 import { distinctUntilChanged } from 'rxjs/operators';
+import { IO } from 'fp-ts/lib/IO';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
@@ -35,7 +36,9 @@ export class Cache<A, L, P> {
     });
 
   private emitEvent = (input: A, cacheValue: CacheValue<L, P>): void => {
-    this.lookup(input).map(s => s.next(cacheValue));
+    this.lookup(input).map(s => {
+      s.next(cacheValue);
+    });
   };
 
   private getOrCreateSubject = (
@@ -43,24 +46,29 @@ export class Cache<A, L, P> {
   ): BehaviorSubject<CacheValue<L, P>> => {
     if (!this.member(input)) {
       this.subjects.set(input, new BehaviorSubject(cacheValueInitial<L, P>()));
-      this.createPending(input);
     }
     return this.unsafeLookup(input);
   };
 
   private createPending = (input: A): TaskEither<L, P> => {
-    const pending = this.fetch(input).bimap(
-      error => {
-        this.emitEvent(input, cacheValueError(error, new Date()));
-        return error;
-      },
-      value => {
-        this.emitEvent(input, cacheValueResolved(value, new Date()));
-        return value;
-      }
+    return new TaskEither(
+      new Task(() => {
+        const pending = this.fetch(input)
+          .bimap(
+            error => {
+              this.emitEvent(input, cacheValueError(error, new Date()));
+              return error;
+            },
+            value => {
+              this.emitEvent(input, cacheValueResolved(value, new Date()));
+              return value;
+            }
+          )
+          .value.run();
+        this.emitEvent(input, cacheValuePending(pending, new Date()));
+        return pending;
+      })
     );
-    this.emitEvent(input, cacheValuePending(pending.value.run(), new Date()));
-    return pending;
   };
 
   run = (input: A): TaskEither<L, P> => {
@@ -81,18 +89,26 @@ export class Cache<A, L, P> {
   private sameInvalidationFrame = false;
 
   invalidate = (input: A): TaskEither<L, P> => {
-    if (!this.sameInvalidationFrame) {
-      this.lookup(input).map(s => s.next(cacheValueInitial<L, P>()));
-      this.sameInvalidationFrame = true;
-      Promise.resolve().then(() => {
-        this.sameInvalidationFrame = false;
-      });
-    }
-    return this.run(input);
+    return fromIO<L, void>(
+      new IO(() => {
+        if (!this.sameInvalidationFrame) {
+          this.sameInvalidationFrame = true;
+          this.emitEvent(input, cacheValueInitial());
+          Promise.resolve().then(() => {
+            this.sameInvalidationFrame = false;
+          });
+        }
+      })
+    ).chain(() => this.run(input));
   };
 
-  observe = (input: A): Observable<CacheValue<L, P>> =>
-    this.getOrCreateSubject(input)
+  observe = (input: A): Observable<CacheValue<L, P>> => {
+    const observable = this.getOrCreateSubject(input)
       .asObservable()
       .pipe(distinctUntilChanged(this.strategy.cacheValueSetoid.equals));
+    // TODO: the following line makes this method eager and not referntially transparent.
+    // Should either: make it happen only on `subscribe()` or return a type different than `Observable`
+    this.run(input).run();
+    return observable;
+  };
 }
