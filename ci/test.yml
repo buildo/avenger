@@ -1,0 +1,17 @@
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: node
+    tag: lts-slim
+
+inputs:
+  - name: avenger
+
+caches:
+  - path: avenger/node_modules
+
+run:
+  path: ci/test.sh
+  dir: avenger
