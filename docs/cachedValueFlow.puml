@@ -1,0 +1,21 @@
+@startuml "Cached Value"
+
+title
+Architecture Flow with cached Value
+end title
+participant Query
+participant Cache
+participant CacheMap
+
+Query -> Cache : getUser({ user: 1 })
+Cache -> CacheMap : get CachedValue
+note right
+{
+  [{ user: 1 }]: CacheValue,
+  [{ user: 2 }]: CacheValue
+}
+end note
+CacheMap -> Cache : return CachedValue for "{ user 1 }"
+Cache -> Query : return CachedValue for "{ user 1 }"
+
+@enduml
