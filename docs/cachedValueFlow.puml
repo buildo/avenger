@@ -3,6 +3,7 @@
 title
 Architecture Flow with cached Value
 end title
+
 participant Query
 participant Cache
 participant CacheMap
@@ -11,11 +12,11 @@ Query -> Cache : getUser({ user: 1 })
 Cache -> CacheMap : get CachedValue
 note right
 {
-  [{ user: 1 }]: CacheValue,
-  [{ user: 2 }]: CacheValue
+  [{ user: 1 }]: CacheValueResolved({ username: "Gigi", preferredColor: "red" }),
+  [{ user: 2 }]: CacheValueResolved({ username: "Sandro", preferredColor: "violet" }),
 }
 end note
-CacheMap -> Cache : return CachedValue for "{ user 1 }"
-Cache -> Query : return CachedValue for "{ user 1 }"
+CacheMap -> Cache : CacheValueResolved({ username: "Gigi", preferredColor: "red" })
+Cache -> Query : CacheValueResolved({ username: "Gigi", preferredColor: "red" })
 
 @enduml
