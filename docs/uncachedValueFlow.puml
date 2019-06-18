@@ -1,12 +1,19 @@
 @startuml "Uncached or Error Value"
+skinparam BoxPadding 10
 
 title
 Architecture Flow with uncached Value
 end title
+
+box "Local Data" #LightGray
 participant Query
 participant Cache
 participant CacheMap
+end box
+
+box "Remote Data" #LightBlue
 participant RemoteDataSource
+end box
 
 Query -> Cache : getUser({ user: 3 })
 Cache -> CacheMap : get CachedValue
