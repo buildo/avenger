@@ -8,9 +8,15 @@ import {
   ProductL,
   ProductP
 } from '../util';
-import { useQueries, useQueriesMonoid } from './useQuery';
+import { defaultMonoidResult } from './useQuery';
 import { Monoid } from 'fp-ts/lib/Monoid';
+import { observable } from '../Observable';
+import { observeShallow } from '../observe';
+import { product } from '../Query';
+import { Subscription } from 'rxjs';
+import { none, Option, some } from 'fp-ts/lib/Option';
 
+type QueryInputProps_internal<A> = { queries: A };
 type QueryInputProps<A> = A extends void ? {} : { queries: A };
 
 type QueryOutputProps<L, P> = { queries: QueryResult<L, P> };
@@ -37,11 +43,56 @@ export function declareQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>
 ): DeclareQueriesReturn<ProductA<R>, ProductL<R>, ProductP<R>> {
-  return ((Component: any) => (inputProps: any) => {
-    const { queries: input, ...props } = inputProps;
-    const queryResult = resultMonoid
-      ? useQueriesMonoid(queries, resultMonoid, input)
-      : useQueries(queries, input);
-    return <Component {...props} queries={queryResult} />;
-  }) as any;
+  const _resultMonoid =
+    resultMonoid || defaultMonoidResult<ProductL<R>, ProductP<R>>();
+  return ((
+    Component: React.ComponentType<QueryOutputProps<ProductL<R>, ProductP<R>>>
+  ) =>
+    class DeclareQueriesWrapper extends React.Component<
+      QueryInputProps_internal<ProductA<R>>
+    > {
+      state: { result: QueryResult<ProductL<R>, ProductP<R>> } = {
+        result: _resultMonoid.empty
+      };
+
+      product = product(queries);
+
+      subscription: Option<Subscription> = none;
+
+      subscribe() {
+        this.subscription = some(
+          observable
+            .map(observeShallow(this.product, this.props.queries), r =>
+              _resultMonoid.concat(this.state.result, r)
+            )
+            .subscribe(result => {
+              this.setState({ result });
+            })
+        );
+      }
+
+      unsubscribe() {
+        this.subscription.map(s => s.unsubscribe());
+      }
+
+      componentDidMount() {
+        this.subscribe();
+      }
+
+      componentDidUpdate(prevProps: QueryInputProps_internal<ProductA<R>>) {
+        if (prevProps.queries !== this.props.queries) {
+          this.unsubscribe();
+          this.subscribe();
+        }
+      }
+
+      componentWillUnmount() {
+        this.unsubscribe();
+      }
+
+      render() {
+        const { queries: _, ...props } = this.props;
+        return <Component {...props} queries={this.state.result} />;
+      }
+    }) as any;
 }

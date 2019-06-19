@@ -46,7 +46,7 @@ export function useQueryMonoid<A, L, P>(
   return state;
 }
 
-function defaultMonoidResult<L, P>() {
+export function defaultMonoidResult<L, P>() {
   return {
     empty: loading,
     concat: (a: QueryResult<L, P>, b: QueryResult<L, P>) =>
