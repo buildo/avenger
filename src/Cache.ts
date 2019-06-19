@@ -1,4 +1,4 @@
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, empty } from 'rxjs';
 import {
   CacheValue,
   cacheValuePending,
@@ -12,7 +12,7 @@ import { Option, some } from 'fp-ts/lib/Option';
 import { TaskEither, fromLeft, taskEither, fromIO } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
 import { Strategy } from './Strategy';
-import { distinctUntilChanged } from 'rxjs/operators';
+import { distinctUntilChanged, tap, concat } from 'rxjs/operators';
 import { IO } from 'fp-ts/lib/IO';
 
 export class Cache<A, L, P> {
@@ -106,9 +106,10 @@ export class Cache<A, L, P> {
     const observable = this.getOrCreateSubject(input)
       .asObservable()
       .pipe(distinctUntilChanged(this.strategy.cacheValueSetoid.equals));
-    // TODO: the following line makes this method eager and not referntially transparent.
-    // Should either: make it happen only on `subscribe()` or return a type different than `Observable`
-    this.run(input).run();
-    return observable;
+
+    return empty().pipe(
+      tap(null, null, () => this.run(input)),
+      concat(observable)
+    );
   };
 }
