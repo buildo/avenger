@@ -125,7 +125,7 @@ describe('Observe queries', () => {
     expect(slaveMock.mock.calls.length).toBe(2);
   });
 
-  fit('in a composed query, when the slave is invalidated the master is not re-run and the update is dispatched', async () => {
+  it('in a composed query, when the slave is invalidated the master is not re-run and the update is dispatched', async () => {
     const masterMock = jest.fn(() => {});
     const slaveMock = jest.fn(() => {});
     const eventDispatchMock = jest.fn(() => {});
