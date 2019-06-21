@@ -7,7 +7,7 @@ import {
   setoidStrict,
   setoidShallow,
   setoidJSON,
-  refetch
+  available
 } from './Strategy';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { CacheValue, getSetoid } from './CacheValue';
@@ -197,6 +197,6 @@ export function map<U, L, A, B>(
 ): ObservableQuery<U, L, B> {
   return compose(
     fa,
-    queryStrict(a => taskEither.of<L, B>(f(a)), refetch)
+    queryStrict(a => taskEither.of<L, B>(f(a)), available)
   );
 }
