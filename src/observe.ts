@@ -35,7 +35,8 @@ function _observe<A, L, P>(
 ): Observable<QueryResult<L, P>> {
   switch (query.type) {
     case 'composition':
-      return observable.chain(_observe(query.master, input), master =>
+      const masterObservable = _observe(query.master, input);
+      return observable.chain(masterObservable, master =>
         master.fold(
           () => observable.of(loading),
           error => observable.of(failure(error, false)),

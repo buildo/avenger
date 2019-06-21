@@ -1,6 +1,6 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
-import { mapWithKey, sequence } from 'fp-ts/lib/Record';
+import { mapWithKey } from 'fp-ts/lib/Record';
 import {
   Strategy,
   JSON,
@@ -28,8 +28,7 @@ interface BaseQuery<A, L, P> {
   _A: A;
   _L: L;
   _P: P;
-  run: (input: A) => TaskEither<L, P>;
-  invalidate: (input: A) => TaskEither<L, P>;
+  invalidate: (input: A) => void;
 }
 
 function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {
@@ -83,7 +82,6 @@ export function query<A = void, L = unknown, P = unknown>(
       type: 'cached',
       ...queryPhantoms<A, L, P>(),
       cache,
-      run: cache.run,
       invalidate: cache.invalidate
     };
   };
@@ -150,18 +148,12 @@ export function compose<A1, L1, P1, L2, P2>(
     ...queryPhantoms<A1, L1 | L2, P2>(),
     master: master as ObservableQuery<A1, L1 | L2, unknown>,
     slave: slave as ObservableQuery<unknown, L1 | L2, P2>,
-    run: (a1: A1) =>
-      (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
-        (slave.run as Fetch<P1, L2, P2>)(a2)
-      ),
     invalidate: (a1: A1) =>
       (master.invalidate as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
         (slave.invalidate as Fetch<P1, L2, P2>)(a2)
       )
   };
 }
-
-const sequenceRecordTaskEither = sequence(taskEither);
 
 /**
  * Constructs a `Product`
@@ -171,18 +163,13 @@ export function product<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>
 ): Product<ProductA<R>, ProductL<R>, ProductP<R>> {
   type A = ProductA<R>;
-  const runQueries = (a: A) =>
-    mapWithKey(queries, (k, query) => query.run(((a || {}) as any)[k]));
-  const run = (a: A) => sequenceRecordTaskEither(runQueries(a));
-  const invalidateQueries = (a: A) =>
+  const invalidate = (a: A) =>
     mapWithKey(queries, (k, query) => query.invalidate(((a || {}) as any)[k]));
-  const invalidate = (a: A) => sequenceRecordTaskEither(invalidateQueries(a));
   return {
     type: 'product',
     ...queryPhantoms<A, ProductL<R>, ProductP<R>>(),
     queries,
-    run: run as any,
-    invalidate: invalidate as any
+    invalidate
   };
 }
 
