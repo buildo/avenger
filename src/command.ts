@@ -1,13 +1,15 @@
 import { Fetch } from './Query';
 import { invalidate } from './invalidate';
-import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither } from 'fp-ts/lib/TaskEither';
 import {
   EnforceNonEmptyRecord,
   ObservableQueries,
   ProductA,
   VoidInputObservableQueries,
-  ProductL
+  ProductL,
+  CachedQueries
 } from './util';
+import { fromNullable } from 'fp-ts/lib/Option';
 
 /**
  * Constructs a command,
@@ -49,17 +51,18 @@ export function command<
   A,
   L,
   P,
-  I extends ObservableQueries,
+  I extends CachedQueries,
   IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
   queries?: EnforceNonEmptyRecord<I>
 ): (a: A, ia?: ProductA<I>) => TaskEither<L | IL, P> {
   return (a, ia) =>
-    cmd(a).chain(p =>
-      queries
-        ? invalidate(queries, (ia || {}) as any).map(() => p)
-        : taskEither.of<L, P>(p)
+    cmd(a).map(p =>
+      fromNullable(queries).fold(p, qs => {
+        invalidate(qs, (ia || {}) as any);
+        return p;
+      })
     );
 }
 
