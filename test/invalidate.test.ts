@@ -50,7 +50,7 @@ describe('invalidate', () => {
     expect(aSpy.mock.calls.length).toBe(2);
   });
 
-  fit('observers should see updated events after an invalidate', async () => {
+  it('observers should see updated events after an invalidate', async () => {
     let events: QueryResult<unknown, unknown>[] = [];
     const aSpy = jest.fn(() => taskEither.of(2));
     const a = queryStrict(aSpy, refetch);
