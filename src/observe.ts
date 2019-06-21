@@ -15,7 +15,7 @@ import { sequence, mapWithKey } from 'fp-ts/lib/Record';
 import { Setoid } from 'fp-ts/lib/Setoid';
 import { setoidStrict, setoidShallow, setoidJSON, JSON } from './Strategy';
 
-function cacheValueToQueryResult<L, P>(
+export function cacheValueToQueryResult<L, P>(
   cacheValue: CacheValue<L, P>
 ): QueryResult<L, P> {
   return cacheValue.fold(
