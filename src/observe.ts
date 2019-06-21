@@ -37,7 +37,7 @@ function _observe<A, L, P>(
     case 'composition':
       return observable.chain(_observe(query.master, input), master =>
         master.fold(
-          observable.of(loading),
+          () => observable.of(loading),
           error => observable.of(failure(error, false)),
           value => _observe(query.slave, value)
         )

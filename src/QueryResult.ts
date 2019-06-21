@@ -29,11 +29,11 @@ export class Loading<L, A> {
   constructor() {}
 
   fold<R>(
-    onLoading: R,
+    onLoading: () => R,
     _onFailure: (value: L, loading: boolean) => R,
     _onSuccess: (value: A, loading: boolean) => R
   ): R {
-    return onLoading;
+    return onLoading();
   }
 
   map<B>(_: (a: A) => B): QueryResult<L, B> {
@@ -49,7 +49,7 @@ export class Loading<L, A> {
 
   ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
     return fab.fold<QueryResult<L, B>>(
-      this as any, // loading
+      () => this as any, // loading
       value => new Failure<L, B>(value, true), // fab's failure
       () => this as any // loading
     );
@@ -68,7 +68,7 @@ export class Failure<L, A> {
   constructor(readonly value: L, readonly loading: boolean) {}
 
   fold<R>(
-    _onLoading: R,
+    _onLoading: () => R,
     onFailure: (value: L, loading: boolean) => R,
     _onSuccess: (value: A, loading: boolean) => R
   ): R {
@@ -88,7 +88,7 @@ export class Failure<L, A> {
 
   ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
     return fab.fold<QueryResult<L, B>>(
-      this as any, // failure
+      () => this as any, // failure
       () => fab as any, // fab's failure
       () => this as any // failure
     );
@@ -107,7 +107,7 @@ export class Success<L, A> {
   constructor(readonly value: A, readonly loading: boolean) {}
 
   fold<R>(
-    _onLoading: R,
+    _onLoading: () => R,
     _onFailure: (value: L, loading: boolean) => R,
     onSuccess: (value: A, loading: boolean) => R
   ): R {
@@ -127,7 +127,7 @@ export class Success<L, A> {
 
   ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
     return fab.fold<QueryResult<L, B>>(
-      fab as any, // loading
+      () => fab as any, // loading
       () => fab as any, // fab's failure
       value => this.map(value) // success
     );
@@ -205,9 +205,9 @@ export function getSetoid<L, A>(
 ): Setoid<QueryResult<L, A>> {
   return fromEquals((a, b) =>
     a.fold(
-      b.type === 'Loading',
-      fa => b.fold(false, fb => Sl.equals(fa, fb), constFalse),
-      sa => b.fold(false, constFalse, sb => Sa.equals(sa, sb))
+      () => b.type === 'Loading',
+      fa => b.fold(constFalse, fb => Sl.equals(fa, fb), constFalse),
+      sa => b.fold(constFalse, constFalse, sb => Sa.equals(sa, sb))
     )
   );
 }
