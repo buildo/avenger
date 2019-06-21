@@ -1,7 +1,7 @@
 import { query, compose } from '../src/Query';
 import { taskEither, TaskEither } from 'fp-ts/lib/TaskEither';
-import { refetch, invalidate } from '../src';
-import { setoidStrict } from '../src/Strategy';
+import { invalidate } from '../src';
+import { setoidStrict, available } from '../src/Strategy';
 import { observe } from '../src/observe';
 import { setoidNumber, setoidString } from 'fp-ts/lib/Setoid';
 import { getSetoid as getCacheValueSetoid } from '../src/CacheValue';
@@ -16,7 +16,7 @@ const makeQuery = (f: jest.Mock, increasingResult?: boolean) => {
     const result = increasingResult ? a + i : a;
     i++;
     return taskEither.of(result) as TaskEither<string, number>;
-  })(refetch(setoidNumber, getCacheValueSetoid(setoidString, setoidNumber)));
+  })(available(setoidNumber, getCacheValueSetoid(setoidString, setoidNumber)));
 };
 
 const wait = (timeout: number) =>

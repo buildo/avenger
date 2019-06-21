@@ -75,7 +75,7 @@ export class Cache<A, L, P> {
       .filter(this.strategy.filter)
       .foldL(
         () => {
-          this.createPending(input);
+          this.createPending(input).run();
         },
         cacheValue =>
           cacheValue.fold(
@@ -108,7 +108,9 @@ export class Cache<A, L, P> {
       .pipe(distinctUntilChanged(this.strategy.cacheValueSetoid.equals));
 
     return empty().pipe(
-      tap(null, null, () => this.run(input)),
+      tap(null, null, () => {
+        this.run(input);
+      }),
       concat(observable)
     );
   };
