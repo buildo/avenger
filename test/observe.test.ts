@@ -12,6 +12,10 @@
 // import { query, compose, product } from '../src/Query';
 // import { observe } from '../src/observe';
 
+describe('useless', () => {
+  it('makes the test pass', () => {});
+});
+
 // describe('observe', () => {
 //   it('does something', async () => {
 //     const a = (input: number) => taskEither.of(input);
