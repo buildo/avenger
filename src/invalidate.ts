@@ -5,7 +5,6 @@ import {
   CachedQueries
 } from './util';
 import { mapWithKey } from 'fp-ts/lib/Record';
-import { fromNullable } from 'fp-ts/lib/Option';
 
 /**
  * Helper to invalidate a record of observable queries.
@@ -27,7 +26,7 @@ export function invalidate<I extends CachedQueries>(
   queries: EnforceNonEmptyRecord<I>,
   input?: ProductA<I>
 ): void {
-  fromNullable(input).map(i =>
-    mapWithKey(queries, (k, v) => v.invalidate(i[k as keyof ProductA<I>]))
+  mapWithKey(queries, (k, v) =>
+    v.invalidate(input ? input[k as keyof ProductA<I>] : undefined)
   );
 }
