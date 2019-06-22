@@ -25,7 +25,7 @@ describe('invalidate', () => {
     // run queries once first
     observe(a, 1, setoidStrict).subscribe(eventsSpy);
     observe(b, 'foo', setoidStrict).subscribe(eventsSpy);
-    await delay(10, void 0);
+    await delay(10, void 0).run();
 
     // invalidate
     invalidate({ a, b }, { a: 1, b: 'foo' });
@@ -41,12 +41,12 @@ describe('invalidate', () => {
 
     // run once
     observe(a, undefined, setoidStrict).subscribe(eventsSpy);
-    await delay(10, void 0);
+    await delay(10, void 0).run();
     expect(aSpy.mock.calls.length).toBe(1);
 
     // invalidate
     invalidate({ a });
-    await delay(10, void 0);
+    await delay(10, void 0).run();
     expect(aSpy.mock.calls.length).toBe(2);
   });
 
@@ -58,11 +58,11 @@ describe('invalidate', () => {
 
     // run once
     observe(a, undefined, setoidStrict).subscribe(eventsSpy);
-    await delay(10, void 0);
+    await delay(10, void 0).run();
 
     // invalidate
     invalidate({ a });
-    await delay(10, void 0);
+    await delay(10, void 0).run();
 
     expect(events).toEqual([
       { type: 'Loading' },

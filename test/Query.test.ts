@@ -2,8 +2,8 @@ import { taskEither } from 'fp-ts/lib/TaskEither';
 import { observe } from '../src/observe';
 import { queryStrict, queryShallow, queryJSON } from '../src/Query';
 import { available, setoidStrict, setoidJSON, JSON } from '../src/Strategy';
-import { delay } from 'rxjs/operators';
 import { QueryResult, getSetoid } from '../src/QueryResult';
+import { delay } from 'fp-ts/lib/Task';
 
 describe('queryStrict', () => {
   it('caches indefinitely with strategy=available', async () => {
@@ -13,7 +13,7 @@ describe('queryStrict', () => {
     const cachedA = queryStrict(a, available);
     const observable = observe(cachedA, 1, setoidStrict);
     observable.subscribe(eventsSpy);
-    await delay(10, void 0);
+    await delay(10, void 0).run();
     observable.subscribe(eventsSpy);
     observable.subscribe(eventsSpy);
 
@@ -34,7 +34,7 @@ describe('queryShallow', () => {
     const cachedA = queryShallow(a, available);
     const observable = observe(cachedA, 1, setoidStrict);
     observable.subscribe(eventsSpy);
-    await delay(10, void 0);
+    await delay(10, void 0).run();
     observable.subscribe(eventsSpy);
     observable.subscribe(eventsSpy);
 
@@ -56,7 +56,7 @@ describe('queryJSON', () => {
     const resultSetoid = getSetoid(setoidJSON, setoidJSON);
     const observable = observe(cachedA, { foo: 1 }, resultSetoid);
     observable.subscribe(eventsSpy);
-    await delay(10, void 0);
+    await delay(10, void 0).run();
     observable.subscribe(eventsSpy);
     observable.subscribe(eventsSpy);
 

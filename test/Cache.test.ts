@@ -22,9 +22,9 @@ describe('Cache', () => {
       );
       const observable = cache.observe('foo');
       observable.subscribe(eventsSpy);
-      await delay(10, void 0);
+      await delay(10, void 0).run();
       observable.subscribe(eventsSpy);
-      await delay(10, void 0);
+      await delay(10, void 0).run();
       expect(fetchSpy.mock.calls.length).toBe(1);
       expect(events.map(cacheValueToQueryResult)).toEqual([
         { type: 'Loading' },
@@ -47,7 +47,7 @@ describe('Cache', () => {
       observable.subscribe(eventsSpy);
       const observable2 = cache.observe('foo');
       observable2.subscribe(eventsSpy);
-      await delay(10, void 0);
+      await delay(10, void 0).run();
 
       // every observable & subscriprion gets all the events but the data is only fetched once
       expect(fetchSpy.mock.calls.length).toBe(1);
@@ -72,11 +72,11 @@ describe('Cache', () => {
         refetch(setoidString, cacheValueSetoid)
       );
       const observable = cache.observe('foo');
-      await delay(10, void 0);
+      await delay(10, void 0).run();
       observable.subscribe(eventsSpy);
-      await delay(10, void 0);
+      await delay(10, void 0).run();
       const observable2 = cache.observe('foo');
-      await delay(10, void 0);
+      await delay(10, void 0).run();
       observable2.subscribe(eventsSpy2);
       await delay(100, void 0);
 
@@ -112,7 +112,7 @@ describe('Cache', () => {
 
       const observable = cache.observe('foo');
       observable.subscribe(eventsSpy);
-      await delay(10, void 0);
+      await delay(10, void 0).run();
       const observable2 = cache.observe('foo');
       observable2.subscribe(eventsSpy2);
 
@@ -144,9 +144,10 @@ describe('Cache', () => {
 
       const observable = cache.observe('foo');
       observable.subscribe(eventsSpy);
-      await delay(200, void 0);
+      await delay(20, void 0).run();
       const observable2 = cache.observe('foo');
       observable2.subscribe(eventsSpy2);
+      await delay(5, void 0).run();
 
       expect(fetchSpy.mock.calls.length).toBe(2);
 
