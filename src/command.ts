@@ -3,11 +3,10 @@ import { invalidate } from './invalidate';
 import { TaskEither } from 'fp-ts/lib/TaskEither';
 import {
   EnforceNonEmptyRecord,
-  ObservableQueries,
   ProductA,
-  VoidInputObservableQueries,
   ProductL,
-  CachedQueries
+  CachedQueries,
+  VoidInputCachedQueries
 } from './util';
 import { fromNullable } from 'fp-ts/lib/Option';
 
@@ -23,7 +22,7 @@ export function command<
   A,
   L,
   P,
-  I extends VoidInputObservableQueries,
+  I extends VoidInputCachedQueries,
   IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
@@ -33,7 +32,7 @@ export function command<
   A,
   L,
   P,
-  I extends ObservableQueries,
+  I extends CachedQueries,
   IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
