@@ -50,7 +50,7 @@ export const location = query(
 
 function setListener() {
   history.listen(() => {
-    invalidate({ location }).run();
+    invalidate({ location });
   });
   _setListener = true;
 }
