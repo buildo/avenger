@@ -1,4 +1,4 @@
-import { ObservableQuery, CachedQuery } from './Query';
+import { ObservableQuery } from './Query';
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
 
@@ -16,16 +16,9 @@ export type Simplify<T> = Pick<T, keyof T>;
 
 export type ObservableQueries = Record<string, ObservableQuery<any, any, any>>;
 
-export type CachedQueries = Record<string, CachedQuery<any, any, any>>;
-
 export type VoidInputObservableQueries = Record<
   string,
   ObservableQuery<void, any, any>
->;
-
-export type VoidInputCachedQueries = Record<
-  string,
-  CachedQuery<void, any, any>
 >;
 
 type _ProductA<R extends ObservableQueries> = Simplify<

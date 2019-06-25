@@ -33,6 +33,7 @@ interface BaseQuery<A, L, P> {
   _L: L;
   _P: P;
   run: (input: A) => TaskEither<L, P>;
+  invalidate: (input: A) => void;
 }
 
 /**
@@ -44,7 +45,6 @@ export interface CachedQuery<A, L, P> extends BaseQuery<A, L, P> {
   _P: P;
   type: 'cached';
   cache: Cache<A, L, P>;
-  invalidate: (input: A) => void;
 }
 
 /**
@@ -159,6 +159,10 @@ export function compose<A1, L1, P1, L2, P2>(
     ...queryPhantoms<A1, L1 | L2, P2>(),
     master: master as ObservableQuery<A1, L1 | L2, unknown>,
     slave: slave as ObservableQuery<unknown, L1 | L2, P2>,
+    invalidate: (a1: A1) =>
+      (master.invalidate as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
+        (slave.invalidate as Fetch<P1, L2, P2>)(a2)
+      ),
     run: (a1: A1) =>
       (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
         (slave.run as Fetch<P1, L2, P2>)(a2)
@@ -179,10 +183,15 @@ export function product<R extends ObservableQueries>(
   const runQueries = (a: A) =>
     mapWithKey(queries, (k, query) => query.run(((a || {}) as any)[k]));
   const run = (a: A) => sequenceRecordTaskEither(runQueries(a));
+  const invalidateQueries = (a: A) => {
+    mapWithKey(queries, (k, query) => query.invalidate(((a || {}) as any)[k]));
+  };
+  const invalidate = (a: A) => invalidateQueries(a);
   return {
     type: 'product',
     ...queryPhantoms<A, ProductL<R>, ProductP<R>>(),
     run: run as any,
+    invalidate,
     queries
   };
 }

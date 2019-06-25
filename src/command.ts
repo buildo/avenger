@@ -5,8 +5,8 @@ import {
   EnforceNonEmptyRecord,
   ProductA,
   ProductL,
-  CachedQueries,
-  VoidInputCachedQueries
+  ObservableQueries,
+  VoidInputObservableQueries
 } from './util';
 import { fromNullable } from 'fp-ts/lib/Option';
 
@@ -22,7 +22,7 @@ export function command<
   A,
   L,
   P,
-  I extends VoidInputCachedQueries,
+  I extends VoidInputObservableQueries,
   IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
@@ -32,7 +32,7 @@ export function command<
   A,
   L,
   P,
-  I extends CachedQueries,
+  I extends ObservableQueries,
   IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,
@@ -50,7 +50,7 @@ export function command<
   A,
   L,
   P,
-  I extends CachedQueries,
+  I extends ObservableQueries,
   IL extends ProductL<I>
 >(
   cmd: Fetch<A, L, P>,

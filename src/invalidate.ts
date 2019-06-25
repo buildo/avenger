@@ -1,8 +1,8 @@
 import {
   EnforceNonEmptyRecord,
   ProductA,
-  VoidInputCachedQueries,
-  CachedQueries
+  ObservableQueries,
+  VoidInputObservableQueries
 } from './util';
 import { mapWithKey } from 'fp-ts/lib/Record';
 
@@ -14,15 +14,15 @@ import { mapWithKey } from 'fp-ts/lib/Record';
  * @param queries A record of observable queries to invalidate
  * @param input Input for `queries`
  */
-export function invalidate<I extends VoidInputCachedQueries>(
+export function invalidate<I extends VoidInputObservableQueries>(
   queries: EnforceNonEmptyRecord<I>,
   input?: ProductA<I>
 ): void;
-export function invalidate<I extends CachedQueries>(
+export function invalidate<I extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<I>,
   input: ProductA<I>
 ): void;
-export function invalidate<I extends CachedQueries>(
+export function invalidate<I extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<I>,
   input?: ProductA<I>
 ): void {
