@@ -25,7 +25,7 @@ xdescribe('useQuery', () => {
     const foo = queryShallow(() => taskEither.of<void, string>('foo'), refetch);
     function Foo() {
       const f = useQuery(foo);
-      return <p>{f.fold('loading', () => 'failure', identity)}</p>;
+      return <p>{f.fold(() => 'loading', () => 'failure', identity)}</p>;
     }
 
     const { getByText } = await render(<Foo />);
@@ -41,7 +41,7 @@ xdescribe('useQuery', () => {
     const foo = queryShallow(foof, refetch);
     const Foo = jest.fn(() => {
       const f = useQuery(foo);
-      return <p>{f.fold('loading', () => 'failure', identity)}</p>;
+      return <p>{f.fold(() => 'loading', () => 'failure', identity)}</p>;
     });
 
     const element = React.createElement(Foo);
