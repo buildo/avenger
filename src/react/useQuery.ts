@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { ObservableQuery, product } from '../Query';
 import { QueryResult, loading, success } from '../QueryResult';
 import { observeShallow } from '../observe';
@@ -12,6 +12,15 @@ import {
   ProductP,
   VoidInputObservableQueries
 } from '../util';
+import { Option, fromNullable } from 'fp-ts/lib/Option';
+
+function usePrevious<T>(value: T): Option<T> {
+  const ref = useRef<T>();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return fromNullable(ref.current);
+}
 
 /**
  * React hook to `observe` an `ObservableQuery`
@@ -35,6 +44,17 @@ export function useQueryMonoid<A, L, P>(
   input: A
 ): QueryResult<L, P> {
   const [state, setState] = useState<QueryResult<L, P>>(resultMonoid.empty);
+  const previousInput = usePrevious(input);
+  const inputEqualityRef = useRef<number>();
+  useEffect(() => {
+    const inputChanged = previousInput.fold(
+      true,
+      previousInput => !query.inputSetoid.equals(previousInput, input)
+    );
+    if (inputChanged) {
+      inputEqualityRef.current = (inputEqualityRef.current || 0) + 1;
+    }
+  });
 
   useEffect(() => {
     const subscription = observable
@@ -43,7 +63,7 @@ export function useQueryMonoid<A, L, P>(
     return () => {
       subscription.unsubscribe();
     };
-  }, [input, query, setState]);
+  }, [inputEqualityRef.current, query, setState]);
 
   return state;
 }
