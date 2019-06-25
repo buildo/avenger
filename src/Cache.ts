@@ -9,7 +9,7 @@ import {
 import { Fetch } from './Query';
 import { lookup } from 'fp-ts/lib/Map';
 import { Option, some } from 'fp-ts/lib/Option';
-import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
 import { Strategy } from './Strategy';
 import { distinctUntilChanged, tap, concat } from 'rxjs/operators';
@@ -70,21 +70,17 @@ export class Cache<A, L, P> {
     );
   };
 
-  private run = (input: A): void => {
+  run = (input: A): TaskEither<L, P> => {
     return some(this.getOrCreateSubject(input).value)
       .filter(this.strategy.filter)
       .foldL(
-        () => {
-          this.createPending(input).run();
-        },
+        () => this.createPending(input),
         cacheValue =>
           cacheValue.fold(
-            () => {
-              this.createPending(input).run();
-            },
-            _ => {},
-            _ => {},
-            _ => {}
+            () => this.createPending(input),
+            pending => new TaskEither(new Task(() => pending)),
+            error => fromLeft<L, P>(error),
+            value => taskEither.of<L, P>(value)
           )
       );
   };
@@ -98,7 +94,7 @@ export class Cache<A, L, P> {
       Promise.resolve().then(() => {
         this.sameInvalidationFrame = false;
       });
-      this.run(input);
+      this.run(input).run();
     }
   };
 
@@ -109,7 +105,7 @@ export class Cache<A, L, P> {
 
     return empty().pipe(
       tap(null, null, () => {
-        this.run(input);
+        this.run(input).run();
       }),
       concat(observable)
     );

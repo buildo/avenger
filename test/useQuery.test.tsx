@@ -50,7 +50,7 @@ xdescribe('useQuery', () => {
     expect(Foo.mock.calls.length).toBe(2);
     expect(foof.mock.calls.length).toBe(1);
     res.value = 'bar';
-    await invalidate({ foo }).run();
+    invalidate({ foo });
     await rerender(element);
     await waitForElement(() => getByText('bar'));
     expect(Foo.mock.calls.length).toBe(4);

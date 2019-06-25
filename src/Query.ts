@@ -17,6 +17,7 @@ import {
   ProductL,
   ProductP
 } from './util';
+import { mapWithKey, sequence } from 'fp-ts/lib/Record';
 
 /**
  * A function that is asynchronous and can fail
@@ -27,10 +28,17 @@ function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {
   return null as any;
 }
 
+interface BaseQuery<A, L, P> {
+  _A: A;
+  _L: L;
+  _P: P;
+  run: (input: A) => TaskEither<L, P>;
+}
+
 /**
  * Represents a cached query, aka a `Fetch` that is cached with a given policy and can be `observe`d
  */
-export interface CachedQuery<A, L, P> {
+export interface CachedQuery<A, L, P> extends BaseQuery<A, L, P> {
   _A: A;
   _L: L;
   _P: P;
@@ -43,7 +51,7 @@ export interface CachedQuery<A, L, P> {
  * Represents a query that is the result of composing two queries that are run one after the other.
  * The `master` is successful, its result is fed into `slave`, yielding the composition result.
  */
-export interface Composition<A, L, P> {
+export interface Composition<A, L, P> extends BaseQuery<A, L, P> {
   _A: A;
   _L: L;
   _P: P;
@@ -55,7 +63,7 @@ export interface Composition<A, L, P> {
 /**
  * Represents a query that aggregates the results of N `queries` when all are successful, or yields the first failure
  */
-export interface Product<A, L, P> {
+export interface Product<A, L, P> extends BaseQuery<A, L, P> {
   _A: A;
   _L: L;
   _P: P;
@@ -84,6 +92,7 @@ export function query<A = void, L = unknown, P = unknown>(
       type: 'cached',
       ...queryPhantoms<A, L, P>(),
       cache,
+      run: cache.run,
       invalidate: cache.invalidate
     };
   };
@@ -149,9 +158,15 @@ export function compose<A1, L1, P1, L2, P2>(
     type: 'composition',
     ...queryPhantoms<A1, L1 | L2, P2>(),
     master: master as ObservableQuery<A1, L1 | L2, unknown>,
-    slave: slave as ObservableQuery<unknown, L1 | L2, P2>
+    slave: slave as ObservableQuery<unknown, L1 | L2, P2>,
+    run: (a1: A1) =>
+      (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
+        (slave.run as Fetch<P1, L2, P2>)(a2)
+      )
   };
 }
+
+const sequenceRecordTaskEither = sequence(taskEither);
 
 /**
  * Constructs a `Product`
@@ -161,9 +176,13 @@ export function product<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>
 ): Product<ProductA<R>, ProductL<R>, ProductP<R>> {
   type A = ProductA<R>;
+  const runQueries = (a: A) =>
+    mapWithKey(queries, (k, query) => query.run(((a || {}) as any)[k]));
+  const run = (a: A) => sequenceRecordTaskEither(runQueries(a));
   return {
     type: 'product',
     ...queryPhantoms<A, ProductL<R>, ProductP<R>>(),
+    run: run as any,
     queries
   };
 }
