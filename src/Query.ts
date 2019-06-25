@@ -1,6 +1,5 @@
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
-import { mapWithKey, sequence } from 'fp-ts/lib/Record';
 import {
   Strategy,
   JSON,
@@ -18,6 +17,7 @@ import {
   ProductL,
   ProductP
 } from './util';
+import { mapWithKey, sequence } from 'fp-ts/lib/Record';
 
 /**
  * A function that is asynchronous and can fail
@@ -28,8 +28,8 @@ interface BaseQuery<A, L, P> {
   _A: A;
   _L: L;
   _P: P;
-  run: (input: A) => TaskEither<L, P>;
-  invalidate: (input: A) => TaskEither<L, P>;
+  run: Fetch<A, L, P>;
+  invalidate: Fetch<A, L, P>;
 }
 
 function queryPhantoms<A, L, P>(): { _A: A; _L: L; _P: P } {

@@ -40,7 +40,9 @@ export function useQueryMonoid<A, L, P>(
     const subscription = observable
       .map(observeShallow(query, input), r => resultMonoid.concat(state, r))
       .subscribe(setState);
-    return subscription.unsubscribe.bind(subscription);
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [input, query, setState]);
 
   return state;

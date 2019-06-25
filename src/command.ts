@@ -3,11 +3,12 @@ import { invalidate } from './invalidate';
 import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import {
   EnforceNonEmptyRecord,
-  ObservableQueries,
   ProductA,
-  VoidInputObservableQueries,
-  ProductL
+  ProductL,
+  ObservableQueries,
+  VoidInputObservableQueries
 } from './util';
+import { fromNullable } from 'fp-ts/lib/Option';
 
 /**
  * Constructs a command,
@@ -57,9 +58,10 @@ export function command<
 ): (a: A, ia?: ProductA<I>) => TaskEither<L | IL, P> {
   return (a, ia) =>
     cmd(a).chain(p =>
-      queries
-        ? invalidate(queries, (ia || {}) as any).map(() => p)
-        : taskEither.of<L, P>(p)
+      fromNullable(queries).foldL(
+        () => taskEither.of<L, P>(p),
+        queries => invalidate(queries, ia).map(() => p)
+      )
     );
 }
 

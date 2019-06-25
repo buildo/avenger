@@ -2,13 +2,17 @@ import { query, queryStrict } from '../src/Query';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { setoidNumber, setoidString } from 'fp-ts/lib/Setoid';
 import { available, setoidStrict, refetch } from '../src/Strategy';
-import { getSetoid } from '../src/CacheValue';
+import { getSetoid, CacheValue } from '../src/CacheValue';
 import { invalidate } from '../src/invalidate';
-import { observeStrict } from '../src/observe';
-import { take, toArray } from 'rxjs/operators';
+import { observe } from '../src/observe';
+// import { take, toArray } from 'rxjs/operators';
+import { delay } from 'fp-ts/lib/Task';
+import { QueryResult } from '../src/QueryResult';
 
 describe('invalidate', () => {
   it('should invalidate a set of queries', async () => {
+    let events: CacheValue<unknown, unknown>[] = [];
+    const eventsSpy = jest.fn(e => events.push(e));
     const aSpy = jest.fn((a: number) => taskEither.of(a * 2));
     const bSpy = jest.fn((b: string) => taskEither.of(b.length));
     const a = query(aSpy)(
@@ -18,15 +22,10 @@ describe('invalidate', () => {
       available(setoidString, getSetoid(setoidStrict, setoidNumber))
     );
 
-    // run once
-    await Promise.all([a.run(1).run(), b.run('foo').run()]);
-    expect(aSpy.mock.calls.length).toBe(1);
-    expect(bSpy.mock.calls.length).toBe(1);
-
-    // run again, without invalidating
-    await Promise.all([a.run(1).run(), b.run('foo').run()]);
-    expect(aSpy.mock.calls.length).toBe(1);
-    expect(bSpy.mock.calls.length).toBe(1);
+    // run queries once first
+    observe(a, 1, setoidStrict).subscribe(eventsSpy);
+    observe(b, 'foo', setoidStrict).subscribe(eventsSpy);
+    await delay(10, void 0).run();
 
     // invalidate
     await invalidate({ a, b }, { a: 1, b: 'foo' }).run();
@@ -35,39 +34,41 @@ describe('invalidate', () => {
   });
 
   it('should work when omitting void query input params', async () => {
+    let events: CacheValue<unknown, unknown>[] = [];
     const aSpy = jest.fn(() => taskEither.of(2));
     const a = queryStrict(aSpy, available);
+    const eventsSpy = jest.fn(e => events.push(e));
 
     // run once
-    await a.run().run();
-    expect(aSpy.mock.calls.length).toBe(1);
-
-    // run again, without invalidating
-    await a.run().run();
+    observe(a, undefined, setoidStrict).subscribe(eventsSpy);
+    await delay(10, void 0).run();
     expect(aSpy.mock.calls.length).toBe(1);
 
     // invalidate
     await invalidate({ a }).run();
+    await delay(10, void 0).run();
     expect(aSpy.mock.calls.length).toBe(2);
   });
 
-  it('observers should see update events after an invalidate', async () => {
-    const af = jest.fn(() => taskEither.of(2));
-    const a = queryStrict(af, refetch);
-    setTimeout(() => a.run().run());
-    setTimeout(() => a.invalidate().run(), 20);
-    const results = await observeStrict(a, undefined)
-      .pipe(
-        take(4),
-        toArray()
-      )
-      .toPromise();
-    expect(results).toEqual([
+  it('observers should see updated events after an invalidate', async () => {
+    let events: QueryResult<unknown, unknown>[] = [];
+    const aSpy = jest.fn(() => taskEither.of(2));
+    const a = queryStrict(aSpy, refetch);
+    const eventsSpy = jest.fn(e => events.push(e));
+
+    // run once
+    observe(a, undefined, setoidStrict).subscribe(eventsSpy);
+    await delay(10, void 0).run();
+
+    // invalidate
+    await invalidate({ a }).run();
+    await delay(10, void 0).run();
+
+    expect(events).toEqual([
       { type: 'Loading' },
       { type: 'Success', value: 2, loading: false },
       { type: 'Loading' },
       { type: 'Success', value: 2, loading: false }
     ]);
-    expect(af.mock.calls.length).toBe(2);
   });
 });
