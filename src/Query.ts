@@ -8,7 +8,7 @@ import {
   setoidJSON,
   available
 } from './Strategy';
-import { Setoid } from 'fp-ts/lib/Setoid';
+import { Setoid, getRecordSetoid, contramap } from 'fp-ts/lib/Setoid';
 import { CacheValue, getSetoid } from './CacheValue';
 import {
   EnforceNonEmptyRecord,
@@ -17,7 +17,7 @@ import {
   ProductL,
   ProductP
 } from './util';
-import { mapWithKey, sequence } from 'fp-ts/lib/Record';
+import { mapWithKey, sequence, map as mapRecord } from 'fp-ts/lib/Record';
 
 /**
  * A function that is asynchronous and can fail
@@ -28,6 +28,7 @@ interface BaseQuery<A, L, P> {
   _A: A;
   _L: L;
   _P: P;
+  inputSetoid: Setoid<A>;
   run: Fetch<A, L, P>;
   invalidate: Fetch<A, L, P>;
 }
@@ -82,6 +83,7 @@ export function query<A = void, L = unknown, P = unknown>(
     return {
       type: 'cached',
       ...queryPhantoms<A, L, P>(),
+      inputSetoid: strategy.inputSetoid,
       cache,
       run: cache.run,
       invalidate: cache.invalidate
@@ -148,6 +150,7 @@ export function compose<A1, L1, P1, L2, P2>(
   return {
     type: 'composition',
     ...queryPhantoms<A1, L1 | L2, P2>(),
+    inputSetoid: master.inputSetoid,
     master: master as ObservableQuery<A1, L1 | L2, unknown>,
     slave: slave as ObservableQuery<unknown, L1 | L2, P2>,
     run: (a1: A1) =>
@@ -180,6 +183,10 @@ export function product<R extends ObservableQueries>(
   return {
     type: 'product',
     ...queryPhantoms<A, ProductL<R>, ProductP<R>>(),
+    inputSetoid: contramap(
+      i => i || ({} as any),
+      getRecordSetoid(mapRecord(queries, q => q.inputSetoid))
+    ),
     queries,
     run: run as any,
     invalidate: invalidate as any

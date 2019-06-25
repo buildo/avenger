@@ -80,7 +80,12 @@ export function declareQueries<R extends ObservableQueries>(
       }
 
       componentDidUpdate(prevProps: QueryInputProps_internal<ProductA<R>>) {
-        if (prevProps.queries !== this.props.queries) {
+        if (
+          !this.product.inputSetoid.equals(
+            prevProps.queries,
+            this.props.queries
+          )
+        ) {
           this.unsubscribe();
           this.subscribe();
         }
