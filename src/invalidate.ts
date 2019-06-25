@@ -1,10 +1,13 @@
+import { TaskEither } from 'fp-ts/lib/TaskEither';
 import {
   EnforceNonEmptyRecord,
-  ProductA,
   ObservableQueries,
-  VoidInputObservableQueries
+  ProductA,
+  VoidInputObservableQueries,
+  ProductL,
+  ProductP
 } from './util';
-import { mapWithKey } from 'fp-ts/lib/Record';
+import { product } from './Query';
 
 /**
  * Helper to invalidate a record of observable queries.
@@ -17,16 +20,14 @@ import { mapWithKey } from 'fp-ts/lib/Record';
 export function invalidate<I extends VoidInputObservableQueries>(
   queries: EnforceNonEmptyRecord<I>,
   input?: ProductA<I>
-): void;
+): TaskEither<ProductL<I>, ProductP<I>>;
 export function invalidate<I extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<I>,
   input: ProductA<I>
-): void;
+): TaskEither<ProductL<I>, ProductP<I>>;
 export function invalidate<I extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<I>,
   input?: ProductA<I>
-): void {
-  mapWithKey(queries, (k, v) =>
-    v.invalidate(input ? input[k as keyof ProductA<I>] : undefined)
-  );
+): TaskEither<ProductL<I>, ProductP<I>> {
+  return product(queries).invalidate(input as any);
 }

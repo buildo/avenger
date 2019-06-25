@@ -28,7 +28,7 @@ describe('invalidate', () => {
     await delay(10, void 0).run();
 
     // invalidate
-    invalidate({ a, b }, { a: 1, b: 'foo' });
+    await invalidate({ a, b }, { a: 1, b: 'foo' }).run();
     expect(aSpy.mock.calls.length).toBe(2);
     expect(bSpy.mock.calls.length).toBe(2);
   });
@@ -45,7 +45,7 @@ describe('invalidate', () => {
     expect(aSpy.mock.calls.length).toBe(1);
 
     // invalidate
-    invalidate({ a });
+    await invalidate({ a }).run();
     await delay(10, void 0).run();
     expect(aSpy.mock.calls.length).toBe(2);
   });
@@ -61,7 +61,7 @@ describe('invalidate', () => {
     await delay(10, void 0).run();
 
     // invalidate
-    invalidate({ a });
+    await invalidate({ a }).run();
     await delay(10, void 0).run();
 
     expect(events).toEqual([

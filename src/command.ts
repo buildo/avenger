@@ -1,6 +1,6 @@
 import { Fetch } from './Query';
 import { invalidate } from './invalidate';
-import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
 import {
   EnforceNonEmptyRecord,
   ProductA,
@@ -57,11 +57,11 @@ export function command<
   queries?: EnforceNonEmptyRecord<I>
 ): (a: A, ia?: ProductA<I>) => TaskEither<L | IL, P> {
   return (a, ia) =>
-    cmd(a).map(p =>
-      fromNullable(queries).fold(p, qs => {
-        invalidate(qs, (ia || {}) as any);
-        return p;
-      })
+    cmd(a).chain(p =>
+      fromNullable(queries).foldL(
+        () => taskEither.of<L, P>(p),
+        queries => invalidate(queries, ia).map(() => p)
+      )
     );
 }
 

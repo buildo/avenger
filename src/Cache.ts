@@ -9,10 +9,11 @@ import {
 import { Fetch } from './Query';
 import { lookup } from 'fp-ts/lib/Map';
 import { Option, some } from 'fp-ts/lib/Option';
-import { TaskEither, fromLeft, taskEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither, fromLeft, taskEither, fromIO } from 'fp-ts/lib/TaskEither';
 import { Task } from 'fp-ts/lib/Task';
 import { Strategy } from './Strategy';
 import { distinctUntilChanged, tap, concat } from 'rxjs/operators';
+import { IO } from 'fp-ts/lib/IO';
 
 export class Cache<A, L, P> {
   private subjects: Map<A, BehaviorSubject<CacheValue<L, P>>> = new Map();
@@ -87,15 +88,18 @@ export class Cache<A, L, P> {
 
   private sameInvalidationFrame = false;
 
-  invalidate = (input: A): void => {
-    if (!this.sameInvalidationFrame) {
-      this.sameInvalidationFrame = true;
-      this.emitEvent(input, cacheValueInitial());
-      Promise.resolve().then(() => {
-        this.sameInvalidationFrame = false;
-      });
-      this.run(input).run();
-    }
+  invalidate = (input: A): TaskEither<L, P> => {
+    return fromIO<L, void>(
+      new IO(() => {
+        if (!this.sameInvalidationFrame) {
+          this.sameInvalidationFrame = true;
+          this.emitEvent(input, cacheValueInitial());
+          Promise.resolve().then(() => {
+            this.sameInvalidationFrame = false;
+          });
+        }
+      })
+    ).chain(() => this.run(input));
   };
 
   observe = (input: A): Observable<CacheValue<L, P>> => {
