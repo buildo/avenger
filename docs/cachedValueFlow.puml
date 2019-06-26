@@ -1,0 +1,22 @@
+@startuml "Cached Value"
+
+title
+Architecture Flow with cached Value
+end title
+
+participant Query
+participant Cache
+participant CacheMap
+
+Query -> Cache : getUser({ user: 1 })
+Cache -> CacheMap : get CachedValue
+note right
+{
+  [{ user: 1 }]: CacheValueResolved({ username: "Gigi", preferredColor: "red" }),
+  [{ user: 2 }]: CacheValueResolved({ username: "Sandro", preferredColor: "violet" }),
+}
+end note
+CacheMap -> Cache : CacheValueResolved({ username: "Gigi", preferredColor: "red" })
+Cache -> Query : CacheValueResolved({ username: "Gigi", preferredColor: "red" })
+
+@enduml
