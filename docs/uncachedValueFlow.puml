@@ -1,4 +1,4 @@
-@startuml "Uncached or Error Value"
+@startuml "UncachedOrErrorValue"
 skinparam BoxPadding 10
 
 title

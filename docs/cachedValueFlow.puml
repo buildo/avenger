@@ -1,4 +1,4 @@
-@startuml "Cached Value"
+@startuml "CachedValue"
 
 title
 Architecture Flow with cached Value
