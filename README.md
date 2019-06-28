@@ -8,8 +8,8 @@
 
 # Intro
 
-Avenger is a data fetching and caching layer written in TypeScript, it aims at implementing the principle of **Command Query Responsibility Segregation** without necessarily enforcing it.
-If you are new to the concept you can get a grasp of its foundations in [this nice article](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler. Using his words:
+Avenger is a data fetching and caching layer written in TypeScript, its API is designed to mirror the principles of **Command Query Responsibility Segregation** thus of facilitating their adoption.
+If you are new to the concept you can get a grasp of its foundations in [this nice aricle](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler. Using his words:
 
 _"The change that CQRS introduces is to separate models for update and display, which it refers to as "Command" and "Query" respectively following the vocabulary of CommandQuerySeparation._
 
@@ -28,10 +28,10 @@ Although important, `query` is a pretty low level API and **Avenger** offers som
 - **expire:** when the data is requested, the fetch function is run only if data in the `Cache` is older than the expiration defined, otherwise the cached value is used.
 - **available:** when the data is requested, if a cahed value is available it is always returned, otherwise the fetch function is run and the result stored in the `Cache` accordingly.
 
-All these utils ask you to specify custom `Setoid` instances for the inputs and outputs of the `Fetch` function but you can (and should) use them toghether with one of the built in implementations:
-- **queryShallow:** will use a shallow equality check.
-- **queryStrict:** will use a strict equality check.
-- **queryJSON:** will use a strict equality check after transforming the data via JSON stringification.
+All these utils ask you to specify custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances that will be used to check if an input is already present in one of the `Chache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resoltr to the `Fetch` function) but you can (and should) use them toghether with one of the built in implementations that automatically thake care of it:
+- **queryShallow:** will use a `Setoid` instance that performs a shallow equality check to compare inputs.
+- **queryStrict:** will use a `Setoid` instance that performs a strict equality check to compare inputs.
+- **queryJSON:** will use a `Setoid` instance that performs a strict equality check after transforming the data via JSON stringification to compare inputs.
 
 Some examples will help clarify:
 ```ts
@@ -57,10 +57,32 @@ const myQuery = queryStrict(fetchFunction, available);
 const myQuery = queryJSON(fetchFunction, expire(10000));
 ```
 
-Each time the `Fetch` function is run with some `inputs`, those same `inputs` are used as `key` to store the result obtained; from that moment onwards when **Avenger** will need to decide if the data in our [**`Cache`**](#Cache) is present and still valid it will first attempt to retrieve its data from the [**`Cache`**](#Cache) by performing an equality check between the `inputs` used to call the `Fetch` function and the keys of the `CacheMap` and then match the result against the cache strategy defined (for instance if we chose `refetch` the data will always be deemed invalid irrespective of the result).
+Each time the `Fetch` function is run with some `inputs`, those same `inputs` are used as a `key` to store the result obtained:
+```
+// usersCache is empty
+usersCache: {}
 
-If the result is valid it is returned, otherwise the `Fetch` function will be re-run in order to get new and valid data.
+//a user is fetched
+getUser({ userId: 1 }) -> { userName: "Mario" }
 
+// usersCache is now populated
+usersCache: {
+  [{ userId: 1 }]: { userName: Mario }
+}
+```
+
+From that moment onwards, when **Avenger** will need to decide if the data in our [**`Cache`**](#Cache) is present and still valid it will:
+
+1. attempt to retrive data from the [**`Cache`**](#Cache)
+2. match the result against the cache strategy defined (for instance if we chose `refetch` the data will always be deemed invalid irrespective of the result).
+
+If the result is valid it is returned, otherwise the `Fetch` function will be re-run in order to get new and valid data. The two flows are relatively simple:
+##### Valid CacheValue
+!["cached flow"](docs/CachedValue.svg)
+
+##### Invalid CacheValue
+when you call `run` or `subscribe` on a `query` with a combination of `inputs` that was never used before (or whose last use ended up with a `Failure`), avenger will try to run the `Fetch` function resulting in a more complex flow:
+!["cached flow"](docs/UncachedOrErrorValue.svg)
 
 There are two ways to get a query result:
 
@@ -68,7 +90,7 @@ There are two ways to get a query result:
 type Error = 'there was an error';
 type User = { userName: String };
 
-declare getUser(userId: number): TaskEither<Error, User>
+declare function getUser(userId: number): TaskEither<Error, User>
 
 const userQuery: ObservableQuery<number, Error, User> = query(
   getUser,
@@ -91,19 +113,13 @@ const task: TaskEither<Error, User> = userQuery.run(1);
 const result: Either<Error, User> = await task.run();
 ```
 
-altough the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes. Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you fold to decide the best way to handle the result.
+altough the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes.
 
+Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you fold to decide the best way to handle the result. The `fold` method takes 3 functions as parameters, the first is used to handle a `Loading` result, the second is used on case a `Failure` occurs and the last one handles `Success` values.
 
-the flow when you subscribe / call run on a cached value is relatively simple:
-!["cached flow"](docs/CachedValue.svg)
-
-
-
-when you call run / subscribe on a combination `query`/`inputs` that was never retrieved before (or whose last try to retrive it ended up with a `Failure`), avenger will try to run the `Fetch` function resulting in a more complex flow:
-!["cached flow"](docs/UncachedOrErrorValue.svg)
 
 ## composing queries
-you can build bigger queries from smaller ones in two ways:
+You can build bigger queries from smaller ones in two ways:
 
 - by composing them with [**`compose`**](#compose): when you need your queries to be sequentially run with the results of one feeding the other, you can use `compose`:
 
@@ -168,7 +184,7 @@ Avenger also exports some utilities to use with `React`
 
 ## declareQueries
 
-`declareQueries` in an `HOC` builder, it lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
+`declareQueries` is an `HOC` builder, it lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
 
 ```ts
 import { declareQueries } from 'avenger/lib/react';
@@ -211,6 +227,7 @@ alternatively, to avoid unecessary boilerplate, you can use the `WithQuery` comp
 
 ```ts
 import { WithQuery } from 'avenger/lib/react';
+import { userPreferences } from './queries'
 
 class MyComponent extends React.PureComponent<Props, State> {
   render() {
@@ -234,6 +251,8 @@ class MyComponent extends React.PureComponent<Props, State> {
 Another useful set of utilities is the one used to handle client navigation in the browser. Following you can find a simple but exhaustive example of how it is used:
 
 ```ts
+import { getCurrentView, getDoUpdateCurrentView } from "avenger/lib/browser";
+
 export type CurrentView =
   | { view: 'itemView'; itemId: String }
   | { view: 'items' };
