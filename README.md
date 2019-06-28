@@ -62,7 +62,7 @@ Each time the `Fetch` function is run with some `inputs`, those same `inputs` ar
 If the result is valid it is returned, otherwise the `Fetch` function will be re-run in order to get new and valid data.
 
 
-There are two ways get a query result:
+There are two ways to get a query result:
 
 ```ts
 type Error = 'there was an error';
