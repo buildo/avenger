@@ -22,13 +22,13 @@ At the heart of the DSL of the software there are two constructors: **query** an
 The [**`query`**](#query) function allows you to query your data source and get an object of type [**`CachedQuery`**](#CachedQuery) in return.
 It accepts two parameters, the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrieve data from your data source, the second is an object with the[**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
 
-Although important, `query` is a pretty low level API and **Avenger** offers some convenient utils with a [**`StrategyBuilder`**](#StrategyBuilder) signature that you should prefer over it (unless you have very specific needs):
+Although important, `query` is a pretty low-level API and **Avenger** offers some convenient utils with a [**`StrategyBuilder`**](#StrategyBuilder) signature that you should prefer over it (unless you have very specific needs):
 
-- **refetch:** runs the fetch function everytime the data is requested.
+- **refetch:** runs the fetch function every time the data is requested.
 - **expire:** when the data is requested, the fetch function is run only if data in the `Cache` is older than the expiration defined, otherwise the cached value is used.
-- **available:** when the data is requested, if a cahed value is available it is always returned, otherwise the fetch function is run and the result stored in the `Cache` accordingly.
+- **available:** when the data is requested, if a cached value is available it is always returned, otherwise the fetch function is run and the result stored in the `Cache` accordingly.
 
-All these utils ask you to specify custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances that will be used to check if an input is already present in one of the `Chache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resoltr to the `Fetch` function) but you can (and should) use them toghether with one of the built in implementations that automatically thake care of it:
+All these utils ask you to specify custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances that will be used to check if an input is already present in one of the `Chache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function) but you can (and should) use them together with one of the built-in implementations that automatically take care of it:
 - **queryShallow:** will use a `Setoid` instance that performs a shallow equality check to compare inputs.
 - **queryStrict:** will use a `Setoid` instance that performs a strict equality check to compare inputs.
 - **queryJSON:** will use a `Setoid` instance that performs a strict equality check after transforming the data via JSON stringification to compare inputs.
@@ -38,21 +38,21 @@ Some examples will help clarify:
 /*
   this implementation will always re-run the `Fetch` function
   even if valid cached data is already present
-  and use shallow equality to compare input output when called
+  and use shallow equality to compare input
 */
 const myQuery = queryShallow(fetchFunction, refetch);
 
 /*
   this implementation will never run the `Fetch` function
   unless no valid data is present in the Cache
-  and use strict equality to compare input/output when called
+  and use strict equality to compare input
 */
 const myQuery = queryStrict(fetchFunction, available);
 
 /*
   this implementation will run the `Fetch` function only if no valid data is present in the Cache
   or t > 10000 ms passed till the last time data was fetched
-  and use strict equality to compare input output when called
+  and use strict equality to compare input
 */
 const myQuery = queryJSON(fetchFunction, expire(10000));
 ```
@@ -113,9 +113,9 @@ const task: TaskEither<Error, User> = userQuery.run(1);
 const result: Either<Error, User> = await task.run();
 ```
 
-altough the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes.
+although the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes.
 
-Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you fold to decide the best way to handle the result. The `fold` method takes 3 functions as parameters, the first is used to handle a `Loading` result, the second is used on case a `Failure` occurs and the last one handles `Success` values.
+Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you fold to decide the best way to handle the result. The `fold` method takes 3 functions as parameters, the first is used to handle a `Loading` result, the second is used in case a `Failure` occurs and the last one handles `Success` values.
 
 
 ## composing queries
@@ -158,7 +158,7 @@ const grouped = product({ myQuery, myQuery2 });
 ```
 
 # commands
-Since now we only described how fetching of data is performed, when you need to update / insert data remotely you can make use of [**`command`**](#command):
+Since now we only described how fetching of data is performed, when you need to update or insert data remotely you can make use of [**`command`**](#command):
 
 ```ts
 declare function updateUserPreferences({
@@ -170,7 +170,7 @@ const updatePreferencesCommand = command(updateUserPreferences, {
 });
 ```
 
-`command` accepts a `Fetch` function that will be used to modify the remote data source and a second parameter, a `Record` of `query`es that will be invalidated once the command is succesfully run:
+`command` accepts a `Fetch` function that will be used to modify the remote data source and a second parameter, a `Record` of `query`es that will be invalidated once the command is successfully run:
 
 ```ts
 /* when you call the command you can specify the input value corresponding
@@ -184,7 +184,7 @@ Avenger also exports some utilities to use with `React`
 
 ## declareQueries
 
-`declareQueries` is an `HOC` builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
+`declareQueries` is a `HOC` builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
 
 ```ts
 import { declareQueries } from 'avenger/lib/react';
