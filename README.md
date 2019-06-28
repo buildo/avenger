@@ -189,7 +189,7 @@ class MyComponent extends React.PureComponent<Props, State> {
 export queries(MyComponent)
 ```
 
-When using this component from outside you will have to pass it the correct query patameters inside the `queries` prop in order for it to load the declared queries:
+When using this component from outside you will have to pass it the correct query parameters inside the `queries` prop in order for it to load the declared queries:
 
 ```ts
 class MyOtherComponent extends React.PureComponent<Props, State> {
