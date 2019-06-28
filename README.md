@@ -9,7 +9,7 @@
 # Intro
 
 Avenger is a data fetching and caching layer written in TypeScript, it aims at implementing the principle of **Command Query Responsibility Segregation** without necessarily enforcing it.
-If you are new to the concept you can get a grasp of its foundations in [this nice aricle](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler. Using his words:
+If you are new to the concept you can get a grasp of its foundations in [this nice article](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler. Using his words:
 
 _"The change that CQRS introduces is to separate models for update and display, which it refers to as "Command" and "Query" respectively following the vocabulary of CommandQuerySeparation._
 
