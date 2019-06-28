@@ -231,7 +231,7 @@ class MyComponent extends React.PureComponent<Props, State> {
 
 # Navigation
 
-Another useful set of utilities is the one used to handle client navigation in the browser. Following you can find a simple but exhautive example of how it is used:
+Another useful set of utilities is the one used to handle client navigation in the browser. Following you can find a simple but exhaustive example of how it is used:
 
 ```ts
 export type CurrentView =
