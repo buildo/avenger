@@ -37,7 +37,7 @@ Some examples will help clarify:
 ```ts
 /*
   this implementation will always re-run the `Fetch` function
-  even is valid cached data is already present
+  even if valid cached data is already present
   and use shallow equality to compare input output when called
 */
 const myQuery = queryShallow(fetchFunction, refetch);
