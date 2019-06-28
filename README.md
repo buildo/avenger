@@ -147,13 +147,16 @@ const result: Either<Error, User> = await task.run();
 
 although the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes.
 
-Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you fold to decide the best way to handle the result. The `fold` method takes 3 functions as parameters, the first is used to handle a `Loading` result, the second is used in case a `Failure` occurs and the last one handles `Success` values.
+Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you fold to decide the best way to handle the result. The `fold` method takes three functions as parameters: the first is used to handle a `Loading` result; the second is used in case a `Failure` occurs; the last one handles `Success` values.
 
 
 ## composing queries
 You can build bigger queries from smaller ones in two ways:
 
-- by composing them with [**`compose`**](#compose): when you need your queries to be sequentially run with the results of one feeding the other, you can use `compose`:
+- by composing them with [**`compose`**](#compose): when you need your queries to be sequentially run with the results of one feeding the other, you can use `compose`.
+- by grouping them with [**`product`**](#product): when you don't need to run the queries sequentially but would like to conveniently group them and treat them as if they were one you can use `product`.
+
+Here are a couple of simple examples on how to use them:
 
 ```ts
 import { compose } from 'avenger/lib/Query';
@@ -177,20 +180,19 @@ const preferencesQuery: ObservableQuery<
   UserPreferences
 > = queryShallow(getUserPreferences, refetch);
 
+// this is a query composition
 const composition: Composition<number, Error, UserPreferences> = compose(
   userQuery,
   preferencesQuery
 );
+
+// this is a query product
+const group = product({ myQuery, myQuery2 });
 ```
 
-- by grouping them with [**`product`**](#product): when you don't need to run the queries sequentially but would like to conveniently group them and treat them as if they were one you can use `product`:
-
-```ts
-const grouped = product({ myQuery, myQuery2 });
-```
 
 # commands
-Since now we only described how fetching of data is performed, when you need to update or insert data remotely you can make use of [**`command`**](#command):
+Up to now we only described how to fetch data. When you need to update or insert data remotely you can make use of [**`command`**](#command):
 
 ```ts
 declare function updateUserPreferences({
@@ -212,11 +214,11 @@ updatePreferencesCommand({ color: 'acquamarine' }, { preferencesQuery: 1 });
 
 # React
 
-Avenger also exports some utilities to use with `React`
+Avenger also exports some utilities to use with `React`.
 
 ## declareQueries
 
-`declareQueries` is a `HOC` builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
+`declareQueries` is a `HOC` (Higher-Order Component) builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
 
 ```ts
 import { declareQueries } from 'avenger/lib/react';
