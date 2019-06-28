@@ -9,7 +9,7 @@
 # Intro
 
 Avenger is a data fetching and caching layer written in TypeScript, its API is designed to mirror the principles of **Command Query Responsibility Segregation** thus of facilitating their adoption.
-If you are new to the concept you can get a grasp of its foundations in [this nice aricle](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler. Using his words:
+If you are new to the concept you can get a grasp of its foundations in [this nice article](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler. Using his words:
 
 _"The change that CQRS introduces is to separate models for update and display, which it refers to as "Command" and "Query" respectively following the vocabulary of CommandQuerySeparation._
 
@@ -73,7 +73,7 @@ usersCache: {
 
 From that moment onwards, when **Avenger** will need to decide if the data in our [**`Cache`**](#Cache) is present and still valid it will:
 
-1. attempt to retrive data from the [**`Cache`**](#Cache)
+1. attempt to retrieve data from the [**`Cache`**](#Cache)
 2. match the result against the cache strategy defined (for instance if we chose `refetch` the data will always be deemed invalid irrespective of the result).
 
 If the result is valid it is returned, otherwise the `Fetch` function will be re-run in order to get new and valid data. The two flows are relatively simple:
@@ -87,15 +87,15 @@ when you call `run` or `subscribe` on a `query` with a combination of `inputs` t
 There are two ways to get a query result:
 
 ```ts
-type Error = 'there was an error';
+type Error = "500" | "404";
 type User = { userName: String };
 
 declare function getUser(userId: number): TaskEither<Error, User>
 
-const userQuery: ObservableQuery<number, Error, User> = query(
+const userQuery: CachedQuery<number, Error, User> = query(
   getUser,
   refetch
-);
+)(refetch);
 
 declare function dispatchError(e: Error): void;
 declare function setCurrentUser(e: User): void;
@@ -104,7 +104,7 @@ declare function setCurrentUser(e: User): void;
 // N.B. until now no fetch is yet attempted, avenger will wait until the first subscription is issued
 const observable: Observable<QueryResult<Error, User>> = observe(userQuery);
 
-// after this the fetch function triggers
+// this will trigger the fetch function
 observable.subscribe(dispatchError, setCurrentUser);
 
 // alternatively you can call `run` on your query and it will return a TaskEither<Error, User>
@@ -170,11 +170,11 @@ const updatePreferencesCommand = command(updateUserPreferences, {
 });
 ```
 
-`command` accepts `Fetch` function that will be used to modify the remote data source and a second parameter, a `Record` of `query`es that will be invalidated once the command is succesfully run:
+`command` accepts a `Fetch` function that will be used to modify the remote data source and a second parameter, a `Record` of `query`es that will be invalidated once the command is succesfully run:
 
 ```ts
 /* when you call the command you can specify the input value corresponding
-to the Cache key that sould be invalidated as a second parameter */
+to the Cache key that should be invalidated as a second parameter */
 updatePreferencesCommand({ color: 'acquamarine' }, { preferencesQuery: 1 });
 ```
 
@@ -184,7 +184,7 @@ Avenger also exports some utilities to use with `React`
 
 ## declareQueries
 
-`declareQueries` is an `HOC` builder, it lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
+`declareQueries` is an `HOC` builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
 
 ```ts
 import { declareQueries } from 'avenger/lib/react';
