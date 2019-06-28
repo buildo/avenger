@@ -8,19 +8,51 @@
 
 # Intro
 
-Avenger is a data fetching and caching layer written in TypeScript, its API is designed to mirror the principles of **Command Query Responsibility Segregation** thus of facilitating their adoption.
-If you are new to the concept you can get a grasp of its foundations in [this nice article](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler. Using his words:
+Avenger is a data fetching and caching layer written in TypeScript. Its API is designed to mirror the principles of **Command Query Responsibility Segregation** and facilitate their adoption (if you are new to the concept you can get a grasp of its foundations in [this nice article](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler).
 
-_"The change that CQRS introduces is to separate models for update and display, which it refers to as "Command" and "Query" respectively following the vocabulary of CommandQuerySeparation._
+Building user interfaces is a complex task, mainly because of its `IO` intensive nature. Reads (**queries**) and updates (**commands**) toward "external" data sources are ubiquitous and difficult to orchestrate but _orchestration_ is not the only challenge a UI developer faces, _performance_ and _scalability_ are also key aspects of good design.
 
-_The rationale is that for many problems, particularly in more complicated domains, having the same conceptual model for commands and queries leads to a more complex model that does neither well."_
+We believe that an _effective and powerful abstraction to handle caching and synchronization of external data in a declarative way_ is of fundamental importance when designing a solid user interface.
+
+This is what **Avenger** wants to be: an abstraction layer over external data that handles caching and synchronization for you:
+
+!["cached flow"](docs/Avenger.svg)
+
+By separating how we fetch external data and how we update it we are able to state in a very declarative and _natural_ way the correct lifecycle of that data:
+
+```ts
+// define a cached query, with strategy "available" (more about this later)
+const user = queryShallow((id: string) => API.fetchUser(id), available);
+// define a command that invalidates the previous query
+const updateUsername = command((patch: Partial<User>) => API.updateUser(patch), { user })
+
+// declare it for usage in a React component
+const queries = declareQueries({ user });
+const DisplayUsername = queries(props => (
+  <div>
+    {props.queries.fold(
+      () => 'loading...',
+      () => 'error while retrieving user',
+      queries => (
+        <UserNameForm
+          value={queries.user.username}
+          onSubmit={updateUsername}
+        />
+      )
+    )}
+  </div>
+));
+
+// render the component
+<Username queries={{ user: '42' }} />;
+```
 
 # Avenger
-At the heart of the DSL of the software there are two constructors: **query** and **command**.
+At the very heart of Avenger's DSL there are two constructors: **query** and **command**.
 
 ## queries
 The [**`query`**](#query) function allows you to query your data source and get an object of type [**`CachedQuery`**](#CachedQuery) in return.
-It accepts two parameters, the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrieve data from your data source, the second is an object with the[**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
+It accepts two parameters: the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrieve data from your data source; the second is an object with the[**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
 
 Although important, `query` is a pretty low-level API and **Avenger** offers some convenient utils with a [**`StrategyBuilder`**](#StrategyBuilder) signature that you should prefer over it (unless you have very specific needs):
 
@@ -151,7 +183,7 @@ const composition: Composition<number, Error, UserPreferences> = compose(
 );
 ```
 
-- by grouping them with [**`product`**](#product): when you don't need to run the queries sequentially but would like to conveniently group them and treat them as if they where one you can use `product`:
+- by grouping them with [**`product`**](#product): when you don't need to run the queries sequentially but would like to conveniently group them and treat them as if they were one you can use `product`:
 
 ```ts
 const grouped = product({ myQuery, myQuery2 });
