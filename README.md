@@ -57,7 +57,7 @@ const myQuery = queryStrict(fetchFunction, available);
 const myQuery = queryJSON(fetchFunction, expire(10000));
 ```
 
-Each time the `Fetch` function is run with some `inputs`, those same `inputs` are used as `key` to store the result obtained; from that moment onwards when **Avenger** will need to decide if the data in our [**`Cache`**](#Cache) is present and still valid it will first attempt to retrive it data from the [**`Cache`**](#Cache) by performing an equality check between the `inputs` used to call the `Fetch` function and the keys of the `CacheMap` and then match the result against the cache strategy defined (for instance if we chose `refetch` the data will always be deemed invalid irrespective of the result).
+Each time the `Fetch` function is run with some `inputs`, those same `inputs` are used as `key` to store the result obtained; from that moment onwards when **Avenger** will need to decide if the data in our [**`Cache`**](#Cache) is present and still valid it will first attempt to retrieve its data from the [**`Cache`**](#Cache) by performing an equality check between the `inputs` used to call the `Fetch` function and the keys of the `CacheMap` and then match the result against the cache strategy defined (for instance if we chose `refetch` the data will always be deemed invalid irrespective of the result).
 
 If the result is valid it is returned, otherwise the `Fetch` function will be re-run in order to get new and valid data.
 
