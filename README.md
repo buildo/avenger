@@ -20,7 +20,7 @@ At the heart of the DSL of the software there are two constructors: **query** an
 
 ## queries
 The [**`query`**](#query) function allows you to query your data source and get an object of type [**`CachedQuery`**](#CachedQuery) in return.
-It accepts two parameters, the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrive data from your data source, the second is an object with the[**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
+It accepts two parameters, the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrieve data from your data source, the second is an object with the[**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
 
 Although important, `query` is a pretty low level API and **Avenger** offers some convenient utils with a [**`StrategyBuilder`**](#StrategyBuilder) signature that you should prefer over it (unless you have very specific needs):
 
