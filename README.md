@@ -45,7 +45,7 @@ const myQuery = queryShallow(fetchFunction, refetch);
 /*
   this implementation will never run the `Fetch` function
   unless no valid data is present in the Cache
-  and use strict equality to compare input output when called
+  and use strict equality to compare input/output when called
 */
 const myQuery = queryStrict(fetchFunction, available);
 
