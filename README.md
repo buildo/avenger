@@ -22,13 +22,13 @@ By separating how we fetch external data and how we update it we are able to sta
 
 ```ts
 // define a cached query, with strategy "available" (more about this later)
-const user = queryShallow((id: string) => API.fetchUser(id), available);
+const user = queryStrict((id: string) => API.fetchUser(id), available);
 // define a command that invalidates the previous query
 const updateUsername = command((patch: Partial<User>) => API.updateUser(patch), { user })
 
 // declare it for usage in a React component
 const queries = declareQueries({ user });
-const DisplayUsername = queries(props => (
+const Username = queries(props => (
   <div>
     {props.queries.fold(
       () => 'loading...',
@@ -56,11 +56,11 @@ It accepts two parameters: the first is a function with a [**`Fetch`**](#Fetch) 
 
 Although important, `query` is a pretty low-level API and **Avenger** offers some convenient utils with a [**`StrategyBuilder`**](#StrategyBuilder) signature that you should prefer over it (unless you have very specific needs):
 
-- **refetch:** runs the fetch function every time the data is requested.
+- **refetch:** runs the fetch function every time the data is requested (unless there's an ongoing pending request, which is always reused).
 - **expire:** when the data is requested, the fetch function is run only if data in the `Cache` is older than the expiration defined, otherwise the cached value is used.
 - **available:** when the data is requested, if a cached value is available it is always returned, otherwise the fetch function is run and the result stored in the `Cache` accordingly.
 
-All these utils ask you to pass custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances as arguments; they will be used to check if a value for an input combination is already present in one of the `Chache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function).
+All these utils ask you to pass custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances as arguments; they will be used to check if a value for an input combination is already present in one of the `Cache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function).
 You can (and should) use these utils together with one of the built-in implementations that automatically take care of passing by the needed `Setoids`:
 - **queryShallow:** will use a `Setoid` instance that performs a shallow equality check to compare inputs.
 - **queryStrict:** will use a `Setoid` instance that performs a strict equality check to compare inputs.
@@ -85,12 +85,12 @@ const myQuery = queryStrict(fetchFunction, available);
 /*
   this implementation will run the `Fetch` function only if no valid data is present in the Cache
   or t > 10000 ms passed till the last time data was fetched
-  and use strict equality to compare input
+  and use JSON equality to compare input
 */
 const myQuery = queryJSON(fetchFunction, expire(10000));
 ```
 
-Each time the `Fetch` function is run with some `inputs`, those same `inputs` are used as a `key` to store the result obtained:
+Each time the `Fetch` function is run with some `input`, those same `input` is used as a `key` to store the result obtained:
 ```
 // usersCache is empty
 usersCache: {}
@@ -128,7 +128,6 @@ declare function getUser(userId: number): TaskEither<Error, User>
 
 const userQuery: CachedQuery<number, Error, User> = query(
   getUser,
-  refetch
 )(refetch);
 
 declare function dispatchError(e: Error): void;
@@ -166,6 +165,8 @@ You can build bigger queries from smaller ones in two ways:
 Here are a couple of simple examples on how to use them:
 
 ```ts
+/* N.B. each value defined is explicitly annotated for clarity, although the annotations are not strictly required */
+
 import { compose } from 'avenger/lib/Query';
 
 type UserPreferences = { color: string };
@@ -176,7 +177,7 @@ declare function getUserPreferences(
   user: User
 ): TaskEither<Error, UserPreferences>;
 
-const userQuery: CachedQuery<number, Error, User> = queryShallow(
+const userQuery: CachedQuery<number, Error, User> = queryStrict(
   getUser,
   refetch
 );
