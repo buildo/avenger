@@ -1,0 +1,49 @@
+@startuml "UncachedOrErrorValue"
+skinparam BoxPadding 10
+
+title
+Architecture Flow with uncached Value
+end title
+
+box "Cached Data" #LightGray
+participant Query
+participant Cache
+participant CacheMap
+end box
+
+box "External Data Source" #LightBlue
+participant ExternalDataSource
+end box
+
+Query -> Cache : getUser({ user: 3 })
+Cache -> CacheMap : get CachedValue
+note right
+{
+  [{ user: 1 }]: CacheValueResolved({ username: "Gigi", preferredColor: "red" }),
+  [{ user: 2 }]: CacheValueResolved({ username: "Sandro", preferredColor: "violet" })
+  [{ user: 3 }]: CacheValueError || undefined
+}
+end note
+CacheMap -> Cache : return CacheValueError || undefined
+Cache -> CacheMap : set CachedValue for "{ user 3 }" to Initial
+note right
+{
+  [{ user: 1 }]: CacheValueResolved({ username: "Gigi", preferredColor: "red" }),
+  [{ user: 2 }]: CacheValueResolved({ username: "Sandro", preferredColor: "violet" })
+  [{ user: 3 }]: CacheValueInitial
+}
+end note
+Cache -> ExternalDataSource : get value for "{ user 3 }"
+ExternalDataSource -> Cache : { username: "Mario", preferredColor: "blue" }
+Cache -> CacheMap : set CachedValue for "{ user 3 }"
+note right
+{
+  [{ user: 1 }]: CacheValueResolved({ username: "Gigi", preferredColor: "red" }),
+  [{ user: 2 }]: CacheValueResolved({ username: "Sandro", preferredColor: "violet" })
+  [{ user: 3 }]: CacheValueResolved({ username: "Mario", preferredColor: "blue" })
+}
+end note
+
+Cache -> Query : { username: "Mario", preferredColor: "blue" }
+
+@enduml
