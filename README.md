@@ -60,7 +60,8 @@ Although important, `query` is a pretty low-level API and **Avenger** offers som
 - **expire:** when the data is requested, the fetch function is run only if data in the `Cache` is older than the expiration defined, otherwise the cached value is used.
 - **available:** when the data is requested, if a cached value is available it is always returned, otherwise the fetch function is run and the result stored in the `Cache` accordingly.
 
-All these utils ask you to specify custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances that will be used to check if an input is already present in one of the `Chache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function) but you can (and should) use them together with one of the built-in implementations that automatically take care of it:
+All these utils ask you to pass custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances as arguments; they will be used to check if a value for an input combination is already present in one of the `Chache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function).
+You can (and should) use these utils together with one of the built-in implementations that automatically take care of passing by the needed `Setoids`:
 - **queryShallow:** will use a `Setoid` instance that performs a shallow equality check to compare inputs.
 - **queryStrict:** will use a `Setoid` instance that performs a strict equality check to compare inputs.
 - **queryJSON:** will use a `Setoid` instance that performs a strict equality check after transforming the data via JSON stringification to compare inputs.
