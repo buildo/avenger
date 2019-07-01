@@ -211,7 +211,7 @@ const updatePreferencesCommand = command(updateUserPreferences, {
 });
 ```
 
-`command` accepts a `Fetch` function that will be used to modify the remote data source and a second parameter, a `Record` of `query`es that will be invalidated once the command is successfully run:
+`command` accepts a `Fetch` function that will be used to modify the remote data source and, as a second optional parameter, a record of `query`es that will be invalidated once the `command` is successfully run:
 
 ```ts
 /* when you call the command you can specify the input value corresponding
