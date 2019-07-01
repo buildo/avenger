@@ -117,6 +117,7 @@ If a valid result is found it is used without further actions, otherwise the `Fe
 when you call `run` or `subscribe` on a `query` with a combination of `inputs` that was never used before (or whose last use ended up with a `Failure`), avenger will try to run the `Fetch` function resulting in a more complex flow:
 !["cached flow"](docs/UncachedOrErrorValue.svg)
 
+## listening to queries
 There are two ways to get a query result:
 
 ```ts
@@ -148,7 +149,7 @@ const result: Either<Error, User> = await task.run();
 
 although the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes.
 
-Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you fold to decide the best way to handle the result. The `fold` method takes three functions as parameters: the first is used to handle a `Loading` result; the second is used in case a `Failure` occurs; the last one handles `Success` values.
+Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you `fold` to decide the best way to handle the result. The `fold` method takes three functions as parameters: the first is used to handle a `Loading` result; the second is used in case a `Failure` occurs; the last one handles `Success` values.
 
 
 ## composing queries
@@ -193,7 +194,7 @@ const composition: Composition<number, Error, UserPreferences> = compose(
 );
 
 // this is a query product
-const group: Composition<number, Error, UserPreferences> = product({ myQuery, myQuery2 });
+const group: Product<number, Error, UserPreferences> = product({ myQuery, myQuery2 });
 ```
 
 
