@@ -10,11 +10,11 @@
 
 Avenger is a data fetching and caching layer written in TypeScript. Its API is designed to mirror the principles of **Command Query Responsibility Segregation** and facilitate their adoption (if you are new to the concept you can get a grasp of its foundations in [this nice article](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler).
 
-Building user interfaces is a complex task, mainly because of its `IO` intensive nature. Reads (**queries**) and updates (**commands**) toward "external" data sources are ubiquitous and difficult to orchestrate but _orchestration_ is not the only challenge a UI developer faces, _performance_ and _scalability_ are also key aspects of good design.
+Building user interfaces is a complex task, mainly because of its `IO` intensive nature. Reads (**queries**) and updates (**commands**) toward "external" data sources are ubiquitous and difficult to orchestrate, but _orchestration_ is not the only challenge a UI developer faces, _performance_ and _scalability_ are also key aspects of good design.
 
 We believe that an _effective and powerful abstraction to handle caching and synchronization of external data in a declarative way_ is of fundamental importance when designing a solid user interface.
 
-This is what **Avenger** wants to be: an abstraction layer over external data that handles caching and synchronization for you:
+This is what **Avenger** aims to be: an abstraction layer over external data that handles caching and synchronization for you:
 
 !["cached flow"](docs/Avenger.svg)
 
