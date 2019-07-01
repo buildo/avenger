@@ -108,7 +108,7 @@ From that moment onwards, when **Avenger** will need to decide if the data in ou
 1. attempt to retrieve data from the [**`Cache`**](#Cache)
 2. match the result against the cache strategy defined (for instance if we chose `refetch` the data will always be deemed invalid irrespective of the result).
 
-If the result is valid it is returned, otherwise the `Fetch` function will be re-run in order to get new and valid data. The two flows are relatively simple:
+If a valid result is found it is used without further actions, otherwise the `Fetch` function will be re-run in order to get valid data. The two flows are relatively simple:
 ##### Valid CacheValue
 !["cached flow"](docs/CachedValue.svg)
 
@@ -154,7 +154,12 @@ Either way, whenever you ask for a query result you will end up with an object w
 You can build bigger queries from smaller ones in two ways:
 
 - by composing them with [**`compose`**](#compose): when you need your queries to be sequentially run with the results of one feeding the other, you can use `compose`.
-- by grouping them with [**`product`**](#product): when you don't need to run the queries sequentially but would like to conveniently group them and treat them as if they were one you can use `product`.
+- by grouping them with [**`product`**](#product): when you don't need to run the queries sequentially but would like to conveniently group them and treat them as if they were one you can use `product`*.
+
+*Internally `product` uses the `Applicative` nature of `QueryResults` to group them using the following hierarchical logic:
+  1. If any of the queries returned a `Failure` then the whole composition is a `Failure`.
+  2. If any of the queries is `Loading` then the whole composition is `Loading`.
+  3. If all the queries ended with a `Success` then the composition is a `Success` with a record of results that mirrors the key/value result of the single queries as value.
 
 Here are a couple of simple examples on how to use them:
 
@@ -169,12 +174,12 @@ declare function getUserPreferences(
   user: User
 ): TaskEither<Error, UserPreferences>;
 
-const userQuery: ObservableQuery<number, Error, User> = queryShallow(
+const userQuery: CachedQuery<number, Error, User> = queryShallow(
   getUser,
   refetch
 );
 
-const preferencesQuery: ObservableQuery<
+const preferencesQuery: CachedQuery<
   User,
   Error,
   UserPreferences
@@ -187,7 +192,7 @@ const composition: Composition<number, Error, UserPreferences> = compose(
 );
 
 // this is a query product
-const group = product({ myQuery, myQuery2 });
+const group: Composition<number, Error, UserPreferences> = product({ myQuery, myQuery2 });
 ```
 
 

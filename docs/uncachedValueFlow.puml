@@ -5,14 +5,14 @@ title
 Architecture Flow with uncached Value
 end title
 
-box "Local Data" #LightGray
+box "Cached Data" #LightGray
 participant Query
 participant Cache
 participant CacheMap
 end box
 
-box "Remote Data" #LightBlue
-participant RemoteDataSource
+box "External Data Source" #LightBlue
+participant ExternalDataSource
 end box
 
 Query -> Cache : getUser({ user: 3 })
@@ -33,8 +33,8 @@ note right
   [{ user: 3 }]: CacheValueInitial
 }
 end note
-Cache -> RemoteDataSource : get value for "{ user 3 }"
-RemoteDataSource -> Cache : { username: "Mario", preferredColor: "blue" }
+Cache -> ExternalDataSource : get value for "{ user 3 }"
+ExternalDataSource -> Cache : { username: "Mario", preferredColor: "blue" }
 Cache -> CacheMap : set CachedValue for "{ user 3 }"
 note right
 {
