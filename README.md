@@ -20,7 +20,7 @@ This is what **Avenger** aims to be: an abstraction layer over external data tha
 
 By separating how we fetch external data and how we update it we are able to state in a very declarative and _natural_ way the correct lifecycle of that data:
 
-```ts
+```tsx
 // define a cached query, with strategy "available" (more about this later)
 const user = queryStrict((id: string) => API.fetchUser(id), available);
 // define a command that invalidates the previous query
@@ -52,7 +52,7 @@ At the very heart of Avenger's DSL there are two constructors: **query** and **c
 
 ## queries
 The [**`query`**](#query) function allows you to query your data source and get an object of type [**`CachedQuery`**](#CachedQuery) in return.
-It accepts two parameters: the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrieve data from your data source; the second is an object with the[**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
+It accepts two parameters: the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrieve data from your data source; the second is an object with the [**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
 
 Although important, `query` is a pretty low-level API and **Avenger** offers some convenient utils with a [**`StrategyBuilder`**](#StrategyBuilder) signature that you should prefer over it (unless you have very specific needs):
 
@@ -228,7 +228,7 @@ Avenger also exports some utilities to use with `React`.
 
 `declareQueries` is a `HOC` (Higher-Order Component) builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
 
-```ts
+```tsx
 import { declareQueries } from 'avenger/lib/react';
 import { userPreferences } from './queries';
 
@@ -267,7 +267,7 @@ class MyOtherComponent extends React.PureComponent<Props, State> {
 
 alternatively, to avoid unecessary boilerplate, you can use the `WithQuery` component:
 
-```ts
+```tsx
 import { WithQuery } from 'avenger/lib/react';
 import { userPreferences } from './queries'
 
@@ -333,7 +333,7 @@ export const doUpdateCurrentView: Command = getDoUpdateCurrentView(viewToLocatio
 
 once you instantiated all the boilerplate needed to instruct Avenger on how to navigate, you can use `currentView` and `doUpdateCurrentView` like they were normal queries and commands (and, in fact, they are..).
 
-```ts
+```tsx
 // ./App.ts
 
 import { declareQueries } from 'avenger/lib/react';
@@ -361,9 +361,8 @@ class Navigation extends React.PureComponent<Props, State> {
 }
 
 export queries(MyComponent)
-
-
-
+```
+```tsx
 // ./Components/ItemView.ts
 
 class ItemView extends React.PureComponent<Props, State> {
@@ -373,8 +372,6 @@ class ItemView extends React.PureComponent<Props, State> {
     return <BackButton onClick={this.goToItems}>
   }
 }
-
-
 ```
 
 ## Signatures
