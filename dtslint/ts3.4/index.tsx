@@ -10,12 +10,7 @@ import {
 import { Strategy, available, expire, refetch } from '../../src/Strategy';
 import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
-import {
-  useQuery,
-  WithQuery,
-  declareQueries,
-  useQueries
-} from '../../src/react';
+import { declareQueries } from '../../src/react';
 import * as React from 'react';
 import { constNull } from 'fp-ts/lib/function';
 import { QueryResult } from '../../src/QueryResult';
@@ -128,20 +123,6 @@ const postWithTags = compose(
   product({ token, postId, posts }),
   addTags
 );
-
-useQuery(a); // $ExpectError
-useQuery(b); // $ExpectType QueryResult<string, number>
-useQuery(b, 3); // $ExpectError
-useQuery(b, undefined); // $ExpectType QueryResult<string, number>
-
-useQueries({ a }); // $ExpectError
-useQueries({ b }); // $ExpectType QueryResult<string, ProductP<{ b: CachedQuery<void, string, number>; }>>
-useQueries({ b }, { b: 3 }); // $ExpectError
-useQueries({ b }, undefined); // $ExpectType QueryResult<string, ProductP<{ b: CachedQuery<void, string, number>; }>>
-
-<WithQuery query={a} render={constNull} />; // $ExpectError
-<WithQuery query={b} render={constNull} />;
-<WithQuery query={b} input={3} render={constNull} />; // $ExpectError
 
 const declareA = declareQueries({ a });
 declareA.InputProps; // $ExpectType { queries: Pick<{} & { a: string; }, "a">; }

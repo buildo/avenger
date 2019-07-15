@@ -15,7 +15,7 @@
   "author": "Giovanni Gonzaga <giovanni@buildo.io>",
   "license": "MIT",
   "dependencies": {
-    "fp-ts": "^1.18.2",
+    "fp-ts": "^1.19.4",
     "history": "^4.9.0",
     "lodash.trim": "^4.5.1",
     "qs": "^6.7.0",
