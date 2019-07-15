@@ -2,8 +2,6 @@ import { ObservableQuery } from './Query';
 
 export type EnforceNonEmptyRecord<R> = keyof R extends never ? never : R;
 
-export type Omit<O, K> = Pick<O, Exclude<keyof O, K>>;
-
 // helpers from https://github.com/tycho01/typical
 type MatchingPropNames<T, X> = {
   [K in keyof T]: T[K] extends X ? K : never;

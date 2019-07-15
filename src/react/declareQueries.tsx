@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { QueryResult, loading, success } from '../QueryResult';
 import {
-  Omit,
   ObservableQueries,
   EnforceNonEmptyRecord,
   ProductA,
