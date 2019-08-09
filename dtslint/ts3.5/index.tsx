@@ -12,7 +12,6 @@ import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
 import { declareQueries } from '../../src/react';
 import * as React from 'react';
-import { constNull } from 'fp-ts/lib/function';
 import { QueryResult } from '../../src/QueryResult';
 import { invalidate } from '../../src/invalidate';
 import { ProductA } from '../../src/util';

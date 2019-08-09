@@ -1,4 +1,9 @@
-import { doUpdateLocation, location } from '../src/browser/location';
+import {
+  doUpdateLocation,
+  location,
+  requestConfirmationToUpdateLocation,
+  doResolvePendingUpdateLocation
+} from '../src/browser/location';
 import { right } from 'fp-ts/lib/Either';
 
 describe('browser/location', () => {
@@ -32,5 +37,52 @@ describe('browser/location', () => {
         search: { bar: 'baz' }
       })
     );
+  });
+
+  it('blocking transitions should work', async () => {
+    await doUpdateLocation({
+      pathname: '/',
+      search: {}
+    }).run();
+
+    let unblock = requestConfirmationToUpdateLocation();
+    await doUpdateLocation({
+      pathname: '/foo',
+      search: { bar: 'baz' }
+    }).run();
+    expect(await location.run().run()).toEqual(
+      right({
+        pathname: '/',
+        search: {}
+      })
+    );
+    await doResolvePendingUpdateLocation(false).run();
+    expect(await location.run().run()).toEqual(
+      right({
+        pathname: '/',
+        search: {}
+      })
+    );
+    unblock();
+
+    unblock = requestConfirmationToUpdateLocation();
+    await doUpdateLocation({
+      pathname: '/foo',
+      search: { bar: 'baz' }
+    }).run();
+    expect(await location.run().run()).toEqual(
+      right({
+        pathname: '/',
+        search: {}
+      })
+    );
+    await doResolvePendingUpdateLocation(true).run();
+    expect(await location.run().run()).toEqual(
+      right({
+        pathname: '/foo',
+        search: { bar: 'baz' }
+      })
+    );
+    unblock();
   });
 });
