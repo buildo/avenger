@@ -9,7 +9,6 @@ import { command, contramap } from '../command';
 import { Task } from 'fp-ts/lib/Task';
 import { right } from 'fp-ts/lib/Either';
 import { parse, stringify } from 'qs';
-import trim = require('lodash.trim');
 import { IO } from 'fp-ts/lib/IO';
 
 export type HistoryLocation = {
@@ -38,9 +37,9 @@ export const location = query(
     if (!_setListener) {
       setListener();
     }
-    const search: HistoryLocation['search'] = parse(
-      trim(history.location.search, '?')
-    );
+    const search: HistoryLocation['search'] = parse(history.location.search, {
+      ignoreQueryPrefix: true
+    });
     return taskEither.of<void, HistoryLocation>({
       pathname: history.location.pathname,
       search
@@ -80,11 +79,14 @@ export const doUpdateLocation = command(
               Object.keys(search).length > 0
                 ? `?${stringify(search, { skipNulls: true })}`
                 : '';
+            const sanitizedPathname = `/${pathname
+              .trim()
+              .replace(/^[\/]+/, '')}`;
             if (
-              trim(pathname, ' /') !== trim(history.location.pathname, ' /') ||
-              trim(searchQuery, ' ?') !== trim(history.location.search, ' ?')
+              sanitizedPathname !== history.location.pathname ||
+              searchQuery !== history.location.search
             ) {
-              const url = `/${trim(pathname, ' /')}${searchQuery}`;
+              const url = `${sanitizedPathname}${searchQuery}`;
               history.push(url);
             }
             resolve(right<void, void>(undefined));

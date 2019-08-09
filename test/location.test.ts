@@ -5,6 +5,7 @@ import {
   doResolvePendingUpdateLocation
 } from '../src/browser/location';
 import { right } from 'fp-ts/lib/Either';
+import { observeStrict } from '../src/observe';
 
 describe('browser/location', () => {
   it('query/command should parse/stringify the `search` query', async () => {
@@ -84,5 +85,35 @@ describe('browser/location', () => {
       })
     );
     unblock();
+  });
+
+  it('should not push to history when running command with the same input', async () => {
+    await doUpdateLocation({
+      pathname: '/foo',
+      search: { foo: 'bar' }
+    }).run();
+    const fn = jest.fn();
+    observeStrict(location, undefined).subscribe(fn);
+    await new Promise(r => setTimeout(r));
+    expect(fn.mock.calls.length).toBe(2);
+    await doUpdateLocation({
+      pathname: '/foo',
+      search: { foo: 'bar' }
+    }).run();
+    await new Promise(r => setTimeout(r));
+    expect(fn.mock.calls.length).toBe(2);
+  });
+
+  it('should trim spaces and slashes in pathname', async () => {
+    await doUpdateLocation({
+      pathname: ' //foos ',
+      search: {}
+    }).run();
+    expect(await location.run().run()).toEqual(
+      right({
+        pathname: '/foos',
+        search: {}
+      })
+    );
   });
 });
