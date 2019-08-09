@@ -21,16 +21,16 @@ export type HistoryLocation = {
 let _setListener = false;
 const history = createBrowserHistory();
 
-const pathRegexp = new RegExp('^[ /]*(.+?)[ /]*$');
-const searchRegexp = new RegExp('^[ ?]*(.+?)[ ?]*$');
+const pathRegexp = new RegExp('^[ /]*(.*?)[ /]*$');
+const searchRegexp = new RegExp('^[ ?]*(.*?)[ ?]*$');
 const sanitizePath = flow(
-  pathRegexp.exec,
+  pathRegexp.exec.bind(pathRegexp),
   fromNullable,
   chain(ra => fromNullable(ra[1]))
 );
 
 const sanitizeSearch = flow(
-  searchRegexp.exec,
+  searchRegexp.exec.bind(searchRegexp),
   fromNullable,
   chain(ra => fromNullable(ra[1]))
 );
@@ -90,7 +90,7 @@ export const doUpdateLocation = command(
                 : '';
 
             const sanitizedPathname = sanitizePath(pathname);
-            const sanitizedSearcQuery = sanitizeSearch(searchQuery);
+            const sanitizedSearchQuery = sanitizeSearch(searchQuery);
 
             if (
               !S.equals(
@@ -98,7 +98,7 @@ export const doUpdateLocation = command(
                 sanitizePath(history.location.pathname)
               ) ||
               !S.equals(
-                sanitizedSearcQuery,
+                sanitizedSearchQuery,
                 sanitizeSearch(history.location.search)
               )
             ) {
@@ -106,7 +106,7 @@ export const doUpdateLocation = command(
                 `${sanitizedPathname.fold(
                   `/${pathname}`,
                   r => `/${r}`
-                )}${sanitizedSearcQuery.fold(`?${searchQuery}`, s => `?${s}`)}`
+                )}${sanitizedSearchQuery.fold(`?${searchQuery}`, s => `?${s}`)}`
               );
             }
             resolve(right<void, void>(undefined));
