@@ -1,24 +1,19 @@
 {
   "compilerOptions": {
-    "types": ["jest", "node"],
-    "target": "es6",
     "module": "commonjs",
-    "outDir": "build",
-    "sourceMap": true,
+    "target": "es5",
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strict": true,
-    "removeComments": true,
-    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "pretty": true,
-    "allowJs": true,
-    "lib": [
-      "es6", "es7", "es2017"
-    ]
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react",
+    "removeComments": true,
+    "lib": ["esnext", "dom"],
+    "outDir": "lib",
+    "declaration": true
   },
-  "include": [
-    "src",
-    "test",
-    "typings"
-  ]
+  "include": ["src"]
 }

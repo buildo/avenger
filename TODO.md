@@ -1,0 +1,12 @@
+- [x] Fix Unhandled Promise rejections (see `yarn test`)
+- [ ] Find a way to write readable tests
+- [x] Split randomtests into meaningful files
+- [ ] Try to remove some unsafe `any` casts
+- [x] Add `invalidate` to `Cache`
+- [x] Add top-level `invalidate`. Should invalidate a set of queries
+- [x] I don't think this is needed anymore: Add topo-sort to top-level `invalidate`
+- [x] Add `command(cmd: Fetch<A, L, P>, invalidates: Record<K, ObservableQ>)`. Implement the old `runCommand` as the result of `command.run()`
+- [x] Add support for `Strategy` (and maybe some default ones)
+- [x] Start porting some real world usages as tests
+- [x] Rewrite `Product`s to be labelled products (structs) instead of tuples. So that we can e.g. reuse it as `command` named dependencies. Refer to https://github.com/gcanti/fp-ts-contrib/blob/master/src/sequenceS.ts (similar typing strategy)
+- [x] Add `/react` folder, basically including `react-avenger` with necessary changes

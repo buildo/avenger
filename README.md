@@ -1,420 +1,499 @@
-# avenger
+Avenger is a data fetching and caching layer written in TypeScript. Its API is designed to mirror the principles of **Command Query Responsibility Segregation** and facilitate their adoption (if you are new to the concept you can get a grasp of its foundations in [this nice article](https://martinfowler.com/bliki/CQRS.html) by Martin Fowler).
 
-[![](https://travis-ci.org/buildo/avenger.svg)](https://travis-ci.org/buildo/avenger)
-[![](https://img.shields.io/npm/v/avenger.svg?sytle=flat-square)](https://www.npmjs.com/package/avenger)
-[![npm downloads](https://img.shields.io/npm/dm/avenger.svg?style=flat-square)](https://www.npmjs.com/package/avenger)
-[![](https://david-dm.org/buildo/avenger.svg)](https://david-dm.org/buildo/avenger#info=dependencies&view=list)
-[![](https://david-dm.org/buildo/avenger/dev-status.svg)](https://david-dm.org/buildo/avenger#info=devDependencies&view=list)
+Building user interfaces is a complex task, mainly because of its `IO` intensive nature. Reads (**queries**) and updates (**commands**) toward "external" data sources are ubiquitous and difficult to orchestrate, but _orchestration_ is not the only challenge a UI developer faces, _performance_ and _scalability_ are also key aspects of good design.
 
-### TLDR
+We believe that an _effective and powerful abstraction to handle caching and synchronization of external data in a declarative way_ is of fundamental importance when designing a solid user interface.
 
-A CQRS-flavoured data fetching and caching layer in JavaScript.
+This is what **Avenger** aims to be: an abstraction layer over external data that handles caching and synchronization for you:
 
-Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser.
+!["cached flow"](docs/Avenger.svg)
 
-### API layers
+By separating how we fetch external data and how we update it we are able to state in a very declarative and _natural_ way the correct lifecycle of that data:
 
-Avenger provides different levels of api:
+```tsx
+// define a cached query, with strategy "available" (more about this later)
+const user = queryStrict((id: string) => API.fetchUser(id), available);
+// define a command that invalidates the previous query
+const updateUsername = command(
+  (patch: Partial<User>) => API.updateUser(patch),
+  { user }
+);
 
-- **layer 0** `fetch`: provides an abstraction over asyncronous data retrieval (`fetch`) and operators to compose different fetches together (`composition` and `product`). Includes data-dependencies and promise pipelining, and a prescription for api categorization. Read more in [Fetch](https://github.com/buildo/avenger#fetch).
-- **layer 1** `fcache`: caching layer on top of `fetch`. Caching and batching happens here. This layer can be considered similar to [DataLoader](https://github.com/facebook/dataloader), adding more powerful caching strategies. You'd use this layer directly in a stateless (server-side) environment, where no long-living cache is involved. Read more in [Cache](https://github.com/buildo/avenger#cache).
-- **layer 2** `query`: extends `fcache` with observable queries. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data.
-- **layer 3** `graph`: provides a higher level interface to `query`. You'd use this layer in a stateful (client) environment, where the app interacts with a long-living cache of remote/async data. Read more in [Graph](https://github.com/buildo/avenger#graph).
-- **layer +** [react-avenger](https://github.com/buildo/react-avenger): provides helpers to connect a `graph` avenger instance to React components in a declarative fashion. You'd use this layer in a generic React client
+// declare it for usage in a React component
+const queries = declareQueries({ user });
+const Username = queries(props => (
+  <div>
+    {props.queries.fold(
+      () => 'loading...',
+      () => 'error while retrieving user',
+      queries => (
+        <UserNameForm value={queries.user.username} onSubmit={updateUsername} />
+      )
+    )}
+  </div>
+));
 
-
-# Fetch
-
-A `fetch` is a function with the following signature:
-
-```
-fetch: A -> Promise[P]
-```
-
-whenever we write `~>` instead of `->` we're implying `Promise[]`
-
-ex: we can write `fetch: A ~> P` for short.
-
-## Classification
-
-Given a fetch `fetch: A ~> P`:
-
-- an *index* for `fetch` is defined as `A ~> List[Id]` where
-  - `A` is a generic "filter" argument (e.g: `ageMin=25`)
-  - `Id` is an identifier for the `P` (it returns a list of Ids)
-  - ex: `getThingIdsBySearchQuery -> Promise[List[ThingId]]`
-- a *catalog* for `fetch` is defined as `A ~> List[P]` where
-  - `A` is again a generic "filter" argument
-  - `P` is the type of each item returned (it returns a list of payloads)
-  - ex: `getThingsBySearchQuery -> Promise[List[Thing]]`
-
-## Operators
-
-### Product
-
-Let:
-
-```
-f1: A1 ~> P1
-f2: A2 ~> P2
-...
-fn: An ~> Pn
+// render the component
+<Username queries={{ user: '42' }} />;
 ```
 
-then:
+# Avenger
 
-```
-product([f1, ... , fn]): [A1, ... , An] ~> [P1, ... , Pn]
-```
+At the very heart of Avenger's DSL there are two constructors: **query** and **command**.
 
-in short:
+## queries
 
-We use the operator *product* whenever we have a set of queries that DO NOT depend on one another: with *product* these queries are run in **parallel**.
+The [**`query`**](#query) function allows you to query your data source and get an object of type [**`CachedQuery`**](#CachedQuery) in return.
+It accepts two parameters: the first is a function with a [**`Fetch`**](#Fetch) signature that is used to retrieve data from your data source; the second is an object with the [**`Strategy`**](#Strategy) signature that will be used to decide if the data stored by **Avenger** is still relevant or needs to be refetched.
 
-### Composition
+Although important, `query` is a pretty low-level API and **Avenger** offers some convenient utils with a [**`StrategyBuilder`**](#StrategyBuilder) signature that you should prefer over it (unless you have very specific needs):
 
-Let:
+- **refetch:** runs the fetch function every time the data is requested (unless there's an ongoing pending request, which is always reused).
+- **expire:** when the data is requested, the fetch function is run only if data in the `Cache` is older than the expiration defined, otherwise the cached value is used.
+- **available:** when the data is requested, if a cached value is available it is always returned, otherwise the fetch function is run and the result stored in the `Cache` accordingly.
 
-```
-master: A2 ~> P2
-ptoa: (P2, A2) -> A1
-slave: A1 ~> P1
-```
+All these utils ask you to pass custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances as arguments; they will be used to check if a value for an input combination is already present in one of the `Cache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function).
+You can (and should) use these utils together with one of the built-in implementations that automatically take care of passing by the needed `Setoids`:
 
-then:
+- **queryShallow:** will use a `Setoid` instance that performs a shallow equality check to compare inputs.
+- **queryStrict:** will use a `Setoid` instance that performs a strict equality check to compare inputs.
+- **queryJSON:** will use a `Setoid` instance that performs a strict equality check after transforming the data via JSON stringification to compare inputs.
 
-```
-compose(master, ptoa, slave): A2 ~> P1
-```
+Some examples will help clarify:
 
-in short:
+```ts
+/*
+  this implementation will always re-run the `Fetch` function
+  even if valid cached data is already present
+  and use shallow equality to compare input
+*/
+const myQuery = queryShallow(fetchFunction, refetch);
 
-We use the operator *compose* whenever we need to run a fetch (`slave`) **after** a previous one (`master`).
+/*
+  this implementation will never run the `Fetch` function
+  unless no valid data is present in the Cache
+  and use strict equality to compare input
+*/
+const myQuery = queryStrict(fetchFunction, available);
 
-`ptoa` (that you should read "P to A") is a function that allows you to transform the output of `master` before passing it as input to `slave`.
-
-The reason it accepts the input of `master` as second argument is to allow you to easily pass a shared context (ex: token, other params taken from state) both to `master` and to `slave`.
-
-
-### Star
-
-Let:
-
-```
-f: A ~> P
-```
-
-then:
-
-```
-star(f): List[A] ~> List[P]
+/*
+  this implementation will run the `Fetch` function only if no valid data is present in the Cache
+  or t > 10000 ms passed till the last time data was fetched
+  and use JSON equality to compare input
+*/
+const myQuery = queryJSON(fetchFunction, expire(10000));
 ```
 
-in short:
-
-We use the operator *star* to transform a fetch into a new one that accepts an array of A as input and returns and array of P as output.
-
-Internally it will use *product* to run multiple fetches for every A in parallel.
-
-# Cache
-
-## CacheValue
-A `CacheValue` is a data structure defined as
-```
-CacheValue = Maybe[P] x Maybe[Promise[P]]
-```
-
-in practice:
-```
-const CacheValue = Struct[{
-  done: Maybe[Struct[{
-    value: Any,
-    timestamp: Number,
-    promise: Promise
-  }]],
-  blocked: Maybe[Promise[P]]
-}]
-```
-
-`blocked` is used to store an on-going fetch.
-
-`done` is used to store the final value and other useful infos once the fetch completes.
-
-## Strategies
-
-Let `CacheValue = Maybe[P] x Maybe[Promise[P]]`, then a *caching strategy* is a function with the following signature:
+Each time the `Fetch` function is run with some `input`, those same `input` is used as a `key` to store the result obtained:
 
 ```
-strategy: CacheValue -> boolean
+// usersCache is empty
+usersCache: {}
+
+//a user is fetched
+getUser({ userId: 1 }) -> { userName: "Mario" }
+
+// usersCache is now populated
+usersCache: {
+  [{ userId: 1 }]: { userName: Mario }
+}
 ```
 
-in short:
+From that moment onwards, when **Avenger** will need to decide if the data in our [**`Cache`**](#Cache) is present and still valid it will:
 
-A *caching strategy* is a function that accepts a `CacheValue` in input and, using its information (is it done? when was it completed?),
-returns `true` if the value can be used as-is and `false` if the value needs to be-refetched
+1. attempt to retrieve data from the [**`Cache`**](#Cache)
+2. match the result against the cache strategy defined (for instance if we chose `refetch` the data will always be deemed invalid irrespective of the result).
 
+If a valid result is found it is used without further actions, otherwise the `Fetch` function will be re-run in order to get valid data. The two flows are relatively simple:
 
-### Provided strategies
+##### Valid CacheValue
 
-- `Expire(delay: integer)`
-- `available = Expire(Infinity)`
-- `refetch = Expire(-1)`
+!["cached flow"](docs/CachedValue.svg)
 
-## `f`-cache
+##### Invalid CacheValue
 
-A `f`-cache is a function with the following signature:
+when you call `run` or `subscribe` on a `query` with a combination of `inputs` that was never used before (or whose last use ended up with a `Failure`), avenger will try to run the `Fetch` function resulting in a more complex flow:
+!["cached flow"](docs/UncachedOrErrorValue.svg)
 
-```
-cache: A -> CacheValue
-```
+## listening to queries
 
-in practice:
+There are two ways to get a query result:
 
-The actual implementation is a class with the following methods:
+```ts
+type Error = '500' | '404';
+type User = { userName: String };
 
-- `constructor({ name?: string, map?: Map, atok: (a: A) => string })`
-- `get(a): A -> CacheValue`
-- `set(a: A, value: CacheValue)`
-- `remove(a: A): void`
-- `clear(): void`
-- `getAvailablePromise(a: A, strategy: Strategy): Maybe[Promise[P]]`
-- `getPromise(a: A, strategy: Strategy, fetch: Fetch[A, P]): Promise[P]`
-- `storePayload(a: A, p: P, promise: Promise[P])`
-- `storePromise(a: A, promise: Promise[P])`
+declare function getUser(userId: number): TaskEither<Error, User>;
 
-`atok` (that you should read "A to key") is used to get a unique key starting from an input A
+const userQuery: CachedQuery<number, Error, User> = query(getUser)(refetch);
 
-## Optimisations
+declare function dispatchError(e: Error): void;
+declare function setCurrentUser(e: User): void;
 
-**fetch**
+// feeding your query to `observe` will give you an observable on the query
+// N.B. until now no fetch is yet attempted, avenger will wait until the first subscription is issued
+const observable: Observable<QueryResult<Error, User>> = observe(userQuery);
 
-`fetch: A ~> P`
+// this will trigger the fetch function
+observable.subscribe(dispatchError, setCurrentUser);
 
-use
-
-`cacheFetch(fetch, strategy, cache)`
-
-under the hood:
-
-`cacheFetch` calls `fetch` to return a fresh value only if the value is not present in `cache` or `strategy` returns `false` (value is expired).
-
-Whenever `fetch` is called:
-- `CacheValue` in `cache` is replaced with a new one with `done: undefined` and `blocked: on-going-promise`
-
-Whenever `fetch` completes:
-- `CacheValue` in `cache` is replaced with a new one with `blocked: undefined` and `done: { value: final-value, timestamp: current-timestamp, promise: resolved-promise }`
-
-**catalog**
-
-`catalog: S ~> List[P]`
-
-use
-
-`cacheCatalog(catalog, cache, strategy, pcache, ptoa)`
-
-where
-
-```
-ptoa: (p: P, s: S, i: Integer) -> A
+// alternatively you can call `run` on your query and it will return a TaskEither<Error, User>
+// you can then use it imperatively
+const task: TaskEither<Error, User> = userQuery.run(1);
+const result: Either<Error, User> = await task.run();
 ```
 
-under the hood:
+although the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes.
 
-things we need to know/remember before proceeding:
-- A catalog returns Promise[List[P]] starting from a single input S.
-- `pcache` ("cache of P") is the cache of P entities which may benefits of the new information returned from `catalog`
-- `ptoa` (that you should read "P to A") is a function that transforms P in a valid A that, if passed to `atok`, would generate a "key" taht can be used to upsert P in `pcache`.
+Either way, whenever you ask for a query result you will end up with an object with the [**`QueryResult`**](#QueryResult) signature that conveniently lets you `fold` to decide the best way to handle the result. The `fold` method takes three functions as parameters: the first is used to handle a `Loading` result; the second is used in case a `Failure` occurs; the last one handles `Success` values.
 
-`cacheCatalog` calls `catalog` to return a fresh value only if the value is not present in `cache` or `strategy` returns `false` (value is expired).
+## composing queries
 
-Whenever `catalog` is called:
-- `CacheValue` in `cache` is replaced with a new one with `done: undefined` and `blocked: on-going-promise`
+You can build bigger queries from smaller ones in two ways:
 
-Whenever `catalog` completes:
-- `CacheValue` in `cache` is replaced with a new one with `blocked: undefined` and `done: { value: final-value, timestamp: current-timestamp, promise: resolved-promise }`
-- every single P of the returned List[P] is used to upsert a fresh CacheValue in `pcache`. This is possible thanks to `ptoa` which, together with the `atok` stored inside `pcache`, generates the correct key that will be used upsert the new value in `pcache`
-  - ex
-    - catalog: `searchUsersByName` (returns List[User])
-    - single fetch associated to `pcache`: function `getUserById` defined as `userId ~> User`
-    - pcache: cache for User. It stores a function `atok` defined as `userId => userId`
-    - ptoa: function defined as `user => user.id`
-    - whenever catalog completes we can store the returned users in `pcache` so a future `getUserById` may return a cached value
+- by composing them with [**`compose`**](#compose): when you need your queries to be sequentially run with the results of one feeding the other, you can use `compose`.
+- by grouping them with [**`product`**](#product): when you don't need to run the queries sequentially but would like to conveniently group them and treat them as if they were one you can use `product`\*.
 
+\*Internally `product` uses the `Applicative` nature of `QueryResults` to group them using the following hierarchical logic:
 
-**star**
+1. If any of the queries returned a `Failure` then the whole composition is a `Failure`.
+2. If any of the queries is `Loading` then the whole composition is `Loading`.
+3. If all the queries ended with a `Success` then the composition is a `Success` with a record of results that mirrors the key/value result of the single queries as value.
 
-`star: List[A] ~> List[P]`
+Here are a couple of simple examples on how to use them:
 
-use
+```ts
+/* N.B. each value defined is explicitly annotated for clarity, although the annotations are not strictly required */
 
-`cacheStar(star, strategy, cache, pcache)`
+import { compose } from 'avenger/lib/Query';
 
-under the hood:
+type UserPreferences = { color: string };
 
-As it happens in `cacheCatalog` `pcache` is the cache the stores the P entities returned by a fetch `A ~> P`.
+// note that the two ends of the composed functions must have compatible types
+declare function getUser(userId: number): TaskEither<Error, User>;
+declare function getUserPreferences(
+  user: User
+): TaskEither<Error, UserPreferences>;
 
-`cacheStar` calls `star` to return a value only if the value is not present in `cache` or `strategy` returns `false` (value is expired).
+const userQuery: CachedQuery<number, Error, User> = queryStrict(
+  getUser,
+  refetch
+);
 
-Whenever `star` is called:
-- calls `cacheFetch` for every single A (see `cacheFetch` definition to understand what happens next)
+const preferencesQuery: CachedQuery<
+  User,
+  Error,
+  UserPreferences
+> = queryShallow(getUserPreferences, refetch);
 
-Whenever `catalog` completes:
-- `CacheValue` in `cache` is replaced with a new one with `blocked: undefined` and `done: { value: final-value, timestamp: current-timestamp, promise: resolved-promise }`
+// this is a query composition
+const composition: Composition<number, Error, UserPreferences> = compose(
+  userQuery,
+  preferencesQuery
+);
 
-The cache owns an additional method `removeBySingleton(a: A)` which is useful to invalidate every `CacheValue` originated by a List[A] that contains A.
-
-**fstar**
-
-`f*: List[A] ~> List[P]`
-
-use
-
-```
-cacheStar(star(f), strategy, cache, pcache)
-// or
-f = cacheFetch(f, strategy, pcache)
-cacheFetch(star(f), strategy, cache))
+// this is a query product
+const group: Product<number, Error, UserPreferences> = product({
+  myQuery,
+  myQuery2
+});
 ```
 
-**product**
+# commands
 
-`p: (A1, ..., An) ~> (P1, ..., Pn)`
+Up to now we only described how to fetch data. When you need to update or insert data remotely you can make use of [**`command`**](#command):
 
-use
+```ts
+declare function updateUserPreferences({
+  color: string
+}): TaskEither<Error, void>;
 
-```
-product(
-  cacheFetch(f1, strategy1, cache1),
-  ...
-  cacheFetch(fn, strategyn, cachen)
-)
-```
-
-**composition**
-
-```
-master: A2 ~> P2
-slave: A1 ~> P1
-ptoa: (P2, A2) -> A1
-
-c: A2 ~> P1
+const updatePreferencesCommand = command(updateUserPreferences, {
+  preferencesQuery
+});
 ```
 
-use
+`command` accepts a `Fetch` function that will be used to modify the remote data source and, as a second optional parameter, a record of `query`es that will be invalidated once the `command` is successfully run:
 
-```
-compose(
-  cacheFetch(master, strategy1, cache1),
-  ptoa,
-  cacheFetch(slave, strategy2, cache2)
-)
+```ts
+/* when you call the command you can specify the input value corresponding
+to the Cache key that should be invalidated as a second parameter */
+updatePreferencesCommand({ color: 'acquamarine' }, { preferencesQuery: 1 });
 ```
 
-# Graph
+# React
 
-## query
+Avenger also exports some utilities to use with `React`.
 
-signature: `query(queryNodes: Dict[string,Query], flatParams: Dict[string,any]): Observable<>`
+## declareQueries
 
-`query` accepts the nodes to query and the `flatParams`s to use as arguments:
+`declareQueries` is a `HOC` (Higher-Order Component) builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
 
-- `queryNodes` is a dictionary of query nodes
+```tsx
+import { declareQueries } from 'avenger/lib/react';
+import { userPreferences } from './queries';
 
-- `flatParams` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible params any fetch we are requesting could need to run
+const queries = declareQueries({ userPreferences });
 
-## invalidate
+class MyComponent extends React.PureComponent<Props, State> {
+  render() {
+    return this.props.queries.fold(
+      () => <p>loading</p>,
+      () => <p>there was a problem when fetching preferences</p>,
+      ({ userPreferences }) => <p>my favourite color is {userPreferences.color}</p>
+    )
+  }
+}
 
-signature: `invalidate(invalidateQueryNodes: Dict[string,Query], flatParams: Dict[string,any])`
-
-`invalidate` accepts all the nodes that should be invalidated, for the given `flatParams`:
-
-
-- `invalidateQueryNodes` is a dictionary of query nodes
-
-- `flatParams` is an object in the form `{ a1: v1, ... }`, and it should contain all the possible params any fetch we are invalidating could need to run
-
-Given a node to be invalidate, given as a property `{ [P]: Query }` in `invalidateQueryNodes` above, we define the terms:
-
-  - *dependencies* of `P`: every other (if any) nodes for which a value is needed before evaluating `P`. `P` has a dependency on `n >= 0` other nodes
-  - *dependents* of `P`:
-  - if `P` has no dependencies, we can refer to it as a "root" node
-  - if `P` has no dependents, we can refer to it as a "leaf" node
-
-When invoking `invalidate`, we should provide explicitly everything that needs to be force-refetched. There's no automatic deletion of dependencies when invalidating a node, while there's automatic invalidation of all dependents:
-
-  - invalidation of all dependents is automatic (recursively, all the dependents of any invalidated node are invalidated as well)
-
-  - refetch of some dependencies may be transparent/automatic (if needed given the cache policies)
-
-To explain this better, let's be more precise about what "invalidating" means
-
-We can identify 2 phases:
-
-### invalidate
-
-which caches (cached fetches), e.g. upon executing a certain "command", should be invalidated?
-
-**It's explicit**: the invalidate phase, starting from a potentially (half) filled cache, should invalidate (aka delete) specific cached values that we know could now be obsolete. This overrides any caching policy, it just *deletes*.
-
-It is recursive: invalidating a node, all cached values (matching current input `A`) of *dependents* of that node are considered obsolete and thus deleted.
-
-### refetch
-
-Which fetches should be re-run (`fetch()`ed) after the invalidation phase?
-
-**It's implicit**: the system knows exactly which are the `fetch` functions we want to re-run at any point in time, given it knows if someone is observing each cached fetch or not. Only observed fetches are re-`fetch()`ed; non-currently-observed ones will be `fetch()`ed when someone asks for them.
-
-To clarify these two phases and the `invalidate` api, here's an example:
-
-### Example
-
-Assume our set of queries is composed of three nodes: `A`, `B` and `C`.
-
-The graph is arranged in this way in terms of dependencies:
-
-```
-    A
-   / \
-  B   C
+export queries(MyComponent)
 ```
 
-In other words:
+When using this component from outside you will have to pass it the correct query parameters inside the `queries` prop in order for it to load the declared queries:
 
-- `A` is a *root* node, it has no dependencies (except of course for the input `Aa`)
-- `B` has one dependency (`A`) plus some input `Ab`, but no dependents, and thus is a "leaf" node
-- `C` has one dependency (`B`) plus some input `Ac`, but no dependents, and thus is a "leaf" node
+```ts
+class MyOtherComponent extends React.PureComponent<Props, State> {
+  render() {
+    return (
+      <MyComponent
+        queries={{
+          userPreferences: { userName: 'Mario' }
+        }}
+      />
+    );
+  }
+}
+```
 
-To simplify things, let's assume every node holds a fetch cached as `refetch` (that is: multiple semi-concurrent requests will reuse a single async request, but requesting the fetch again later on will cause a new refetch).
+## WithQuery
 
-We'll describe what happens in terms of calls to `query` and `invalidate`.
+alternatively, to avoid unecessary boilerplate, you can use the `WithQuery` component:
 
-We'll also assume that every fetch is performing an async authenticated request to a web server, and thus it needs a `token`.
-`B` and `C` also need something more (they have a dependency on `A` after all): we can imagine this to be whatever, for example:
+```tsx
+import { WithQuery } from 'avenger/lib/react';
+import { userPreferences } from './queries';
 
-- `A` fetches the current authenticated user given a `token`
-- `B` fetches current user's "posts". In order to work it needs a `token` and the `id` of the current user, obtained by `A`.
-- `C` fetches current user's "friends". In order to work it needs a `token` and the `id` of the current user, obtained by `A`.
+class MyComponent extends React.PureComponent<Props, State> {
+  render() {
+    return (
+      <WithQuery
+        query={userPreferences}
+        input={{ userName: 'Mario' }}
+        render={userPreferences =>
+          userPreferences.fold(
+            () => <p>loading</p>,
+            () => <p>there was a problem when fetching preferences</p>,
+            userPreferences => (
+              <p>my favourite color is {userPreferences.color}</p>
+            )
+          )
+        }
+      />
+    );
+  }
+}
+```
 
-Our story goes as follows:
+# Navigation
 
-1. `subscription1 = query({ A, B }, { token: 'foo' })`
+Another useful set of utilities is the one used to handle client navigation in the browser. Following you can find a simple but exhaustive example of how it is used:
 
-  - `A` and `B` are run, respecting the `B -> A` dependency, and the `subscription1` observer is notified accordingly
+```ts
+import { getCurrentView, getDoUpdateCurrentView } from "avenger/lib/browser";
 
-2. `invalidate({ A }, { token: 'foo' })`
+export type CurrentView =
+  | { view: 'itemView'; itemId: String }
+  | { view: 'items' };
+  | { view: 'home' };
 
-  - "invalidate" phase: `A` and all its dependents (`B`, `C`) are invalidated. Since `C` was never fetched (and thus never fetched for `token='foo'`), there's nothing to delete there. `A(token='foo')` and its dependent `B` have been fetched instead, so both `A` and `B` instances for `token='foo'` are removed from cache.
+const itemViewRegex = /^\/items\/([^\/]+)$/;
+const itemsRegex = /^\/items$/;
 
-  - "refetch" phase: `A` and all its dependents are evaluated as "refetchable" candidates. `B` is thus fetched, but since `C` has no observers, its `fetch` is not run. Since `A` and `B` both have `strategy=refetch`, they will both run "for real".
+export function locationToView(location: HistoryLocation): CurrentView {
+  const itemViewMatch = location.pathname.match(itemViewRegex);
+  const itemsMatch = location.pathname.match(itemsRegex);
 
-3. `subscription2 = query({ C }, { token: 'foo' })`
+  if (itemViewMatch) {
+    return { view: 'itemView'; itemId: itemViewMatch[1] };
+  } else if (itemsMatch) {
+    return { view: 'items' };
+  } else {
+    return { view: 'home' };
+  }
+}
 
-  - `C` is run, and the `subscription2` observer is notified accordingly
+export function viewToLocation(view: CurrentView): HistoryLocation {
+  switch (view.view) {
+    case 'itemView':
+      return { pathname: `/items/${view.itemId}`, search: {} };
+    case 'items':
+      return { pathname: '/items', search: {} };
+    case 'home':
+      return { pathname: '/home', search: {} };
+  }
+}
 
-  - since every node has `strategy=refetch`, and `C` needs `A` to complete, `A` is re-fetched as well, and the `subscription1` listener notified accordingly
+const currentView: ObservableQuery = getCurrentView(locationToView);
+export const doUpdateCurrentView: Command = getDoUpdateCurrentView(viewToLocation);
+```
 
-4. `invalidate({ A }, { token: 'foo' })`
+once you instantiated all the boilerplate needed to instruct Avenger on how to navigate, you can use `currentView` and `doUpdateCurrentView` like they were normal queries and commands (and, in fact, they are..).
 
-  - "invalidate" phase: `A` and all its dependents (`B`, `C`) are invalidated. `A(token='foo')` and all its dependents (`B` and `C`) have been fetched this time, so all three instances for `token='foo'` are deleted from cache.
+```tsx
+// ./App.ts
 
-  - "refetch" phase: `A` and all its dependents are evaluated as "refetchable" candidates. `A`, `B` and `C` are fetched since they are all observed.
+import { declareQueries } from 'avenger/lib/react';
+
+const queries = declareQueries({ currentView });
+
+// usually at the top level of your app there will be a sort of index of your navigation
+class Navigation extends React.PureComponent<Props, State> {
+  render() {
+    return this.props.queries.fold(
+      () => <p>loading</p>,
+      () => null,
+      ({ currentView }) => {
+        switch(currentView.view) {
+          case 'itemView':
+            return <ItemView id={view.itemId} />
+          case 'items':
+            return <Items />
+          case 'home':
+            return <Home />
+        }
+      }
+    )
+  }
+}
+
+export queries(MyComponent)
+```
+
+```tsx
+// ./Components/ItemView.ts
+
+class ItemView extends React.PureComponent<Props, State> {
+  goToItems: () => doUpdateCurrentView({ view: 'items' }).run()
+
+  render() {
+    return <BackButton onClick={this.goToItems}>
+  }
+}
+```
+
+## Signatures
+
+> N.B. all the following signatures reference the abstractions in [`fp-ts`](https://github.com/gcanti/fp-ts)
+
+### `query`
+
+```ts
+declare function query<A = void, L = unknown, P = unknown>(
+  fetch: Fetch<A, L, P>
+): (strategy: Strategy<A, L, P>) => CachedQuery<A, L, P>;
+```
+
+### `Fetch`
+
+```ts
+type Fetch<A, L, P> = (input: A) => TaskEither<L, P>;
+```
+
+### `StrategyBuilder`
+
+```ts
+type StrategyBuilder<A, L, P> = (
+  inputSetoid: Setoid<A>,
+  cacheValueSetoid: Setoid<CacheValue<L, P>>
+) => Strategy<A, L, P>;
+```
+
+### `Strategy`
+
+```ts
+export class Strategy<A, L, P> {
+  constructor(
+    readonly inputSetoid: Setoid<A>,
+    readonly filter: Function1<CacheValue<L, P>, boolean>,
+    readonly cacheValueSetoid: Setoid<CacheValue<L, P>>
+  ) {}
+}
+```
+
+### `CachedQuery`
+
+```ts
+interface CachedQuery<A, L, P> {
+  type: 'cached';
+  inputSetoid: Setoid<A>;
+  run: Fetch<A, L, P>;
+  invalidate: Fetch<A, L, P>;
+  cache: Cache<A, L, P>;
+}
+```
+
+### `Composition`
+
+```ts
+interface Composition<A, L, P> {
+  type: 'composition';
+  inputSetoid: Setoid<A>;
+  run: Fetch<A, L, P>;
+  invalidate: Fetch<A, L, P>;
+  master: ObservableQuery<A, L, unknown>;
+  slave: ObservableQuery<unknown, L, P>;
+}
+```
+
+### `Product`
+
+```ts
+interface Product<A, L, P> {
+  type: 'product';
+  inputSetoid: Setoid<A>;
+  run: Fetch<A, L, P>;
+  invalidate: Fetch<A, L, P>;
+  queries: Record<string, ObservableQuery<A[keyof A], L, P[keyof P]>>;
+}
+```
+
+### `ObservableQuery`
+
+```ts
+type ObservableQuery<A, L, P> =
+  | CachedQuery<A, L, P>
+  | Composition<A, L, P>
+  | Product<A, L, P>;
+```
+
+### `QueryResult`
+
+```ts
+// instance of Bifunctor2<URI> & Monad2<URI>
+type QueryResult<L, A> = Loading<L, A> | Failure<L, A> | Success<L, A>;
+```
+
+### `compose`
+
+```ts
+function compose<A1, L1, P1, L2, P2>(
+  master: ObservableQuery<A1, L1, P1>,
+  slave: ObservableQuery<P1, L2, P2>
+): Composition<A1, L1 | L2, P2>;
+```
+
+### `product`
+
+```ts
+function product<R extends ObservableQueries>(
+  queries: EnforceNonEmptyRecord<R>
+): Product<ProductA<R>, ProductL<R>, ProductP<R>>;
+```
+
+### `command`
+
+```ts
+function command<A, L, P, I extends ObservableQueries, IL extends ProductL<I>>(
+  cmd: Fetch<A, L, P>,
+  queries?: EnforceNonEmptyRecord<I>
+): (a: A, ia?: ProductA<I>) => TaskEither<L | IL, P>;
+```

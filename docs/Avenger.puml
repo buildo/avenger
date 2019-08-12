@@ -1,0 +1,43 @@
+@startuml "Avenger"
+skinparam linetype ortho
+
+database "Avenger" {
+[Data A proxy]
+[Data B proxy]
+[Data C proxy]
+}
+database "PostgreSQL" {
+[Data A]
+[Data B]
+[Data A proxy] --> [Data A]
+[Data A] --> [Data A proxy]
+[Data B proxy] --> [Data B]
+[Data B] --> [Data B proxy]
+}
+
+database "LocalStorage" {
+[Data C]
+[Data C proxy] --> [Data C]
+[Data C] --> [Data C proxy]
+}
+
+(UI Component) as (UC1)
+(UI Component) as (UC2)
+(UI Component) as (UC3)
+(UI Component) as (UC4)
+(UI Component) as (UC5)
+
+' some components use the data
+(UC1) --> [Data A proxy]
+(UC2) --> [Data A proxy]
+(UC3) --> [Data A proxy]
+(UC4) --> [Data A proxy]
+(UC5) --> [Data A proxy]
+
+(UC3) --> [Data B proxy]
+(UC4) --> [Data B proxy]
+(UC5) --> [Data B proxy]
+
+(UC5) --> [Data C proxy]
+
+@enduml
