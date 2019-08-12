@@ -87,6 +87,23 @@ describe('browser/location', () => {
     unblock();
   });
 
+  it('should push to history when running command with different input', async () => {
+    await doUpdateLocation({
+      pathname: '/foo',
+      search: { foo: 'bar' }
+    }).run();
+    const fn = jest.fn();
+    observeStrict(location, undefined).subscribe(fn);
+    await new Promise(r => setTimeout(r));
+    expect(fn.mock.calls.length).toBe(2);
+    await doUpdateLocation({
+      pathname: '/foo2',
+      search: { foo: 'bar2' }
+    }).run();
+    await new Promise(r => setTimeout(r));
+    expect(fn.mock.calls.length).toBe(4);
+  });
+
   it('should not push to history when running command with the same input', async () => {
     await doUpdateLocation({
       pathname: '/foo',
