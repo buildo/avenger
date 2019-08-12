@@ -129,7 +129,14 @@ export const setoidShallow = fromEquals(shallowEqual);
 
 export type JSONObject = { [key: string]: JSON };
 export interface JSONArray extends Array<JSON> {}
-export type JSON = null | string | number | boolean | JSONArray | JSONObject;
+export type JSON =
+  | null
+  | undefined
+  | string
+  | number
+  | boolean
+  | JSONArray
+  | JSONObject;
 
 export function JSONEqual<A extends JSON>(a: A, b: A): boolean {
   return JSON.stringify(a) === JSON.stringify(b);

@@ -47,12 +47,12 @@ export const location = query(
   }
 )(
   refetch<void, void, HistoryLocation>(
-    setoidStrict as any,
+    setoidStrict,
     getSetoid<void, HistoryLocation>(
-      setoidStrict as any,
+      setoidStrict,
       getStructSetoid<HistoryLocation>({
         pathname: setoidString,
-        search: setoidJSON as any
+        search: setoidJSON
       })
     )
   )
@@ -102,8 +102,8 @@ export const pendingUpdateLocation = query(() =>
   taskEither.of<void, boolean>(!!_historyBlockCallback)
 )(
   refetch<void, void, boolean>(
-    setoidStrict as any,
-    getSetoid<void, boolean>(setoidStrict as any, setoidBoolean)
+    setoidStrict,
+    getSetoid<void, boolean>(setoidStrict, setoidBoolean)
   )
 );
 
