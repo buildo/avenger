@@ -6,6 +6,7 @@ import {
 } from '../src/browser/location';
 import { right } from 'fp-ts/lib/Either';
 import { observeStrict } from '../src/observe';
+import { delay } from 'fp-ts/lib/Task';
 
 describe('browser/location', () => {
   it('query/command should parse/stringify the `search` query', async () => {
@@ -94,13 +95,13 @@ describe('browser/location', () => {
     }).run();
     const fn = jest.fn();
     observeStrict(location, undefined).subscribe(fn);
-    await new Promise(r => setTimeout(r));
+    await delay(0, void 0).run();
     expect(fn.mock.calls.length).toBe(2);
     await doUpdateLocation({
       pathname: '/foo2',
       search: { foo: 'bar2' }
     }).run();
-    await new Promise(r => setTimeout(r));
+    await delay(0, void 0).run();
     expect(fn.mock.calls.length).toBe(4);
   });
 
@@ -111,13 +112,13 @@ describe('browser/location', () => {
     }).run();
     const fn = jest.fn();
     observeStrict(location, undefined).subscribe(fn);
-    await new Promise(r => setTimeout(r));
+    await delay(0, void 0).run();
     expect(fn.mock.calls.length).toBe(2);
     await doUpdateLocation({
       pathname: '/foo',
       search: { foo: 'bar' }
     }).run();
-    await new Promise(r => setTimeout(r));
+    await delay(0, void 0).run();
     expect(fn.mock.calls.length).toBe(2);
   });
 
