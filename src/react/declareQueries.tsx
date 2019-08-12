@@ -21,7 +21,7 @@ type QueryOutputProps<L, P> = { queries: QueryResult<L, P> };
 
 type InputProps<Props, A> = Omit<Props, 'queries'> & QueryInputProps<A>;
 
-interface DeclareQueriesReturn<A, L, P> {
+export interface DeclareQueriesReturn<A, L, P> {
   <Props extends QueryOutputProps<L, P>>(
     component: React.ComponentType<Props>
   ): React.ComponentType<InputProps<Props, A>>;

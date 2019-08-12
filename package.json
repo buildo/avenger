@@ -17,14 +17,12 @@
   "dependencies": {
     "fp-ts": "^1.19.4",
     "history": "^4.9.0",
-    "lodash.trim": "^4.5.1",
     "qs": "^6.7.0",
     "rxjs": "^6.5.2"
   },
   "devDependencies": {
     "@types/history": "^4.7.2",
     "@types/jest": "^24.0.13",
-    "@types/lodash.trim": "^4.5.6",
     "@types/qs": "^6.5.3",
     "@types/react": "^16.8.19",
     "@types/react-dom": "^16.8.4",
