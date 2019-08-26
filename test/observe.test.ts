@@ -9,7 +9,7 @@ import {
 import { available, setoidStrict, setoidShallow } from '../src/Strategy';
 import { getSetoid as getCacheValueSetoid, getSetoid } from '../src/CacheValue';
 import { getSetoid as getQueryResultSetoid } from '../src/QueryResult';
-import { query, compose, product } from '../src/Query';
+import { query, compose, product, alternative } from '../src/Query';
 import { observe } from '../src/observe';
 import { invalidate } from '../src/invalidate';
 
@@ -668,5 +668,30 @@ describe('observe', () => {
     expect(masterMock.mock.calls.length).toBe(1);
     expect(eventDispatchMock.mock.calls.length).toBe(4);
     expect(slaveMock.mock.calls.length).toBe(2);
+  });
+
+  it('alternative', async () => {
+    const f1 = query((_: string) => fromLeft<unknown, number>('nope'))(
+      available(setoidString, getCacheValueSetoid(setoidStrict, setoidNumber))
+    );
+    const f2 = query((s: string) => taskEither.of(s.length * 2))(
+      available(setoidString, getCacheValueSetoid(setoidStrict, setoidNumber))
+    );
+    const a = alternative(f1, f2);
+    requestAnimationFrame(() => a.run('foo').run());
+    const results = await observe(
+      a,
+      'foo',
+      getQueryResultSetoid(setoidStrict, setoidShallow)
+    )
+      .pipe(
+        take(2),
+        toArray()
+      )
+      .toPromise();
+    expect(results).toEqual([
+      { type: 'Loading' },
+      { type: 'Success', value: 6, loading: false }
+    ]);
   });
 });

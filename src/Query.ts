@@ -64,12 +64,24 @@ export interface Product<A, L, P> extends BaseQuery<A, L, P> {
 }
 
 /**
+ * Represents a query that aggregates the results of 2 `queries` by giving precedence
+ * to the first (`main`) or falling back to the second (`alt`) in case of error on `main`.
+ * The `main` `inputSetoid` will be used.
+ */
+export interface Alternative<A, L, P> extends BaseQuery<A, L, P> {
+  type: 'alternative';
+  main: ObservableQuery<A, L, P>;
+  alt: ObservableQuery<A, L, P>;
+}
+
+/**
  * A query that can be `observe`d
  */
 export type ObservableQuery<A, L, P> =
   | CachedQuery<A, L, P>
   | Composition<A, L, P>
-  | Product<A, L, P>;
+  | Product<A, L, P>
+  | Alternative<A, L, P>;
 
 /**
  * Constructs a `CachedQuery` given a `Fetch` function and a cache `Strategy`
@@ -190,6 +202,25 @@ export function product<R extends ObservableQueries>(
     queries,
     run: run as any,
     invalidate: invalidate as any
+  };
+}
+
+/**
+ * Constructs an `Alternative`
+ * @param queries A record of `Fetch` functions
+ */
+export function alternative<A, L, P>(
+  main: ObservableQuery<A, L, P>,
+  alt: ObservableQuery<A, L, P>
+): Alternative<A, L, P> {
+  return {
+    type: 'alternative',
+    ...queryPhantoms<A, L, P>(),
+    inputSetoid: main.inputSetoid,
+    main,
+    alt,
+    run: (a: A) => main.run(a).orElse(() => alt.run(a)),
+    invalidate: (a: A) => main.invalidate(a).orElse(() => alt.invalidate(a))
   };
 }
 

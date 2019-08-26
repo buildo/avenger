@@ -9,7 +9,7 @@ import {
 } from './QueryResult';
 import { Observable } from 'rxjs/internal/Observable';
 import { observable } from './Observable';
-import { distinctUntilChanged, map } from 'rxjs/operators';
+import { distinctUntilChanged, map, filter } from 'rxjs/operators';
 import { ObservableQuery } from './Query';
 import { sequence, mapWithKey } from 'fp-ts/lib/Record';
 import { Setoid } from 'fp-ts/lib/Setoid';
@@ -49,6 +49,11 @@ function _observe<A, L, P>(
           _observe(query, ((input || {}) as any)[k])
         )
       ).pipe(map(sequenceRecordQueryResult)) as any;
+    case 'alternative':
+      return observable.alt(
+        _observe(query.main, input).pipe(filter(v => v.type !== 'Failure')),
+        _observe(query.alt, input)
+      );
     case 'cached':
       return query.cache.observe(input).pipe(map(cacheValueToQueryResult));
   }
