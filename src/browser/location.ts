@@ -25,7 +25,7 @@ export const requestConfirmationToUpdateLocation = (): (() => void) =>
 const history = createBrowserHistory({
   getUserConfirmation(_, callback) {
     _historyBlockCallback = callback;
-    invalidate({ pendingUpdateLocation });
+    invalidate({ pendingUpdateLocation }).run();
   }
 });
 
