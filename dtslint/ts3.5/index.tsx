@@ -21,6 +21,7 @@ declare const as: Strategy<string, string, number>;
 const a = query(af)(as); // $ExpectType CachedQuery<string, string, number>
 
 declare const bf: () => TaskEither<string, number>;
+// tslint:disable-next-line:invalid-void
 declare const bs: Strategy<void, string, number>;
 const b = query(bf)(bs); // $ExpectType CachedQuery<void, string, number>
 
@@ -63,6 +64,7 @@ interface Loc {
   pathname: string;
   search: Record<string, string>;
 }
+// tslint:disable-next-line:invalid-void
 declare const location: ObservableQuery<void, void, Loc>;
 interface View {
   view: string;
@@ -73,6 +75,7 @@ declare function locationToView(location: Loc): View;
 const currentView = compose(
   location,
   queryStrict(
+    // tslint:disable-next-line:invalid-void
     location => taskEither.of<void, View>(locationToView(location)),
     refetch
   )
@@ -91,6 +94,7 @@ observeShallow(productab, { a: 'foo' });
 // $ExpectError
 observeShallow(productab, { b: 1, a: 'foo' });
 
+// tslint:disable-next-line:invalid-void
 declare function getToken(): TaskEither<void, string>;
 interface Post {
   id: number;
@@ -199,21 +203,27 @@ cmdb(1);
 
 // tslint:disable-next-line:interface-over-type-literal
 type RA = {
+  // tslint:disable-next-line:invalid-void
   a: ObservableQuery<string, void, number>;
+  // tslint:disable-next-line:invalid-void
   b: ObservableQuery<void, void, number>;
 };
 type PA = ProductA<RA>; // $ExpectType Pick<{ b?: undefined; } & { a: string; }, "a" | "b">
 
 // tslint:disable-next-line:interface-over-type-literal
 type RB = {
+  // tslint:disable-next-line:invalid-void
   a: ObservableQuery<void, void, number>;
+  // tslint:disable-next-line:invalid-void
   b: ObservableQuery<void, void, number>;
 };
 type PB = ProductA<RB>; // $ExpectType void
 
 // tslint:disable-next-line:interface-over-type-literal
 type RC = {
+  // tslint:disable-next-line:invalid-void
   a: ObservableQuery<string, void, number>;
+  // tslint:disable-next-line:invalid-void
   b: ObservableQuery<number, void, number>;
 };
 type PC = ProductA<RC>; // $ExpectType Pick<{} & { a: string; b: number; }, "a" | "b">
