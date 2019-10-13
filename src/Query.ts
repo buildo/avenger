@@ -202,8 +202,17 @@ export function map<U, L, A, B>(
   fa: ObservableQuery<U, L, A>,
   f: (a: A) => B
 ): ObservableQuery<U, L, B> {
-  return compose(
-    fa,
-    queryStrict(a => taskEither.of<L, B>(f(a)), available)
-  );
+  return queryStrict(a => fa.run(a).map(f), available);
+}
+
+/**
+ * Apply a transformation to the result of a failing `ObservableQuery`
+ * @param fa An `ObservableQuery`
+ * @param f The function transforming the failure result
+ */
+export function mapLeft<U, L, A, B>(
+  fa: ObservableQuery<U, L, A>,
+  f: (a: L) => B
+): ObservableQuery<U, B, A> {
+  return queryStrict(a => fa.run(a).mapLeft(f), available);
 }
