@@ -236,7 +236,7 @@ declare const q3: ObservableQuery<void, string, string>;
   queries={{ q1, q2 }}
   params={{ q: { a: 'ciao' }, q2: { b: 2 } }} // $ExpectError
   render={q => {
-    return q.queries.fold(
+    return q.fold(
       () => null,
       () => null,
       ({ q1, q2 }) => <span>{`${q1}: ${q2}`}</span>
@@ -248,7 +248,7 @@ declare const q3: ObservableQuery<void, string, string>;
   queries={{ q1, q2 }}
   params={{ q1: { a: 2 }, q2: { b: 2 } }} // $ExpectError
   render={q => {
-    return q.queries.fold(
+    return q.fold(
       () => null,
       () => null,
       ({ q1, q2 }) => <span>{`${q1}: ${q2}`}</span>
@@ -260,7 +260,7 @@ declare const q3: ObservableQuery<void, string, string>;
   queries={{ q2 }}
   params={{ q2: { b: 2 } }}
   render={q => {
-    return q.queries.fold(() => null, () => null, ({ q }) => <span>{q}</span>); // $ExpectError
+    return q.fold(() => null, () => null, ({ q }) => <span>{q}</span>); // $ExpectError
   }}
 />;
 
@@ -268,18 +268,14 @@ declare const q3: ObservableQuery<void, string, string>;
   queries={{ q3 }}
   params={{ q3: undefined }}
   render={q => {
-    return q.queries.fold(
-      () => null,
-      () => null,
-      ({ q3 }) => <span>{q3}</span>
-    );
+    return q.fold(() => null, () => null, ({ q3 }) => <span>{q3}</span>);
   }}
 />;
 
 <WithQueries
   queries={{ q3, q4: q3 }}
   render={q => {
-    return q.queries.fold(
+    return q.fold(
       () => null,
       () => null,
       ({ q3, q4 }) => <span>{`${q3}-${q4}`}</span>
