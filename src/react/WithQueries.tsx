@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Function1 } from 'fp-ts/lib/function';
 import { declareQueries } from './declareQueries';
 import { QueryResult } from '../QueryResult';
 import {
@@ -9,8 +10,6 @@ import {
   ProductA
 } from '../util';
 
-type QueryOutputProps<L, P> = { queries: QueryResult<L, P> };
-
 type Params<A> = A extends void
   ? {}
   : {
@@ -19,12 +18,15 @@ type Params<A> = A extends void
 
 type Props<R extends ObservableQueries> = {
   queries: EnforceNonEmptyRecord<R>;
-  render: React.ComponentType<QueryOutputProps<ProductL<R>, ProductP<R>>>;
+  render: Function1<QueryResult<ProductL<R>, ProductP<R>>, React.ReactNode>;
 } & Params<ProductA<R>>;
 
 export function WithQueries<P extends ObservableQueries>(props: Props<P>) {
   const WrappedComponent = React.useMemo(
-    () => declareQueries(props.queries)(props.render),
+    () =>
+      declareQueries(props.queries)(({ queries }) => (
+        <>{props.render(queries)}</>
+      )),
     [false]
   );
 
