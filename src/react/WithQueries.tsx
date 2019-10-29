@@ -27,7 +27,7 @@ export function WithQueries<P extends ObservableQueries>(props: Props<P>) {
       declareQueries(props.queries)(({ queries }) => (
         <>{props.render(queries)}</>
       )),
-    [false]
+    []
   );
 
   const params = (props as any).params
