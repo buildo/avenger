@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { shallowEqual, JSONEqual } from '../src/Strategy';
+import { shallowEqual, JSONEqual, JSONObject } from '../src/Strategy';
 
 describe('Strategy', () => {
   describe('shallowEqual', () => {
@@ -23,10 +23,13 @@ describe('Strategy', () => {
 
   describe('JSONEqual', () => {
     it('is reflexive and simmetric', () => {
-      const reflexivity = fc.property(fc.anything(), a => JSONEqual(a, a));
+      const reflexivity = fc.property(
+        fc.anything() as fc.Arbitrary<JSONObject>,
+        a => JSONEqual(a, a)
+      );
       const simmetry = fc.property(
-        fc.anything(),
-        fc.anything(),
+        fc.anything() as fc.Arbitrary<JSONObject>,
+        fc.anything() as fc.Arbitrary<JSONObject>,
         (a, b) => JSONEqual(a, b) === JSONEqual(b, a)
       );
 
