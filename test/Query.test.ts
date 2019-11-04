@@ -76,7 +76,14 @@ describe('queryJSON', () => {
   });
 });
 
-it('map', async () => {
+it('map - resolves to `f(a)`', async () => {
+  const a = queryStrict(() => taskEither.of('foo'), refetch);
+  const b = map(a, (s: string) => s.length);
+  const r = await b.run().run();
+  expect(r).toEqual(right(3));
+});
+
+it('map - invalidating `a` causes an invalidation of `f(a)`', async () => {
   const f1 = jest.fn(() => taskEither.of('foo'));
   const a = queryStrict(f1, refetch);
   const f2 = jest.fn((s: string) => s.length);
@@ -85,8 +92,7 @@ it('map', async () => {
   const observable = observe(b, undefined, resultSetoid);
   const observer = jest.fn();
   observable.subscribe(observer);
-  const r = await b.run().run();
-  expect(r).toEqual(right(3));
+  await delay(10, void 0).run();
   expect(f1.mock.calls.length).toBe(1);
   expect(f2.mock.calls.length).toBe(1);
   expect(observer.mock.calls.length).toBe(2); // pending + value
