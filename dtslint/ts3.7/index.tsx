@@ -264,9 +264,9 @@ declare const q3: ObservableQuery<void, string, string>;
   }}
 />;
 
-<WithQueries // $ExpectError
+<WithQueries
   queries={{ q3 }}
-  params={{ q3: undefined }}
+  params={{ q3: undefined }} // $ExpectError
   render={q => {
     return q.fold(() => null, () => null, ({ q3 }) => <span>{q3}</span>);
   }}
