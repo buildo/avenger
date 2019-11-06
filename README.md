@@ -293,6 +293,8 @@ class MyComponent extends React.PureComponent<Props, State> {
 }
 ```
 
+**NB** both `declareQueries` and `WithQueries` do not support dynamic queries definition (e.g. `declareQueries(someCondition ? { queryA } : { queryA, queryB }`).
+
 # Navigation
 
 Another useful set of utilities is the one used to handle client navigation in the browser. Following you can find a simple but exhaustive example of how it is used:
