@@ -10,7 +10,7 @@ import {
 import { Strategy, available, expire, refetch } from '../../src/Strategy';
 import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
-import { declareQueries } from '../../src/react';
+import { declareQueries, WithQueries } from '../../src/react';
 import * as React from 'react';
 import { QueryResult } from '../../src/QueryResult';
 import { invalidate } from '../../src/invalidate';
@@ -227,3 +227,58 @@ type RC = {
   b: ObservableQuery<number, void, number>;
 };
 type PC = ProductA<RC>; // $ExpectType Pick<{} & { a: string; b: number; }, "a" | "b">
+
+declare const q1: ObservableQuery<{ a: string }, string, string>;
+declare const q2: ObservableQuery<{ b: number }, string, string>;
+declare const q3: ObservableQuery<void, string, string>;
+
+<WithQueries
+  queries={{ q1, q2 }}
+  params={{ q: { a: 'ciao' }, q2: { b: 2 } }} // $ExpectError
+  render={q => {
+    return q.fold(
+      () => null,
+      () => null,
+      ({ q1, q2 }) => <span>{`${q1}: ${q2}`}</span>
+    );
+  }}
+/>;
+
+<WithQueries
+  queries={{ q1, q2 }}
+  params={{ q1: { a: 2 }, q2: { b: 2 } }} // $ExpectError
+  render={q => {
+    return q.fold(
+      () => null,
+      () => null,
+      ({ q1, q2 }) => <span>{`${q1}: ${q2}`}</span>
+    );
+  }}
+/>;
+
+<WithQueries
+  queries={{ q2 }}
+  params={{ q2: { b: 2 } }}
+  render={q => {
+    return q.fold(() => null, () => null, ({ q }) => <span>{q}</span>); // $ExpectError
+  }}
+/>;
+
+<WithQueries
+  queries={{ q3 }}
+  params={{ q3: undefined }} // $ExpectError
+  render={q => {
+    return q.fold(() => null, () => null, ({ q3 }) => <span>{q3}</span>);
+  }}
+/>;
+
+<WithQueries
+  queries={{ q3, q4: q3 }}
+  render={q => {
+    return q.fold(
+      () => null,
+      () => null,
+      ({ q3, q4 }) => <span>{`${q3}-${q4}`}</span>
+    );
+  }}
+/>;

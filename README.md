@@ -264,26 +264,26 @@ class MyOtherComponent extends React.PureComponent<Props, State> {
 }
 ```
 
-## WithQuery
+## WithQueries
 
-alternatively, to avoid unecessary boilerplate, you can use the `WithQuery` component:
+alternatively, to avoid unecessary boilerplate, you can use the `WithQueries` component:
 
 ```tsx
-import { WithQuery } from 'avenger/lib/react';
+import { WithQueries } from 'avenger/lib/react';
 import { userPreferences } from './queries';
 
 class MyComponent extends React.PureComponent<Props, State> {
   render() {
     return (
-      <WithQuery
-        query={userPreferences}
-        input={{ userName: 'Mario' }}
-        render={userPreferences =>
-          userPreferences.fold(
+      <WithQueries
+        queries={{ userPreferences }}
+        params={{ userPreferences: { userName: 'Mario' } }}
+        render={queries =>
+          queries.fold(
             () => <p>loading</p>,
             () => <p>there was a problem when fetching preferences</p>,
-            userPreferences => (
-              <p>my favourite color is {userPreferences.color}</p>
+            ({ userPreferences }) => (
+              <p>Mario's favourite color is {userPreferences.color}</p>
             )
           )
         }
@@ -292,6 +292,8 @@ class MyComponent extends React.PureComponent<Props, State> {
   }
 }
 ```
+
+**NB** both `declareQueries` and `WithQueries` do not support dynamic queries definition (e.g. `declareQueries(someCondition ? { queryA } : { queryA, queryB }`).
 
 # Navigation
 
