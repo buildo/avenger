@@ -21,6 +21,26 @@ type Props<R extends ObservableQueries> = {
   render: Function1<QueryResult<ProductL<R>, ProductP<R>>, React.ReactNode>;
 } & Params<ProductA<R>>;
 
+/**
+ * A React component to observe a record of `ObservableQueries`
+ *
+ * @param queries a record of `ObservableQueries`
+ * @param params a record of inputs for the queries
+ * @param render a function that accepts a product of QueryResult and returns a ReactNode
+ *
+ * @example
+ * return (
+ *   <WithQueries
+ *    queries={{ randomQuery }}
+ *    params={{ randomQuery: randomQueryParams }}
+ *    render={queries => queries.fold(
+ *      () => "load",
+ *      () => "failed",
+ *      ({ randomQuery: randomQueryResult }) => randomQueryResult
+ *    }
+ *  />
+ * )
+ */
 export function WithQueries<P extends ObservableQueries>(props: Props<P>) {
   const WrappedComponent = React.useMemo(
     () =>
