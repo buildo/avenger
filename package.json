@@ -1,6 +1,6 @@
 {
   "name": "avenger",
-  "version": "5.2.0",
+  "version": "5.2.1",
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "test": "jest",
