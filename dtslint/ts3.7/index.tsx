@@ -38,16 +38,10 @@ declare const es: Strategy<string, number, boolean>;
 const e = query(ef)(es); // $ExpectType CachedQuery<string, number, boolean>
 
 // $ExpectType Composition<string, string, boolean>
-const composeac = compose(
-  a,
-  c
-);
+const composeac = compose(a, c);
 
 // $ExpectType Composition<string, string | number, boolean>
-const composead = compose(
-  a,
-  d
-);
+const composead = compose(a, d);
 
 const composeae = compose(
   a,
@@ -55,10 +49,7 @@ const composeae = compose(
 );
 
 // $expectType Composition<never, string, boolean>
-const composebc = compose(
-  b,
-  c
-);
+const composebc = compose(b, c);
 
 interface Loc {
   pathname: string;
@@ -122,10 +113,7 @@ declare function _addTags(input: {
 const addTags = queryShallow(_addTags, expire(2000));
 // tslint:disable-next-line:max-line-length
 // $ExpectType Composition<Pick<{ token?: undefined; } & { postId: number; posts: Pick<{ token?: undefined; } & { limit: number; }, "token" | "limit">; }, "token" | "postId" | "posts">, void | "invalid token" | "not found", PostWithTags>
-const postWithTags = compose(
-  product({ token, postId, posts }),
-  addTags
-);
+const postWithTags = compose(product({ token, postId, posts }), addTags);
 
 const declareA = declareQueries({ a });
 declareA.InputProps; // $ExpectType { queries: Pick<{} & { a: string; }, "a">; }
@@ -260,7 +248,11 @@ declare const q3: ObservableQuery<void, string, string>;
   queries={{ q2 }}
   params={{ q2: { b: 2 } }}
   render={q => {
-    return q.fold(() => null, () => null, ({ q }) => <span>{q}</span>); // $ExpectError
+    return q.fold(
+      () => null,
+      () => null,
+      ({ q }) => <span>{q}</span> // $ExpectError
+    );
   }}
 />;
 
@@ -268,7 +260,11 @@ declare const q3: ObservableQuery<void, string, string>;
   queries={{ q3 }}
   params={{ q3: undefined }} // $ExpectError
   render={q => {
-    return q.fold(() => null, () => null, ({ q3 }) => <span>{q3}</span>);
+    return q.fold(
+      () => null,
+      () => null,
+      ({ q3 }) => <span>{q3}</span>
+    );
   }}
 />;
 

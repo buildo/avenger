@@ -42,10 +42,16 @@ type Props<R extends ObservableQueries> = {
  * )
  */
 export function WithQueries<P extends ObservableQueries>(props: Props<P>) {
+  const renderRef = React.useRef(props.render);
+
+  React.useEffect(() => {
+    renderRef.current = props.render;
+  }, [props.render]);
+
   const WrappedComponent = React.useMemo(
     () =>
       declareQueries(props.queries)(({ queries }) => (
-        <>{props.render(queries)}</>
+        <>{renderRef.current(queries)}</>
       )),
     []
   );

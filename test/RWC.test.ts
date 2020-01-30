@@ -57,10 +57,7 @@ it('RWC', async () => {
       ),
     expire(2000)
   );
-  const postWithTags = compose(
-    product({ token, postId, posts }),
-    addTags
-  );
+  const postWithTags = compose(product({ token, postId, posts }), addTags);
 
   requestAnimationFrame(() =>
     postWithTags
@@ -74,10 +71,7 @@ it('RWC', async () => {
     postId: 3,
     posts: { limit: 10 }
   })
-    .pipe(
-      take(2),
-      toArray()
-    )
+    .pipe(take(2), toArray())
     .toPromise();
   expect(results).toEqual([
     { type: 'Loading' },

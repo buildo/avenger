@@ -8,10 +8,7 @@ describe('memoryValue', () => {
     const { query, command } = memoryValue<Option<string>>(none);
     requestAnimationFrame(() => command(some('token')).run());
     const results = await observeStrict(query, undefined)
-      .pipe(
-        take(4),
-        toArray()
-      )
+      .pipe(take(4), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },

@@ -38,10 +38,7 @@ describe('observe', () => {
       1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -60,10 +57,7 @@ describe('observe', () => {
       1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results1).toEqual([
       { type: 'Loading' },
@@ -75,10 +69,7 @@ describe('observe', () => {
       1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(1),
-        toArray()
-      )
+      .pipe(take(1), toArray())
       .toPromise();
     expect(results2).toEqual([{ type: 'Success', value: 1, loading: false }]);
   });
@@ -94,10 +85,7 @@ describe('observe', () => {
       1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results1).toEqual([
       { type: 'Loading' },
@@ -108,10 +96,7 @@ describe('observe', () => {
       1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(1),
-        toArray()
-      )
+      .pipe(take(1), toArray())
       .toPromise();
     expect(results2).toEqual([{ type: 'Success', value: 1, loading: false }]);
   });
@@ -128,20 +113,14 @@ describe('observe', () => {
       1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     const o2 = observe(
       cachedA,
       1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     const [results1, results2] = await Promise.all([o1, o2]);
     expect(results1).toEqual(results2);
@@ -163,20 +142,14 @@ describe('observe', () => {
       input1,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     const o2 = observe(
       cachedA,
       input2,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     const [results1, results2] = await Promise.all([o1, o2]);
     expect(results1).toEqual(results2);
@@ -193,10 +166,7 @@ describe('observe', () => {
       'foo',
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -211,20 +181,14 @@ describe('observe', () => {
     const slave = query((n: number) => taskEither.of(n * 2))(
       available(setoidNumber, getCacheValueSetoid(setoidStrict, setoidNumber))
     );
-    const composition = compose(
-      master,
-      slave
-    );
+    const composition = compose(master, slave);
     requestAnimationFrame(() => composition.run('foo').run());
     const results = await observe(
       composition,
       'foo',
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -239,10 +203,7 @@ describe('observe', () => {
     const slave = query((n: number) => taskEither.of(n * 2))(
       available(setoidNumber, getCacheValueSetoid(setoidStrict, setoidNumber))
     );
-    const composition = compose(
-      master,
-      slave
-    );
+    const composition = compose(master, slave);
     requestAnimationFrame(() => {
       observe(
         composition,
@@ -256,10 +217,7 @@ describe('observe', () => {
       'foo',
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -274,20 +232,14 @@ describe('observe', () => {
     const slave = query((n: number) => taskEither.of(n * 2))(
       available(setoidNumber, getCacheValueSetoid(setoidStrict, setoidNumber))
     );
-    const composition = compose(
-      master,
-      slave
-    );
+    const composition = compose(master, slave);
     requestAnimationFrame(() => composition.run('foo').run());
     const results = await observe(
       slave,
       3,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -302,20 +254,14 @@ describe('observe', () => {
     const slave = query((n: number) => taskEither.of(n * 2))(
       available(setoidNumber, getCacheValueSetoid(setoidStrict, setoidNumber))
     );
-    const composition = compose(
-      master,
-      slave
-    );
+    const composition = compose(master, slave);
     requestAnimationFrame(() => master.run('foo').run());
     const results = await observe(
       composition,
       'foo',
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -330,20 +276,14 @@ describe('observe', () => {
     const slave = query((n: number) => taskEither.of(n * 2))(
       available(setoidNumber, getCacheValueSetoid(setoidStrict, setoidNumber))
     );
-    const composition = compose(
-      master,
-      slave
-    );
+    const composition = compose(master, slave);
     requestAnimationFrame(() => master.run('foo').run());
     const results = await observe(
       composition,
       'foo',
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -358,20 +298,14 @@ describe('observe', () => {
     const slave = query((_: number) => fromLeft<string, number>('nope'))(
       available(setoidNumber, getCacheValueSetoid(setoidString, setoidNumber))
     );
-    const composition = compose(
-      master,
-      slave
-    );
+    const composition = compose(master, slave);
     requestAnimationFrame(() => slave.run(3).run());
     const results = await observe(
       composition,
       'foo',
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -393,10 +327,7 @@ describe('observe', () => {
       { f1: 'foo', f2: 2 },
       getQueryResultSetoid(setoidStrict, setoidShallow)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -418,10 +349,7 @@ describe('observe', () => {
       'foo',
       getQueryResultSetoid(setoidStrict, setoidShallow)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -443,10 +371,7 @@ describe('observe', () => {
       { f1: 'foo', f2: 1 },
       getQueryResultSetoid(setoidStrict, setoidShallow)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -468,10 +393,7 @@ describe('observe', () => {
       { f1: 'foo', f2: 1 },
       getQueryResultSetoid(setoidStrict, setoidShallow)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -494,10 +416,7 @@ describe('observe', () => {
       undefined,
       getQueryResultSetoid(setoidStrict, setoidStrict)
     )
-      .pipe(
-        take(2),
-        toArray()
-      )
+      .pipe(take(2), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -519,10 +438,7 @@ describe('observe', () => {
     const slave = query(fslave)(
       available(setoidString, getSetoid(setoidStrict as any, setoidNumber))
     );
-    const composition = compose(
-      master,
-      slave
-    );
+    const composition = compose(master, slave);
     requestAnimationFrame(() => master.run().run());
     setTimeout(() => master.invalidate().run(), 10);
     const results = await observe(
@@ -530,10 +446,7 @@ describe('observe', () => {
       undefined,
       fromEquals(() => false)
     )
-      .pipe(
-        take(4),
-        toArray()
-      )
+      .pipe(take(4), toArray())
       .toPromise();
     expect(results).toEqual([
       { type: 'Loading' },
@@ -568,14 +481,7 @@ describe('observe', () => {
     const slaveMock = jest.fn(() => {});
     const a = makeQuery(masterMock);
     const b = makeQuery(slaveMock);
-    observe(
-      compose(
-        a,
-        b
-      ),
-      1,
-      setoidStrict
-    );
+    observe(compose(a, b), 1, setoidStrict);
     await wait(10);
 
     expect(masterMock.mock.calls.length).toBe(0);
@@ -587,14 +493,7 @@ describe('observe', () => {
     const slaveMock = jest.fn(() => {});
     const a = makeQuery(masterMock);
     const b = makeQuery(slaveMock);
-    observe(
-      compose(
-        a,
-        b
-      ),
-      1,
-      setoidStrict
-    ).subscribe(a => a);
+    observe(compose(a, b), 1, setoidStrict).subscribe(a => a);
     await wait(10);
 
     expect(masterMock.mock.calls.length).toBe(1);
@@ -607,14 +506,7 @@ describe('observe', () => {
     const eventDispatchMock = jest.fn(() => {});
     const a = makeQuery(masterMock);
     const b = makeQuery(slaveMock);
-    observe(
-      compose(
-        a,
-        b
-      ),
-      1,
-      setoidStrict
-    ).subscribe(eventDispatchMock);
+    observe(compose(a, b), 1, setoidStrict).subscribe(eventDispatchMock);
     await wait(10);
     invalidate({ a }, { a: 1 }).run();
     await wait(10);
@@ -630,14 +522,7 @@ describe('observe', () => {
     const eventDispatchMock = jest.fn(() => {});
     const a = makeQuery(masterMock, true);
     const b = makeQuery(slaveMock, true);
-    observe(
-      compose(
-        a,
-        b
-      ),
-      1,
-      setoidStrict
-    ).subscribe(eventDispatchMock);
+    observe(compose(a, b), 1, setoidStrict).subscribe(eventDispatchMock);
     await wait(10);
     invalidate({ a }, { a: 1 }).run();
     await wait(10);
@@ -653,14 +538,7 @@ describe('observe', () => {
     const eventDispatchMock = jest.fn(() => {});
     const a = makeQuery(masterMock);
     const b = makeQuery(slaveMock);
-    observe(
-      compose(
-        a,
-        b
-      ),
-      1,
-      setoidStrict
-    ).subscribe(eventDispatchMock);
+    observe(compose(a, b), 1, setoidStrict).subscribe(eventDispatchMock);
     await wait(10);
     invalidate({ b }, { b: 1 }).run();
     await wait(10);
