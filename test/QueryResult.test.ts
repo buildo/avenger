@@ -32,7 +32,7 @@ function getQueryResult<L, A>(
   leftArb: fc.Arbitrary<L>,
   rightArb: fc.Arbitrary<A>
 ): fc.Arbitrary<QueryResult<L, A>> {
-  return fc.oneof(
+  return fc.oneof<fc.Arbitrary<QueryResult<L, A>>[]>(
     getLoading(rightArb),
     getFailure(leftArb),
     getSuccess(rightArb)

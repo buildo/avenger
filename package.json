@@ -16,26 +16,26 @@
   "license": "MIT",
   "dependencies": {
     "fp-ts": "^1.19.5",
-    "history": "^4.9.0",
-    "qs": "^6.7.0",
-    "rxjs": "^6.5.2"
+    "history": "^4.10.1",
+    "qs": "^6.9.1",
+    "rxjs": "^6.5.4"
   },
   "devDependencies": {
-    "@types/history": "^4.7.2",
-    "@types/jest": "^24.0.13",
-    "@types/qs": "^6.5.3",
-    "@types/react": "^16.8.19",
-    "@types/react-dom": "^16.8.4",
+    "@types/history": "^4.7.5",
+    "@types/jest": "^25.1.4",
+    "@types/qs": "^6.9.1",
+    "@types/react": "^16.9.23",
+    "@types/react-dom": "^16.9.5",
     "dtslint": "github:gcanti/dtslint",
     "fast-check": "^1.17.0",
     "fp-ts-laws": "0.1.0",
-    "jest": "^24.8.0",
+    "jest": "^25.1.0",
     "prettier": "^1.18.0",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0",
     "react-testing-library": "^6.1.2",
-    "ts-jest": "^24.0.2",
-    "typescript": "^3.6.4"
+    "ts-jest": "^25.2.1",
+    "typescript": "^3.8.3"
   },
   "files": [
     "lib"

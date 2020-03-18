@@ -22,7 +22,7 @@ function getPending<L, A>(
   leftArb: fc.Arbitrary<L>,
   rightArb: fc.Arbitrary<A>
 ): fc.Arbitrary<CacheValue<L, A>> {
-  return fc.oneof(
+  return fc.oneof<fc.Arbitrary<CacheValue<L, A>>[]>(
     leftArb.map(l => cacheValuePending(Promise.resolve(left(l)), new Date())),
     rightArb.map(r => cacheValuePending(Promise.resolve(right(r)), new Date()))
   );
@@ -42,7 +42,7 @@ function getCacheValue<L, A>(
   leftArb: fc.Arbitrary<L>,
   rightArb: fc.Arbitrary<A>
 ): fc.Arbitrary<CacheValue<L, A>> {
-  return fc.oneof(
+  return fc.oneof<fc.Arbitrary<CacheValue<L, A>>[]>(
     getInitial(rightArb),
     getPending(leftArb, rightArb),
     getError(leftArb),
