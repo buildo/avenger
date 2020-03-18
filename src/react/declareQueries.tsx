@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { QueryResult, loading, success } from '../QueryResult';
+import { QueryResult } from '../QueryResult';
 import {
   ObservableQueries,
   EnforceNonEmptyRecord,
@@ -7,6 +7,7 @@ import {
   ProductL,
   ProductP
 } from '../util';
+import { defaultMonoidResult } from './util';
 import { Monoid } from 'fp-ts/lib/Monoid';
 import { observable } from '../Observable';
 import { observeShallow } from '../observe';
@@ -27,16 +28,6 @@ export interface DeclareQueriesReturn<A, L, P> {
   ): React.ComponentType<InputProps<Props, A>>;
   InputProps: QueryInputProps<A>;
   Props: QueryOutputProps<L, P>;
-}
-
-function defaultMonoidResult<L, P>() {
-  return {
-    empty: loading,
-    concat: (a: QueryResult<L, P>, b: QueryResult<L, P>) =>
-      a.type === 'Success' && b.type === 'Loading'
-        ? success<L, P>(a.value, true)
-        : b
-  };
 }
 
 /**
