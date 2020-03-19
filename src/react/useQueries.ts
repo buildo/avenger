@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Monoid } from 'fp-ts/lib/Monoid';
 import { Option, fromNullable } from 'fp-ts/lib/Option';
 import { QueryResult } from '../QueryResult';
@@ -15,10 +14,11 @@ import { defaultMonoidResult } from './util';
 import { observable } from '../Observable';
 import { observeShallow } from '../observe';
 import { setoidShallow } from '../Strategy';
+import { useRef, useEffect, useState, useMemo } from 'react';
 
 function usePrevious<T>(value: T): Option<T> {
-  const ref = React.useRef<T>();
-  React.useEffect(() => {
+  const ref = useRef<T>();
+  useEffect(() => {
     ref.current = value;
   });
   return fromNullable(ref.current);
@@ -39,9 +39,9 @@ function usePrevious<T>(value: T): Option<T> {
  *   (randomQueryResult) => randomQueryResult
  * )
  */
-export function useQuery<A extends void, L, P>(
-  query: ObservableQuery<A, L, P>,
-  params?: A,
+export function useQuery<L, P>(
+  query: ObservableQuery<void, L, P>,
+  params?: void,
   resultMonoid?: Monoid<QueryResult<L, P>>
 ): QueryResult<L, P>;
 export function useQuery<A, L, P>(
@@ -56,14 +56,12 @@ export function useQuery<A, L, P>(
 ): QueryResult<L, P> {
   const _resultMonoid = resultMonoid || defaultMonoidResult<L, P>();
 
-  const [state, setState] = React.useState<QueryResult<L, P>>(
-    _resultMonoid.empty
-  );
+  const [state, setState] = useState<QueryResult<L, P>>(_resultMonoid.empty);
 
   const previousInput = usePrevious(params);
-  const [inputEquality, setInputEquality] = React.useState(0);
+  const [inputEquality, setInputEquality] = useState(0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const inputChanged = previousInput.fold(
       false,
       previousInput => !query.inputSetoid.equals(previousInput, params)
@@ -73,14 +71,14 @@ export function useQuery<A, L, P>(
     }
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const subscription = observable
       .map(observeShallow(query, params), r => _resultMonoid.concat(state, r))
       .subscribe(setState);
     return () => {
       subscription.unsubscribe();
     };
-  }, [inputEquality, query, setState]);
+  }, [inputEquality, query]);
 
   return state;
 }
@@ -119,9 +117,9 @@ export function useQueries<R extends ObservableQueries>(
   resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>
 ): QueryResult<ProductL<R>, ProductP<R>> {
   const previousQueries = usePrevious(queries);
-  const [queriesEquality, setQueriesEquality] = React.useState(0);
-  const queryProduct = React.useMemo(() => product(queries), [queriesEquality]);
-  React.useEffect(() => {
+  const [queriesEquality, setQueriesEquality] = useState(0);
+  const queryProduct = useMemo(() => product(queries), [queriesEquality]);
+  useEffect(() => {
     const queriesChanged = previousQueries.fold(
       false,
       previousQueries => !setoidShallow.equals(previousQueries, queries)

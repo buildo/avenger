@@ -45,14 +45,14 @@ describe('useQueries', () => {
     const element = React.createElement(Foo);
     const { getByText, rerender } = await render(element);
     await waitForElement(() => getByText('foo'));
-    expect(Foo.mock.calls.length).toBe(2);
-    expect(foof.mock.calls.length).toBe(1);
+    expect(Foo).toHaveBeenCalledTimes(2);
+    expect(foof).toHaveBeenCalledTimes(1);
     res.value = 'bar';
     await invalidate({ foo }).run();
     await rerender(element);
     await waitForElement(() => getByText('bar'));
-    expect(Foo.mock.calls.length).toBe(4);
-    expect(foof.mock.calls.length).toBe(2);
+    expect(Foo).toHaveBeenCalledTimes(4);
+    expect(foof).toHaveBeenCalledTimes(2);
     cleanup();
   });
 

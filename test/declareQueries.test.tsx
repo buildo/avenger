@@ -52,14 +52,14 @@ describe('declareQueries', () => {
     // Since we a) don't have a way of comparing result (i.e. no resultSetoid) and b) it's unsafe
     // to call subscribe and potentially trigger a setState before the component is mounted,
     // this is expected
-    expect(Foo_.mock.calls.length).toBe(3);
-    expect(foof.mock.calls.length).toBe(1);
+    expect(Foo_).toHaveBeenCalledTimes(3);
+    expect(foof).toHaveBeenCalledTimes(1);
     res.value = 'bar';
     await invalidate({ foo }).run();
     await rerender(element);
     await waitForElement(() => getByText('bar'));
-    expect(Foo_.mock.calls.length).toBe(5); // why 5 and not 4? See comment above
-    expect(foof.mock.calls.length).toBe(2);
+    expect(Foo_).toHaveBeenCalledTimes(5); // why 5 and not 4? See comment above
+    expect(foof).toHaveBeenCalledTimes(2);
     cleanup();
   });
 
