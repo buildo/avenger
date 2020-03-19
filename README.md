@@ -293,7 +293,30 @@ class MyComponent extends React.PureComponent<Props, State> {
 }
 ```
 
-**NB** both `declareQueries` and `WithQueries` do not support dynamic queries definition (e.g. `declareQueries(someCondition ? { queryA } : { queryA, queryB }`).
+**NB** both `declareQueries` and `WithQueries` do not support dynamic queries definition (e.g. `declareQueries(someCondition ? { queryA } : { queryA, queryB }` will not work).
+
+## useQueries (and useQuery)
+
+alternatively, to avoid unecessary boilerplate, you can use the `useQuery` and `useQueries` hooks:
+
+```tsx
+import { useQuery } from 'avenger/lib/react';
+import { userPreferences } from './queries';
+
+const MyComponent: React.FC<{ userName: string }> = props => {
+  return useQuery(userPreferences, { userName: props.userName }).fold(
+    () => <p>loading</p>,
+    () => <p>there was a problem when fetching preferences</p>,
+    userPreferences => (
+      <p>
+        {props.userName}'s favourite color is {userPreferences.color}
+      </p>
+    )
+  );
+};
+```
+
+**NB** both `useQuery` and `useQueries` support dynamic queries definition (e.g. `useQueries(someCondition ? { queryA } : { queryA, queryB }` will work as expected).
 
 # Navigation
 
