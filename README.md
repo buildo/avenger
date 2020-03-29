@@ -11,6 +11,8 @@ This is what **Avenger** aims to be: an abstraction layer over external data tha
 By separating how we fetch external data and how we update it we are able to state in a very declarative and _natural_ way the correct lifecycle of that data:
 
 ```tsx
+import { queryStrict, command } from 'avenger';
+
 // define a cached query, with strategy "available" (more about this later)
 const user = queryStrict((id: string) => API.fetchUser(id), available);
 // define a command that invalidates the previous query
@@ -20,14 +22,24 @@ const updateUsername = command(
 );
 
 // declare it for usage in a React component
+import { pipe } from 'fp-ts/lib/pipeable';
+import * as QR from 'avenger/lib/QueryResult';
+import { declareQueries } from 'avenger/lib/react';
+
 const queries = declareQueries({ user });
 const Username = queries(props => (
   <div>
-    {props.queries.fold(
-      () => 'loading...',
-      () => 'error while retrieving user',
-      queries => (
-        <UserNameForm value={queries.user.username} onSubmit={updateUsername} />
+    {pipe(
+      props.queries,
+      QR.fold(
+        () => 'loading...',
+        () => 'error while retrieving user',
+        queries => (
+          <UserNameForm
+            value={queries.user.username}
+            onSubmit={updateUsername}
+          />
+        )
       )
     )}
   </div>
@@ -52,12 +64,12 @@ Although important, `query` is a pretty low-level API and **Avenger** offers som
 - **expire:** when the data is requested, the fetch function is run only if data in the `Cache` is older than the expiration defined, otherwise the cached value is used.
 - **available:** when the data is requested, if a cached value is available it is always returned, otherwise the fetch function is run and the result stored in the `Cache` accordingly.
 
-All these utils ask you to pass custom [**`Setoid`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Setoid.ts.md) instances as arguments; they will be used to check if a value for an input combination is already present in one of the `Cache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function).
-You can (and should) use these utils together with one of the built-in implementations that automatically take care of passing by the needed `Setoids`:
+All these utils ask you to pass custom [**`Eq`**](https://github.com/gcanti/fp-ts/blob/master/docs/modules/Eq.ts.md) instances as arguments; they will be used to check if a value for an input combination is already present in one of the `Cache`'s keys (if the check is successful `Avenger` will try to use that value, otherwise it will resort to the `Fetch` function).
+You can (and should) use these utils together with one of the built-in implementations that automatically take care of passing by the needed `Eq`s:
 
-- **queryShallow:** will use a `Setoid` instance that performs a shallow equality check to compare inputs.
-- **queryStrict:** will use a `Setoid` instance that performs a strict equality check to compare inputs.
-- **queryJSON:** will use a `Setoid` instance that performs a strict equality check after transforming the data via JSON stringification to compare inputs.
+- **queryShallow:** will use an `Eq` instance that performs a shallow equality check to compare inputs.
+- **queryStrict:** will use an `Eq` instance that performs a strict equality check to compare inputs.
+- **queryJSON:** will use an `Eq` instance that performs a strict equality check after transforming the data via JSON stringification to compare inputs.
 
 Some examples will help clarify:
 
@@ -140,7 +152,7 @@ observable.subscribe(dispatchError, setCurrentUser);
 // alternatively you can call `run` on your query and it will return a TaskEither<Error, User>
 // you can then use it imperatively
 const task: TaskEither<Error, User> = userQuery.run(1);
-const result: Either<Error, User> = await task.run();
+const result: Either<Error, User> = await task();
 ```
 
 although the `run` method is available to check a query result imperatively, it is highly suggested the use of the `observe` utility in order to be notified in real time of when data changes.
@@ -230,17 +242,22 @@ Avenger also exports some utilities to use with `React`.
 `declareQueries` is a `HOC` (Higher-Order Component) builder. It lets you define the queries that you want to inject into a component and then creates a simple `HOC` to wrap it:
 
 ```tsx
+import { pipe } from 'fp-ts/lib/pipeable';
 import { declareQueries } from 'avenger/lib/react';
+import * as QR from 'avenger/lib/QueryResult';
 import { userPreferences } from './queries';
 
 const queries = declareQueries({ userPreferences });
 
 class MyComponent extends React.PureComponent<Props, State> {
   render() {
-    return this.props.queries.fold(
-      () => <p>loading</p>,
-      () => <p>there was a problem when fetching preferences</p>,
-      ({ userPreferences }) => <p>my favourite color is {userPreferences.color}</p>
+    return pipe(
+      this.props.queries,
+      QR.fold(
+        () => <p>loading</p>,
+        () => <p>there was a problem when fetching preferences</p>,
+        ({ userPreferences }) => <p>my favourite color is {userPreferences.color}</p>
+      )
     )
   }
 }
@@ -269,6 +286,7 @@ class MyOtherComponent extends React.PureComponent<Props, State> {
 alternatively, to avoid unecessary boilerplate, you can use the `WithQueries` component:
 
 ```tsx
+import * as QR from 'avenger/lib/QueryResult';
 import { WithQueries } from 'avenger/lib/react';
 import { userPreferences } from './queries';
 
@@ -278,15 +296,17 @@ class MyComponent extends React.PureComponent<Props, State> {
       <WithQueries
         queries={{ userPreferences }}
         params={{ userPreferences: { userName: 'Mario' } }}
-        render={queries =>
-          queries.fold(
-            () => <p>loading</p>,
-            () => <p>there was a problem when fetching preferences</p>,
-            ({ userPreferences }) => (
-              <p>Mario's favourite color is {userPreferences.color}</p>
-            )
+        render={QR.fold(
+          () => (
+            <p>loading</p>
+          ),
+          () => (
+            <p>there was a problem when fetching preferences</p>
+          ),
+          ({ userPreferences }) => (
+            <p>Mario's favourite color is {userPreferences.color}</p>
           )
-        }
+        )}
       />
     );
   }
@@ -300,17 +320,22 @@ class MyComponent extends React.PureComponent<Props, State> {
 alternatively, to avoid unecessary boilerplate, you can use the `useQuery` and `useQueries` hooks:
 
 ```tsx
+import { pipe } from 'fp-ts/lib/pipeable';
+import * as QR from 'avenger/lib/QueryResult';
 import { useQuery } from 'avenger/lib/react';
 import { userPreferences } from './queries';
 
 const MyComponent: React.FC<{ userName: string }> = props => {
-  return useQuery(userPreferences, { userName: props.userName }).fold(
-    () => <p>loading</p>,
-    () => <p>there was a problem when fetching preferences</p>,
-    userPreferences => (
-      <p>
-        {props.userName}'s favourite color is {userPreferences.color}
-      </p>
+  return pipe(
+    useQuery(userPreferences, { userName: props.userName }),
+    QR.fold(
+      () => <p>loading</p>,
+      () => <p>there was a problem when fetching preferences</p>,
+      userPreferences => (
+        <p>
+          {props.userName}'s favourite color is {userPreferences.color}
+        </p>
+      )
     )
   );
 };
@@ -319,19 +344,24 @@ const MyComponent: React.FC<{ userName: string }> = props => {
 ## useQueries
 
 ```tsx
+import { pipe } from 'fp-ts/lib/pipeable';
+import * as QR from 'avenger/lib/QueryResult';
 import { useQueries } from 'avenger/lib/react';
 
 declare const query1: ObservableQuery<string, unknown, number>;
 declare const query2: ObservableQuery<void, unknown, string>;
 
 const MyComponent: React.FC = props => {
-  return useQueries({ query1, query2 }, { query1: 'query-1-input' }).fold(
-    () => <p>still loading query1 or query2 (or both)</p>,
-    () => <p>there was a problem when fetching either query1 or query2</p>,
-    ({ query1, query2 }) => (
-      <p>
-        {query2}: {query1}
-      </p>
+  return pipe(
+    useQueries({ query1, query2 }, { query1: 'query-1-input' }),
+    QR.fold(
+      () => <p>still loading query1 or query2 (or both)</p>,
+      () => <p>there was a problem when fetching either query1 or query2</p>,
+      ({ query1, query2 }) => (
+        <p>
+          {query2}: {query1}
+        </p>
+      )
     )
   );
 };
@@ -386,7 +416,8 @@ once you instantiated all the boilerplate needed to instruct Avenger on how to n
 
 ```tsx
 // ./App.ts
-
+import { pipe } from 'fp-ts/lib/pipeable';
+import * as QR from 'avenger/lib/QueryResult';
 import { declareQueries } from 'avenger/lib/react';
 
 const queries = declareQueries({ currentView });
@@ -394,19 +425,22 @@ const queries = declareQueries({ currentView });
 // usually at the top level of your app there will be a sort of index of your navigation
 class Navigation extends React.PureComponent<Props, State> {
   render() {
-    return this.props.queries.fold(
-      () => <p>loading</p>,
-      () => null,
-      ({ currentView }) => {
-        switch(currentView.view) {
-          case 'itemView':
-            return <ItemView id={view.itemId} />
-          case 'items':
-            return <Items />
-          case 'home':
-            return <Home />
+    return pipe(
+      this.props.queries,
+      QR.fold(
+        () => <p>loading</p>,
+        () => null,
+        ({ currentView }) => {
+          switch(currentView.view) {
+            case 'itemView':
+              return <ItemView id={view.itemId} />
+            case 'items':
+              return <Items />
+            case 'home':
+              return <Home />
+          }
         }
-      }
+      )
     )
   }
 }
@@ -418,7 +452,7 @@ export queries(MyComponent)
 // ./Components/ItemView.ts
 
 class ItemView extends React.PureComponent<Props, State> {
-  goToItems: () => doUpdateCurrentView({ view: 'items' }).run()
+  goToItems: () => doUpdateCurrentView({ view: 'items' })()
 
   render() {
     return <BackButton onClick={this.goToItems}>
@@ -448,8 +482,8 @@ type Fetch<A, L, P> = (input: A) => TaskEither<L, P>;
 
 ```ts
 type StrategyBuilder<A, L, P> = (
-  inputSetoid: Setoid<A>,
-  cacheValueSetoid: Setoid<CacheValue<L, P>>
+  inputEq: Eq<A>,
+  cacheValueEq: Eq<CacheValue<L, P>>
 ) => Strategy<A, L, P>;
 ```
 
@@ -458,9 +492,9 @@ type StrategyBuilder<A, L, P> = (
 ```ts
 export class Strategy<A, L, P> {
   constructor(
-    readonly inputSetoid: Setoid<A>,
+    readonly inputEq: Eq<A>,
     readonly filter: Function1<CacheValue<L, P>, boolean>,
-    readonly cacheValueSetoid: Setoid<CacheValue<L, P>>
+    readonly cacheValueEq: Eq<CacheValue<L, P>>
   ) {}
 }
 ```
@@ -470,7 +504,7 @@ export class Strategy<A, L, P> {
 ```ts
 interface CachedQuery<A, L, P> {
   type: 'cached';
-  inputSetoid: Setoid<A>;
+  inputEq: Eq<A>;
   run: Fetch<A, L, P>;
   invalidate: Fetch<A, L, P>;
   cache: Cache<A, L, P>;
@@ -482,7 +516,7 @@ interface CachedQuery<A, L, P> {
 ```ts
 interface Composition<A, L, P> {
   type: 'composition';
-  inputSetoid: Setoid<A>;
+  inputEq: Eq<A>;
   run: Fetch<A, L, P>;
   invalidate: Fetch<A, L, P>;
   master: ObservableQuery<A, L, unknown>;
@@ -495,7 +529,7 @@ interface Composition<A, L, P> {
 ```ts
 interface Product<A, L, P> {
   type: 'product';
-  inputSetoid: Setoid<A>;
+  inputEq: Eq<A>;
   run: Fetch<A, L, P>;
   invalidate: Fetch<A, L, P>;
   queries: Record<string, ObservableQuery<A[keyof A], L, P[keyof P]>>;
