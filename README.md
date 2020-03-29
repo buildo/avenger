@@ -69,7 +69,6 @@ You can (and should) use these utils together with one of the built-in implement
 
 - **queryShallow:** will use an `Eq` instance that performs a shallow equality check to compare inputs.
 - **queryStrict:** will use an `Eq` instance that performs a strict equality check to compare inputs.
-- **queryJSON:** will use an `Eq` instance that performs a strict equality check after transforming the data via JSON stringification to compare inputs.
 
 Some examples will help clarify:
 
@@ -91,9 +90,9 @@ const myQuery = queryStrict(fetchFunction, available);
 /*
   this implementation will run the `Fetch` function only if no valid data is present in the Cache
   or t > 10000 ms passed till the last time data was fetched
-  and use JSON equality to compare input
+  and use strict equality to compare input
 */
-const myQuery = queryJSON(fetchFunction, expire(10000));
+const myQuery = queryStrict(fetchFunction, expire(10000));
 ```
 
 Each time the `Fetch` function is run with some `input`, those same `input` is used as a `key` to store the result obtained:

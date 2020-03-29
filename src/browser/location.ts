@@ -50,7 +50,7 @@ export const location = Q.query(
       Eq.eqStrict,
       Eq.getStructEq<HistoryLocation>({
         pathname: Eq.eqString,
-        search: S.eqJSON
+        search: S.eqShallow
       })
     )
   )

@@ -104,23 +104,6 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
 
 export const eqShallow = Eq.fromEquals(shallowEqual);
 
-export type JSONObject = { [key: string]: JSON };
-export interface JSONArray extends Array<JSON> {}
-export type JSON =
-  | null
-  | undefined
-  | string
-  | number
-  | boolean
-  | JSONArray
-  | JSONObject;
-
-export function JSONEqual<A extends JSON>(a: A, b: A): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
-export const eqJSON = Eq.fromEquals<JSON>(JSONEqual);
-
 export const strategy = {
   URI
 };

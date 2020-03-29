@@ -119,18 +119,6 @@ export function queryShallow<A = void, L = unknown, P = unknown>(
 }
 
 /**
- * Constructs a `CachedQuery` with a `Strategy` that uses `JSON.stringify` to compare inputs and results
- * @param fetch The function to be cached
- * @param makeStrategy Implements the `Strategy` used to filter available values from the cache
- */
-export function queryJSON<A extends JSON, L extends JSON, P extends JSON>(
-  fetch: Fetch<A, L, P>,
-  makeStrategy: StrategyBuilder<A, L, P>
-): CachedQuery<A, L, P> {
-  return query(fetch)(makeStrategy(S.eqJSON, CV.getEq(S.eqJSON, S.eqJSON)));
-}
-
-/**
  * Constructs a `Composition`
  * @param master A `Fetch` to run first, receiving the composition input
  * @param slave A `Fetch` to run with the result of `master` as input

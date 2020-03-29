@@ -49,28 +49,6 @@ describe('queryShallow', () => {
   });
 });
 
-describe('queryJSON', () => {
-  it('caches indefinitely with strategy=available', async () => {
-    let events: QR.QueryResult<unknown, unknown>[] = [];
-    const eventsSpy = jest.fn(e => events.push(e));
-    const a = (input: JSON) => TE.taskEither.of<JSON, JSON>(input);
-    const cachedA = Q.queryJSON(a, S.available);
-    const resultEq = QR.getEq(S.eqJSON, S.eqJSON);
-    const observable = observe(cachedA, { foo: 1 }, resultEq);
-    observable.subscribe(eventsSpy);
-    await T.delay(10)(T.of(void 0))();
-    observable.subscribe(eventsSpy);
-    observable.subscribe(eventsSpy);
-
-    expect(events).toEqual([
-      { _tag: 'Loading' },
-      { _tag: 'Success', success: { foo: 1 }, loading: false },
-      { _tag: 'Success', success: { foo: 1 }, loading: false },
-      { _tag: 'Success', success: { foo: 1 }, loading: false }
-    ]);
-  });
-});
-
 it('map - resolves to `f(a)`', async () => {
   const a = Q.queryStrict(() => TE.taskEither.of('foo'), S.refetch);
   const b = Q.map(a, (s: string) => s.length);

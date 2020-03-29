@@ -104,20 +104,3 @@ export function observeShallow<A, L, P>(
     distinctUntilChanged(QR.getEq<L, P>(S.eqShallow, S.eqShallow).equals)
   );
 }
-
-/**
- * Given an `ObservableQuery`, returns an observable stream of `QueryResult`s
- * representing the latest available value for such query,
- * using `JSON.stringify` to compare and potentially aggregate subsequent results
- *
- * @param query The `ObservableQuery` to `observe`
- * @param input Input for `query`
- */
-export function observeJSON<A, L extends JSON, P extends JSON>(
-  query: ObservableQuery<A, L, P>,
-  input: A
-): Observable<QR.QueryResult<L, P>> {
-  return _observe(query, input).pipe(
-    distinctUntilChanged(QR.getEq<L, P>(S.eqJSON, S.eqJSON).equals)
-  );
-}
