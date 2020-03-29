@@ -15,7 +15,7 @@
   "author": "Giovanni Gonzaga <giovanni@buildo.io>",
   "license": "MIT",
   "dependencies": {
-    "fp-ts": "^1.19.5",
+    "fp-ts": "^2.5.3",
     "history": "^4.10.1",
     "qs": "^6.9.1",
     "rxjs": "^6.5.4"
@@ -28,7 +28,7 @@
     "@types/react-dom": "^16.9.5",
     "dtslint": "github:gcanti/dtslint",
     "fast-check": "^1.17.0",
-    "fp-ts-laws": "0.1.0",
+    "fp-ts-laws": "0.2.1",
     "jest": "^25.1.0",
     "prettier": "^1.18.0",
     "react": "^16.13.0",
