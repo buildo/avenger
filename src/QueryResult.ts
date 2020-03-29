@@ -1,5 +1,6 @@
 import { Monad2 } from 'fp-ts/lib/Monad';
 import { Bifunctor2 } from 'fp-ts/lib/Bifunctor';
+import { Alt2 } from 'fp-ts/lib/Alt';
 import * as Eq from 'fp-ts/lib/Eq';
 import { constFalse, constant } from 'fp-ts/lib/function';
 import { pipeable, pipe } from 'fp-ts/lib/pipeable';
@@ -67,11 +68,11 @@ export function queryResultSuccess<E = never, A = never>(
   return { _tag: 'Success', success, loading };
 }
 
-export function fold<E, A, R>(
-  onLoading: () => R,
-  onFailure: (failure: E, loading: boolean) => R,
-  onSuccess: (success: A, loading: boolean) => R
-): (ma: QueryResult<E, A>) => R {
+export function fold<E, A, B>(
+  onLoading: () => B,
+  onFailure: (failure: E, loading: boolean) => B,
+  onSuccess: (success: A, loading: boolean) => B
+): (ma: QueryResult<E, A>) => B {
   return ma => {
     switch (ma._tag) {
       case 'Loading':
@@ -136,14 +137,22 @@ function _chain<L, A, B>(
   return pipe(fa, fold(constant(queryResultLoading), queryResultFailure, f));
 }
 
-export const queryResult: Bifunctor2<URI> & Monad2<URI> = {
+function _alt<E, A>(
+  fx: QueryResult<E, A>,
+  fy: () => QueryResult<E, A>
+): QueryResult<E, A> {
+  return pipe(fx, fold(fy, fy, queryResultSuccess));
+}
+
+export const queryResult: Bifunctor2<URI> & Monad2<URI> & Alt2<URI> = {
   URI,
   map: _map,
   ap: (fab, fa) => _chain(fab, f => _map(fa, f)),
   of: _of,
   mapLeft: _mapLeft,
   bimap: _bimap,
-  chain: _chain
+  chain: _chain,
+  alt: _alt
 };
 
 const {
