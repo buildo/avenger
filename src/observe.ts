@@ -1,53 +1,54 @@
 import { CacheValue } from './CacheValue';
-import {
-  QueryResult,
-  loading,
-  failure,
-  success,
-  queryResult,
-  getSetoid
-} from './QueryResult';
+import * as QR from './QueryResult';
 import { Observable } from 'rxjs/internal/Observable';
 import { observable } from './Observable';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { ObservableQuery } from './Query';
-import { sequence, mapWithKey } from 'fp-ts/lib/Record';
-import { Setoid } from 'fp-ts/lib/Setoid';
-import { setoidStrict, setoidShallow, setoidJSON, JSON } from './Strategy';
+import * as R from 'fp-ts/lib/Record';
+import * as Eq from 'fp-ts/lib/Eq';
+import * as S from './Strategy';
+import * as CV from './CacheValue';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 export function cacheValueToQueryResult<L, P>(
   cacheValue: CacheValue<L, P>
-): QueryResult<L, P> {
-  return cacheValue.fold(
-    () => loading,
-    () => loading,
-    value => failure<L, P>(value, false),
-    value => success<L, P>(value, false)
+): QR.QueryResult<L, P> {
+  return pipe(
+    cacheValue,
+    CV.fold(
+      () => QR.queryResultLoading,
+      () => QR.queryResultLoading,
+      value => QR.queryResultFailure<L, P>(value, false),
+      value => QR.queryResultSuccess<L, P>(value, false)
+    )
   );
 }
 
-const sequenceRecordObservable = sequence(observable);
-const sequenceRecordQueryResult = sequence(queryResult);
+const sequenceRecordObservable = R.sequence(observable);
+const sequenceRecordQueryResult = R.sequence(QR.queryResult);
 
 function _observe<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A
-): Observable<QueryResult<L, P>> {
+): Observable<QR.QueryResult<L, P>> {
   switch (query.type) {
     case 'composition':
       const masterObservable = _observe(query.master, input);
-      return observable.chain(masterObservable, master =>
-        master.fold(
-          () => observable.of(loading),
-          error => observable.of(failure(error, false)),
+      return observable.chain(
+        masterObservable,
+        QR.fold(
+          () => observable.of(QR.queryResultLoading),
+          error => observable.of(QR.queryResultFailure(error, false)),
           value => _observe(query.slave, value)
         )
       );
     case 'product':
-      return sequenceRecordObservable(
-        mapWithKey(query.queries, (k, query) =>
+      return pipe(
+        query.queries,
+        R.mapWithIndex((k, query) =>
           _observe(query, ((input || {}) as any)[k])
-        )
+        ),
+        sequenceRecordObservable
       ).pipe(map(sequenceRecordQueryResult)) as any;
     case 'cached':
       return query.cache.observe(input).pipe(map(cacheValueToQueryResult));
@@ -60,14 +61,14 @@ function _observe<A, L, P>(
  *
  * @param query The `ObservableQuery` to `observe`
  * @param input Input for `query`
- * @param resultSetoid The `Setoid` used to aggregate subsequent `QueryResult` payloads
+ * @param resultEq The `Eq` used to aggregate subsequent `QueryResult` payloads
  */
 export function observe<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A,
-  resultSetoid: Setoid<QueryResult<L, P>>
-): Observable<QueryResult<L, P>> {
-  return _observe(query, input).pipe(distinctUntilChanged(resultSetoid.equals));
+  resultEq: Eq.Eq<QR.QueryResult<L, P>>
+): Observable<QR.QueryResult<L, P>> {
+  return _observe(query, input).pipe(distinctUntilChanged(resultEq.equals));
 }
 
 /**
@@ -81,9 +82,9 @@ export function observe<A, L, P>(
 export function observeStrict<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A
-): Observable<QueryResult<L, P>> {
+): Observable<QR.QueryResult<L, P>> {
   return _observe(query, input).pipe(
-    distinctUntilChanged(getSetoid<L, P>(setoidStrict, setoidStrict).equals)
+    distinctUntilChanged(QR.getEq<L, P>(Eq.eqStrict, Eq.eqStrict).equals)
   );
 }
 
@@ -98,9 +99,9 @@ export function observeStrict<A, L, P>(
 export function observeShallow<A, L, P>(
   query: ObservableQuery<A, L, P>,
   input: A
-): Observable<QueryResult<L, P>> {
+): Observable<QR.QueryResult<L, P>> {
   return _observe(query, input).pipe(
-    distinctUntilChanged(getSetoid<L, P>(setoidShallow, setoidShallow).equals)
+    distinctUntilChanged(QR.getEq<L, P>(S.eqShallow, S.eqShallow).equals)
   );
 }
 
@@ -115,8 +116,8 @@ export function observeShallow<A, L, P>(
 export function observeJSON<A, L extends JSON, P extends JSON>(
   query: ObservableQuery<A, L, P>,
   input: A
-): Observable<QueryResult<L, P>> {
+): Observable<QR.QueryResult<L, P>> {
   return _observe(query, input).pipe(
-    distinctUntilChanged(getSetoid<L, P>(setoidJSON, setoidJSON).equals)
+    distinctUntilChanged(QR.getEq<L, P>(S.eqJSON, S.eqJSON).equals)
   );
 }

@@ -1,11 +1,12 @@
 import { Either } from 'fp-ts/lib/Either';
 import { Functor2 } from 'fp-ts/lib/Functor';
-import { Setoid, fromEquals } from 'fp-ts/lib/Setoid';
+import { Eq, fromEquals } from 'fp-ts/lib/Eq';
 import { constFalse, constant } from 'fp-ts/lib/function';
+import { pipeable, pipe } from 'fp-ts/lib/pipeable';
 
 declare module 'fp-ts/lib/HKT' {
-  interface URI2HKT2<L, A> {
-    CacheValue: CacheValue<L, A>;
+  interface URItoKind2<E, A> {
+    CacheValue: CacheValue<E, A>;
   }
 }
 
@@ -13,160 +14,130 @@ export const URI = 'CacheValue';
 
 export type URI = typeof URI;
 
+export interface CacheValueInitial {
+  readonly _tag: 'Initial';
+}
+
+export interface CacheValuePending<E, A> {
+  readonly _tag: 'Pending';
+  readonly pending: Promise<Either<E, A>>;
+  readonly updated: Date;
+}
+
+export interface CacheValueError<E> {
+  readonly _tag: 'Error';
+  readonly error: E;
+  readonly updated: Date;
+}
+
+export interface CacheValueResolved<A> {
+  readonly _tag: 'Resolved';
+  readonly resolved: A;
+  readonly updated: Date;
+}
+
 /**
  * Represents a value stored in an `ObservableQuery` cache
  */
-export type CacheValue<L, A> =
-  | CacheValueInitial<L, A>
-  | CacheValuePending<L, A>
-  | CacheValueResolved<L, A>
-  | CacheValueError<L, A>;
-
-class CacheValueInitial<L, A> {
-  readonly type: 'Initial' = 'Initial';
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _URI!: URI;
-  constructor() {}
-
-  fold<R>(
-    onCacheValueInitial: () => R,
-    _onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
-    _onCacheValueError: (value: L, updated: Date) => R,
-    _onCacheValueResolved: (value: A, updated: Date) => R
-  ): R {
-    return onCacheValueInitial();
-  }
-
-  map<B>(_f: (a: A) => B): CacheValue<L, B> {
-    return this as any;
-  }
-}
-
-class CacheValuePending<L, A> {
-  readonly type: 'Pending' = 'Pending';
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _URI!: URI;
-  constructor(readonly value: Promise<Either<L, A>>, readonly updated: Date) {}
-
-  fold<R>(
-    _onCacheValueInitial: () => R,
-    onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
-    _onCacheValueError: (value: L, updated: Date) => R,
-    _onCacheValueResolved: (value: A, updated: Date) => R
-  ): R {
-    return onCacheValuePending(this.value, this.updated);
-  }
-
-  map<B>(_f: (a: A) => B): CacheValue<L, B> {
-    return this as any;
-  }
-}
-
-class CacheValueError<L, A> {
-  readonly type: 'Error' = 'Error';
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _URI!: URI;
-  constructor(readonly value: L, readonly updated: Date) {}
-
-  fold<R>(
-    _onCacheValueInitial: () => R,
-    _onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
-    onCacheValueError: (value: L, updated: Date) => R,
-    _onCacheValueResolved: (value: A, updated: Date) => R
-  ): R {
-    return onCacheValueError(this.value, this.updated);
-  }
-
-  map<B>(_f: (a: A) => B): CacheValue<L, B> {
-    return this as any;
-  }
-}
-
-class CacheValueResolved<L, A> {
-  readonly type: 'Resolved' = 'Resolved';
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _URI!: URI;
-  constructor(readonly value: A, readonly updated: Date) {}
-
-  fold<R>(
-    _onCacheValueInitial: () => R,
-    _onCacheValuePending: (value: Promise<Either<L, A>>, updated: Date) => R,
-    _onCacheValueError: (value: L, updated: Date) => R,
-    onCacheValueResolved: (value: A, updated: Date) => R
-  ): R {
-    return onCacheValueResolved(this.value, this.updated);
-  }
-
-  map<B>(f: (a: A) => B): CacheValue<L, B> {
-    return cacheValueResolved(f(this.value), this.updated);
-  }
-}
+export type CacheValue<E, A> =
+  | CacheValueInitial
+  | CacheValuePending<E, A>
+  | CacheValueError<E>
+  | CacheValueResolved<A>;
 
 /**
- * Constructs a `CacheValueInitial`
+ * A `CacheValueInitial`
  */
-export function cacheValueInitial<L, A>(): CacheValue<L, A> {
-  return new CacheValueInitial();
-}
+export const cacheValueInitial: CacheValue<never, never> = { _tag: 'Initial' };
 
 /**
  * Constructs a `CacheValuePending`
  */
-export function cacheValuePending<L, A>(
-  value: Promise<Either<L, A>>,
+export function cacheValuePending<E = never, A = never>(
+  pending: Promise<Either<E, A>>,
   updated: Date
-): CacheValue<L, A> {
-  return new CacheValuePending(value, updated);
+): CacheValue<E, A> {
+  return { _tag: 'Pending', pending, updated };
 }
 
 /**
  * Constructs a `CacheValueError`
  */
-export function cacheValueError<L, A>(
-  value: L,
+export function cacheValueError<E = never, A = never>(
+  error: E,
   updated: Date
-): CacheValue<L, A> {
-  return new CacheValueError(value, updated);
+): CacheValue<E, A> {
+  return { _tag: 'Error', error, updated };
 }
 
 /**
  * Constructs a `CacheValueResolved`
  */
-export function cacheValueResolved<L, A>(
-  value: A,
+export function cacheValueResolved<E = never, A = never>(
+  resolved: A,
   updated: Date
-): CacheValue<L, A> {
-  return new CacheValueResolved(value, updated);
+): CacheValue<E, A> {
+  return { _tag: 'Resolved', resolved, updated };
 }
 
-function map<L, A, B>(fa: CacheValue<L, A>, f: (a: A) => B): CacheValue<L, B> {
-  return fa.map(f);
+export function fold<E, A, B>(
+  onCacheValueInitial: () => B,
+  onCacheValuePending: (pending: Promise<Either<E, A>>, updated: Date) => B,
+  onCacheValueError: (error: E, updated: Date) => B,
+  onCacheValueResolved: (resolved: A, updated: Date) => B
+): (ma: CacheValue<E, A>) => B {
+  return ma => {
+    switch (ma._tag) {
+      case 'Initial':
+        return onCacheValueInitial();
+      case 'Pending':
+        return onCacheValuePending(ma.pending, ma.updated);
+      case 'Error':
+        return onCacheValueError(ma.error, ma.updated);
+      case 'Resolved':
+        return onCacheValueResolved(ma.resolved, ma.updated);
+    }
+  };
+}
+
+function _map<E, A, B>(ma: CacheValue<E, A>, f: (a: A) => B): CacheValue<E, B> {
+  return ma._tag === 'Resolved'
+    ? cacheValueResolved(f(ma.resolved), ma.updated)
+    : (ma as CacheValue<E, B>);
 }
 
 export const cacheValue: Functor2<URI> = {
   URI,
-  map
+  map: _map
 };
 
+const { map } = pipeable(cacheValue);
+
+export { map };
+
 /**
- * Constructs the Setoid for `CacheValue` given Setoids to compare errors and resolved values
- * @param Sl Setoid to compare error values
- * @param Sa Setoid to compare resolved values
+ * Constructs the Eq instance for `CacheValue` given Eqs to compare errors and resolved values
+ * @param Eqe Eq to compare error values
+ * @param Eqa Eq to compare resolved values
  */
-export function getSetoid<L, A>(
-  Sl: Setoid<L>,
-  Sa: Setoid<A>
-): Setoid<CacheValue<L, A>> {
+export function getEq<E, A>(Eqe: Eq<E>, Eqa: Eq<A>): Eq<CacheValue<E, A>> {
   return fromEquals((a, b) =>
-    a.fold(
-      constant(b.type === 'Initial'),
-      constant(b.type === 'Pending'),
-      ea => b.fold(constFalse, constFalse, eb => Sl.equals(ea, eb), constFalse),
-      sa => b.fold(constFalse, constFalse, constFalse, sb => Sa.equals(sa, sb))
+    pipe(
+      a,
+      fold(
+        constant(b._tag === 'Initial'),
+        constant(b._tag === 'Pending'),
+        ea =>
+          pipe(
+            b,
+            fold(constFalse, constFalse, eb => Eqe.equals(ea, eb), constFalse)
+          ),
+        sa =>
+          pipe(
+            b,
+            fold(constFalse, constFalse, constFalse, sb => Eqa.equals(sa, sb))
+          )
+      )
     )
   );
 }

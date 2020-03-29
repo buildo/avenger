@@ -1,16 +1,10 @@
-import { CacheValue } from './CacheValue';
-import {
-  Setoid,
-  contramap as setoidContramap,
-  fromEquals,
-  strictEqual
-} from 'fp-ts/lib/Setoid';
-import { Function1, constTrue, constFalse } from 'fp-ts/lib/function';
-import { Contravariant3 } from 'fp-ts/lib/Contravariant';
+import * as CV from './CacheValue';
+import * as Eq from 'fp-ts/lib/Eq';
+import { constTrue, constFalse } from 'fp-ts/lib/function';
 
 declare module 'fp-ts/lib/HKT' {
-  interface URI2HKT3<U, L, A> {
-    Strategy: Strategy<A, L, U>;
+  interface URItoKind3<R, E, A> {
+    Strategy: Strategy<R, E, A>;
   }
 }
 
@@ -18,63 +12,48 @@ export const URI = 'Strategy';
 
 export type URI = typeof URI;
 
-export class Strategy<A, L, P> {
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _P!: P;
-  readonly _URI!: URI;
-  constructor(
-    readonly inputSetoid: Setoid<A>,
-    readonly filter: Function1<CacheValue<L, P>, boolean>,
-    readonly cacheValueSetoid: Setoid<CacheValue<L, P>>
-  ) {}
-
-  contramap<B>(f: (b: B) => A): Strategy<B, L, P> {
-    return new Strategy(
-      setoidContramap(f, this.inputSetoid),
-      this.filter,
-      this.cacheValueSetoid
-    );
-  }
+export interface Strategy<R, E, A> {
+  readonly inputEq: Eq.Eq<R>;
+  readonly filter: (cacheValue: CV.CacheValue<E, A>) => boolean;
+  readonly cacheValueEq: Eq.Eq<CV.CacheValue<E, A>>;
 }
 
-export function fromSuccessFilter<A, L, P>(
-  inputSetoid: Setoid<A>,
-  filter: (value: P, updated: Date) => boolean,
-  cacheValueSetoid: Setoid<CacheValue<L, P>>
-): Strategy<A, L, P> {
-  return new Strategy(
-    inputSetoid,
-    (cacheValue: CacheValue<L, P>) =>
-      cacheValue.fold(constTrue, constTrue, constFalse, filter),
-    cacheValueSetoid
-  );
+export function fromSuccessFilter<R, E, A>(
+  inputEq: Eq.Eq<R>,
+  filter: (value: A, updated: Date) => boolean,
+  cacheValueEq: Eq.Eq<CV.CacheValue<E, A>>
+): Strategy<R, E, A> {
+  return {
+    inputEq,
+    filter: CV.fold(constTrue, constTrue, constFalse, filter),
+    cacheValueEq
+  };
 }
 
 /**
  * A cache strategy builder that always return the cached value, if available
  *
- * @param inputSetoid A `Setoid` used to comopare input values when reading from the cache
- * @param cacheValueSetoid A `Setoid` used to compare `CacheValue`s when available in the cache
+ * @param inputEq An `Eq` used to comopare input values when reading from the cache
+ * @param cacheValueEq An `Eq` used to compare `CacheValue`s when available in the cache
  */
-export function available<A, L, P>(
-  inputSetoid: Setoid<A>,
-  cacheValueSetoid: Setoid<CacheValue<L, P>>
-): Strategy<A, L, P> {
-  return fromSuccessFilter(inputSetoid, constTrue, cacheValueSetoid);
+export function available<R, E, A>(
+  inputEq: Eq.Eq<R>,
+  cacheValueEq: Eq.Eq<CV.CacheValue<E, A>>
+): Strategy<R, E, A> {
+  return fromSuccessFilter(inputEq, constTrue, cacheValueEq);
 }
 
 /**
  * A cache strategy builder that always ignores the cached values and requests an update, re-fetching
  *
- * @param inputSetoid A `Setoid` used to comopare input values when reading from the cache
- * @param cacheValueSetoid A `Setoid` used to compare `CacheValue`s when available in the cache
+ * @param inputEq An `Eq` used to comopare input values when reading from the cache
+ * @param cacheValueEq An `Eq` used to compare `CacheValue`s when available in the cache
  */
-export function refetch<A, L, P>(
-  inputSetoid: Setoid<A>,
-  cacheValueSetoid: Setoid<CacheValue<L, P>>
-): Strategy<A, L, P> {
-  return fromSuccessFilter(inputSetoid, constFalse, cacheValueSetoid);
+export function refetch<R, E, A>(
+  inputEq: Eq.Eq<R>,
+  cacheValueEq: Eq.Eq<CV.CacheValue<E, A>>
+): Strategy<R, E, A> {
+  return fromSuccessFilter(inputEq, constFalse, cacheValueEq);
 }
 
 /**
@@ -82,19 +61,17 @@ export function refetch<A, L, P>(
  * if available, and otherwise re-fetches
  */
 export function expire(afterMs: number) {
-  return <A, L, P>(
-    inputSetoid: Setoid<A>,
-    cacheValueSetoid: Setoid<CacheValue<L, P>>
-  ): Strategy<A, L, P> => {
+  return <R, E, A>(
+    inputEq: Eq.Eq<R>,
+    cacheValueEq: Eq.Eq<CV.CacheValue<E, A>>
+  ): Strategy<R, E, A> => {
     return fromSuccessFilter(
-      inputSetoid,
+      inputEq,
       (_, updated) => updated.getTime() >= Date.now() - afterMs,
-      cacheValueSetoid
+      cacheValueEq
     );
   };
 }
-
-export const setoidStrict = fromEquals(strictEqual);
 
 export function shallowEqual(a: unknown, b: unknown): boolean {
   if (a === b) {
@@ -125,7 +102,7 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
-export const setoidShallow = fromEquals(shallowEqual);
+export const eqShallow = Eq.fromEquals(shallowEqual);
 
 export type JSONObject = { [key: string]: JSON };
 export interface JSONArray extends Array<JSON> {}
@@ -142,16 +119,8 @@ export function JSONEqual<A extends JSON>(a: A, b: A): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-export const setoidJSON = fromEquals<JSON>(JSONEqual);
+export const eqJSON = Eq.fromEquals<JSON>(JSONEqual);
 
-function contramap<A, L, P, B>(
-  fa: Strategy<A, L, P>,
-  f: (b: B) => A
-): Strategy<B, L, P> {
-  return fa.contramap(f);
-}
-
-export const strategy: Contravariant3<URI> = {
-  URI,
-  contramap
+export const strategy = {
+  URI
 };

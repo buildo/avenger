@@ -1,15 +1,8 @@
-import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
+import * as TE from 'fp-ts/lib/TaskEither';
 import { Cache } from './Cache';
-import {
-  Strategy,
-  JSON,
-  setoidStrict,
-  setoidShallow,
-  setoidJSON,
-  available
-} from './Strategy';
-import { Setoid, getRecordSetoid, contramap } from 'fp-ts/lib/Setoid';
-import { CacheValue, getSetoid } from './CacheValue';
+import * as S from './Strategy';
+import * as Eq from 'fp-ts/lib/Eq';
+import * as CV from './CacheValue';
 import {
   EnforceNonEmptyRecord,
   ObservableQueries,
@@ -17,18 +10,19 @@ import {
   ProductL,
   ProductP
 } from './util';
-import { mapWithKey, sequence, map as mapRecord } from 'fp-ts/lib/Record';
+import * as R from 'fp-ts/lib/Record';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 /**
  * A function that is asynchronous and can fail
  */
-export type Fetch<A, L, P> = (input: A) => TaskEither<L, P>;
+export type Fetch<A, L, P> = (input: A) => TE.TaskEither<L, P>;
 
 interface BaseQuery<A, L, P> {
   _A: A;
   _L: L;
   _P: P;
-  inputSetoid: Setoid<A>;
+  inputEq: Eq.Eq<A>;
   run: Fetch<A, L, P>;
   invalidate: Fetch<A, L, P>;
 }
@@ -77,13 +71,13 @@ export type ObservableQuery<A, L, P> =
  */
 export function query<A = void, L = unknown, P = unknown>(
   fetch: Fetch<A, L, P>
-): (strategy: Strategy<A, L, P>) => CachedQuery<A, L, P> {
+): (strategy: S.Strategy<A, L, P>) => CachedQuery<A, L, P> {
   return strategy => {
     const cache = new Cache<A, L, P>(fetch, strategy);
     return {
       type: 'cached',
       ...queryPhantoms<A, L, P>(),
-      inputSetoid: strategy.inputSetoid,
+      inputEq: strategy.inputEq,
       cache,
       run: cache.run,
       invalidate: cache.invalidate
@@ -92,9 +86,9 @@ export function query<A = void, L = unknown, P = unknown>(
 }
 
 export type StrategyBuilder<A, L, P> = (
-  inputSetoid: Setoid<A>,
-  cacheValueSetoid: Setoid<CacheValue<L, P>>
-) => Strategy<A, L, P>;
+  inputEq: Eq.Eq<A>,
+  cacheValueEq: Eq.Eq<CV.CacheValue<L, P>>
+) => S.Strategy<A, L, P>;
 
 /**
  * Constructs a `CachedQuery` with a `Strategy` that uses strict equality to compare inputs and results
@@ -106,7 +100,7 @@ export function queryStrict<A = void, L = unknown, P = unknown>(
   makeStrategy: StrategyBuilder<A, L, P>
 ): CachedQuery<A, L, P> {
   return query(fetch)(
-    makeStrategy(setoidStrict, getSetoid(setoidStrict, setoidStrict))
+    makeStrategy(Eq.eqStrict, CV.getEq(Eq.eqStrict, Eq.eqStrict))
   );
 }
 
@@ -120,7 +114,7 @@ export function queryShallow<A = void, L = unknown, P = unknown>(
   makeStrategy: StrategyBuilder<A, L, P>
 ): CachedQuery<A, L, P> {
   return query(fetch)(
-    makeStrategy(setoidShallow, getSetoid(setoidShallow, setoidShallow))
+    makeStrategy(S.eqShallow, CV.getEq(S.eqShallow, S.eqShallow))
   );
 }
 
@@ -133,9 +127,7 @@ export function queryJSON<A extends JSON, L extends JSON, P extends JSON>(
   fetch: Fetch<A, L, P>,
   makeStrategy: StrategyBuilder<A, L, P>
 ): CachedQuery<A, L, P> {
-  return query(fetch)(
-    makeStrategy(setoidJSON, getSetoid(setoidJSON, setoidJSON))
-  );
+  return query(fetch)(makeStrategy(S.eqJSON, CV.getEq(S.eqJSON, S.eqJSON)));
 }
 
 /**
@@ -150,21 +142,22 @@ export function compose<A1, L1, P1, L2, P2>(
   return {
     type: 'composition',
     ...queryPhantoms<A1, L1 | L2, P2>(),
-    inputSetoid: master.inputSetoid,
+    inputEq: master.inputEq,
     master: master as ObservableQuery<A1, L1 | L2, unknown>,
     slave: slave as ObservableQuery<unknown, L1 | L2, P2>,
     run: (a1: A1) =>
-      (master.run as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
+      TE.taskEither.chain((master.run as Fetch<A1, L1 | L2, P1>)(a1), a2 =>
         (slave.run as Fetch<P1, L2, P2>)(a2)
       ),
     invalidate: (a1: A1) =>
-      (master.invalidate as Fetch<A1, L1 | L2, P1>)(a1).chain(a2 =>
-        (slave.invalidate as Fetch<P1, L2, P2>)(a2)
+      TE.taskEither.chain(
+        (master.invalidate as Fetch<A1, L1 | L2, P1>)(a1),
+        a2 => (slave.invalidate as Fetch<P1, L2, P2>)(a2)
       )
   };
 }
 
-const sequenceRecordTaskEither = sequence(taskEither);
+const sequenceRecordTaskEither = R.sequence(TE.taskEither);
 
 /**
  * Constructs a `Product`
@@ -175,17 +168,25 @@ export function product<R extends ObservableQueries>(
 ): Product<ProductA<R>, ProductL<R>, ProductP<R>> {
   type A = ProductA<R>;
   const runQueries = (a: A) =>
-    mapWithKey(queries, (k, query) => query.run(((a || {}) as any)[k]));
+    pipe(
+      queries,
+      R.mapWithIndex((k, query) => query.run(((a || {}) as any)[k]))
+    );
   const run = (a: A) => sequenceRecordTaskEither(runQueries(a));
   const invalidateQueries = (a: A) =>
-    mapWithKey(queries, (k, query) => query.invalidate(((a || {}) as any)[k]));
+    pipe(
+      queries,
+      R.mapWithIndex((k, query) => query.invalidate(((a || {}) as any)[k]))
+    );
   const invalidate = (a: A) => sequenceRecordTaskEither(invalidateQueries(a));
   return {
     type: 'product',
     ...queryPhantoms<A, ProductL<R>, ProductP<R>>(),
-    inputSetoid: contramap(
-      i => i || ({} as any),
-      getRecordSetoid(mapRecord(queries, q => q.inputSetoid))
+    inputEq: pipe(
+      queries,
+      R.map(q => q.inputEq),
+      Eq.getStructEq,
+      Eq.contramap(i => i || ({} as any))
     ),
     queries,
     run: run as any,
@@ -204,6 +205,6 @@ export function map<U, L, A, B>(
 ): ObservableQuery<U, L, B> {
   return compose(
     fa,
-    queryStrict(a => taskEither.of<L, B>(f(a)), available)
+    queryStrict(a => TE.taskEither.of<L, B>(f(a)), S.available)
   );
 }

@@ -1,15 +1,13 @@
 import { createBrowserHistory } from 'history';
 import { invalidate } from '../invalidate';
-import { query, map } from '../Query';
-import { taskEither, TaskEither, fromIO } from 'fp-ts/lib/TaskEither';
-import { refetch, setoidStrict, setoidJSON } from '../Strategy';
-import { getSetoid } from '../CacheValue';
-import { getStructSetoid, setoidString, setoidBoolean } from 'fp-ts/lib/Setoid';
+import * as Q from '../Query';
+import * as TE from 'fp-ts/lib/TaskEither';
+import * as S from '../Strategy';
+import * as CV from '../CacheValue';
+import * as Eq from 'fp-ts/lib/Eq';
 import { command, contramap } from '../command';
-import { Task } from 'fp-ts/lib/Task';
-import { right } from 'fp-ts/lib/Either';
+import * as E from 'fp-ts/lib/Either';
 import { parse, stringify } from 'qs';
-import { IO } from 'fp-ts/lib/IO';
 
 export type HistoryLocation = {
   pathname: string;
@@ -25,34 +23,34 @@ export const requestConfirmationToUpdateLocation = (): (() => void) =>
 const history = createBrowserHistory({
   getUserConfirmation(_, callback) {
     _historyBlockCallback = callback;
-    invalidate({ pendingUpdateLocation }).run();
+    invalidate({ pendingUpdateLocation })();
   }
 });
 
 /**
  * A query that never fails and returns the current `HistoryLocation`
  */
-export const location = query(
-  (): TaskEither<void, HistoryLocation> => {
+export const location = Q.query(
+  (): TE.TaskEither<void, HistoryLocation> => {
     if (!_setListener) {
       setListener();
     }
     const search: HistoryLocation['search'] = parse(history.location.search, {
       ignoreQueryPrefix: true
     });
-    return taskEither.of<void, HistoryLocation>({
+    return TE.taskEither.of<void, HistoryLocation>({
       pathname: history.location.pathname,
       search
     });
   }
 )(
-  refetch<void, void, HistoryLocation>(
-    setoidStrict,
-    getSetoid<void, HistoryLocation>(
-      setoidStrict,
-      getStructSetoid<HistoryLocation>({
-        pathname: setoidString,
-        search: setoidJSON
+  S.refetch<void, void, HistoryLocation>(
+    Eq.eqStrict,
+    CV.getEq<void, HistoryLocation>(
+      Eq.eqStrict,
+      Eq.getStructEq<HistoryLocation>({
+        pathname: Eq.eqString,
+        search: S.eqJSON
       })
     )
   )
@@ -60,7 +58,7 @@ export const location = query(
 
 function setListener() {
   history.listen(() => {
-    invalidate({ location }).run();
+    invalidate({ location })();
   });
   _setListener = true;
 }
@@ -70,40 +68,33 @@ function setListener() {
  */
 export const doUpdateLocation = command(
   // no need to invalidate `location` since it will be invalidated by the `history` listener anyway
-  ({ search, pathname }: HistoryLocation): TaskEither<void, void> =>
-    new TaskEither(
-      new Task(
-        () =>
-          new Promise(resolve => {
-            const searchQuery =
-              Object.keys(search).length > 0
-                ? `?${stringify(search, { skipNulls: true })}`
-                : '';
-            const sanitizedPathname = `/${pathname
-              .trim()
-              .replace(/^[\/]+/, '')}`;
-            if (
-              sanitizedPathname !== history.location.pathname ||
-              searchQuery !== history.location.search
-            ) {
-              const url = `${sanitizedPathname}${searchQuery}`;
-              history.push(url);
-            }
-            resolve(right<void, void>(undefined));
-          })
-      )
-    )
+  ({ search, pathname }: HistoryLocation): TE.TaskEither<void, void> => () =>
+    new Promise(resolve => {
+      const searchQuery =
+        Object.keys(search).length > 0
+          ? `?${stringify(search, { skipNulls: true })}`
+          : '';
+      const sanitizedPathname = `/${pathname.trim().replace(/^[\/]+/, '')}`;
+      if (
+        sanitizedPathname !== history.location.pathname ||
+        searchQuery !== history.location.search
+      ) {
+        const url = `${sanitizedPathname}${searchQuery}`;
+        history.push(url);
+      }
+      resolve(E.right<void, void>(undefined));
+    })
 );
 
 /**
  * A query that never fails and returns `true` if there's a pending (blocked) location update
  */
-export const pendingUpdateLocation = query(() =>
-  taskEither.of<void, boolean>(!!_historyBlockCallback)
+export const pendingUpdateLocation = Q.query(() =>
+  TE.taskEither.of<void, boolean>(!!_historyBlockCallback)
 )(
-  refetch<void, void, boolean>(
-    setoidStrict,
-    getSetoid<void, boolean>(setoidStrict, setoidBoolean)
+  S.refetch<void, void, boolean>(
+    Eq.eqStrict,
+    CV.getEq<void, boolean>(Eq.eqStrict, Eq.eqBoolean)
   )
 );
 
@@ -112,15 +103,14 @@ export const pendingUpdateLocation = query(() =>
  */
 export const doResolvePendingUpdateLocation = command(
   (confirm: boolean) =>
-    fromIO<void, void>(
-      new IO(() => {
-        const callback = _historyBlockCallback;
-        _historyBlockCallback = null;
-        if (callback) {
-          callback(confirm);
-        }
-      })
-    ),
+    TE.fromIOEither<void, void>(() => {
+      const callback = _historyBlockCallback;
+      _historyBlockCallback = null;
+      if (callback) {
+        callback(confirm);
+      }
+      return E.right(undefined);
+    }),
   { location, pendingUpdateLocation }
 );
 
@@ -129,7 +119,7 @@ export const doResolvePendingUpdateLocation = command(
  * @param f Function to transform the current `HistoryLocation`
  */
 export function getCurrentView<A>(f: (location: HistoryLocation) => A) {
-  return map(location, f);
+  return Q.map(location, f);
 }
 
 /**

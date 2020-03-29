@@ -1,11 +1,12 @@
 import { Monad2 } from 'fp-ts/lib/Monad';
 import { Bifunctor2 } from 'fp-ts/lib/Bifunctor';
-import { Setoid, fromEquals } from 'fp-ts/lib/Setoid';
-import { constFalse } from 'fp-ts/lib/function';
+import * as Eq from 'fp-ts/lib/Eq';
+import { constFalse, constant } from 'fp-ts/lib/function';
+import { pipeable, pipe } from 'fp-ts/lib/pipeable';
 
 declare module 'fp-ts/lib/HKT' {
-  interface URI2HKT2<L, A> {
-    QueryResult: QueryResult<L, A>;
+  interface URItoKind2<E, A> {
+    QueryResult: QueryResult<E, A>;
   }
 }
 
@@ -13,201 +14,182 @@ export const URI = 'QueryResult';
 
 export type URI = typeof URI;
 
+export interface QueryResultLoading {
+  readonly _tag: 'Loading';
+}
+
+export interface QueryResultFailure<E> {
+  readonly _tag: 'Failure';
+  readonly failure: E;
+  readonly loading: boolean;
+}
+
+export interface QueryResultSuccess<A> {
+  readonly _tag: 'Success';
+  readonly success: A;
+  readonly loading: boolean;
+}
+
 /**
  * Represents a result obtained by observing a query.
  *
  * `observe` returns an observable stream of such results.
  */
-export type QueryResult<L, A> = Loading<L, A> | Failure<L, A> | Success<L, A>;
+export type QueryResult<E, A> =
+  | QueryResultLoading
+  | QueryResultFailure<E>
+  | QueryResultSuccess<A>;
 
-export class Loading<L, A> {
-  static value: QueryResult<never, never> = new Loading();
-  readonly type: 'Loading' = 'Loading';
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _URI!: URI;
-  constructor() {}
+/**
+ * A `QueryResultLoading`
+ */
+export const queryResultLoading: QueryResult<never, never> = {
+  _tag: 'Loading'
+};
 
-  fold<R>(
-    onLoading: () => R,
-    _onFailure: (value: L, loading: boolean) => R,
-    _onSuccess: (value: A, loading: boolean) => R
-  ): R {
-    return onLoading();
-  }
-
-  map<B>(_: (a: A) => B): QueryResult<L, B> {
-    return this as any;
-  }
-
-  bimap<B, C>(
-    _whenFailure: (value: L) => B,
-    _whenSuccess: (value: A) => C
-  ): QueryResult<B, C> {
-    return this as any;
-  }
-
-  ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
-    return fab.fold<QueryResult<L, B>>(
-      () => this as any, // loading
-      value => new Failure<L, B>(value, true), // fab's failure
-      () => this as any // loading
-    );
-  }
-
-  chain<B>(_f: (value: A) => QueryResult<L, B>): QueryResult<L, B> {
-    return this as any;
-  }
-}
-
-export class Failure<L, A> {
-  readonly type: 'Failure' = 'Failure';
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _URI!: URI;
-  constructor(readonly value: L, readonly loading: boolean) {}
-
-  fold<R>(
-    _onLoading: () => R,
-    onFailure: (value: L, loading: boolean) => R,
-    _onSuccess: (value: A, loading: boolean) => R
-  ): R {
-    return onFailure(this.value, this.loading);
-  }
-
-  map<B>(_: (a: A) => B): QueryResult<L, B> {
-    return this as any;
-  }
-
-  bimap<B, C>(
-    whenFailure: (value: L) => B,
-    _whenSuccess: (value: A) => C
-  ): QueryResult<B, C> {
-    return new Failure<B, C>(whenFailure(this.value), this.loading);
-  }
-
-  ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
-    return fab.fold<QueryResult<L, B>>(
-      () => this as any, // failure
-      () => fab as any, // fab's failure
-      () => this as any // failure
-    );
-  }
-
-  chain<B>(_f: (value: A) => QueryResult<L, B>): QueryResult<L, B> {
-    return this as any;
-  }
-}
-
-export class Success<L, A> {
-  readonly type: 'Success' = 'Success';
-  readonly _A!: A;
-  readonly _L!: L;
-  readonly _URI!: URI;
-  constructor(readonly value: A, readonly loading: boolean) {}
-
-  fold<R>(
-    _onLoading: () => R,
-    _onFailure: (value: L, loading: boolean) => R,
-    onSuccess: (value: A, loading: boolean) => R
-  ): R {
-    return onSuccess(this.value, this.loading);
-  }
-
-  map<B>(f: (a: A) => B): QueryResult<L, B> {
-    return new Success(f(this.value), this.loading);
-  }
-
-  bimap<B, C>(
-    _whenFailure: (value: L) => B,
-    whenSuccess: (value: A) => C
-  ): QueryResult<B, C> {
-    return new Success<B, C>(whenSuccess(this.value), this.loading);
-  }
-
-  ap<B>(fab: QueryResult<L, (a: A) => B>): QueryResult<L, B> {
-    return fab.fold<QueryResult<L, B>>(
-      () => fab as any, // loading
-      () => fab as any, // fab's failure
-      value => this.map(value) // success
-    );
-  }
-
-  chain<B>(f: (value: A) => QueryResult<L, B>): QueryResult<L, B> {
-    return f(this.value);
-  }
+/**
+ * Constructs a `QueryResultFailure`
+ */
+export function queryResultFailure<E = never, A = never>(
+  failure: E,
+  loading: boolean
+): QueryResult<E, A> {
+  return { _tag: 'Failure', failure, loading };
 }
 
 /**
- * A `Loading` `QueryResult`
+ * Constructs a `QueryResultSuccess`
  */
-export const loading: QueryResult<never, never> = Loading.value;
-
-/**
- * Constructs a `Failure` `QueryResult`
- */
-export function failure<L, A>(value: L, loading: boolean): QueryResult<L, A> {
-  return new Failure(value, loading);
+export function queryResultSuccess<E = never, A = never>(
+  success: A,
+  loading: boolean
+): QueryResult<E, A> {
+  return { _tag: 'Success', success, loading };
 }
 
-/**
- * Constructs a `Success` `QueryResult`
- */
-export function success<L, A>(value: A, loading: boolean): QueryResult<L, A> {
-  return new Success(value, loading);
+export function fold<E, A, R>(
+  onLoading: () => R,
+  onFailure: (failure: E, loading: boolean) => R,
+  onSuccess: (success: A, loading: boolean) => R
+): (ma: QueryResult<E, A>) => R {
+  return ma => {
+    switch (ma._tag) {
+      case 'Loading':
+        return onLoading();
+      case 'Failure':
+        return onFailure(ma.failure, ma.loading);
+      case 'Success':
+        return onSuccess(ma.success, ma.loading);
+    }
+  };
 }
 
-const map = <L, A, B>(
-  fa: QueryResult<L, A>,
+function _map<E = never, A = never, B = never>(
+  fa: QueryResult<E, A>,
   f: (a: A) => B
-): QueryResult<L, B> => {
-  return fa.map(f);
-};
+): QueryResult<E, B> {
+  return pipe(
+    fa,
+    fold(constant(queryResultLoading), queryResultFailure, (success, loading) =>
+      queryResultSuccess(f(success), loading)
+    )
+  );
+}
 
-const ap = <L, A, B>(
-  fab: QueryResult<L, (a: A) => B>,
-  fa: QueryResult<L, A>
-): QueryResult<L, B> => {
-  return fa.ap(fab);
-};
+function _of<E = never, A = never>(success: A): QueryResult<E, A> {
+  return queryResultSuccess(success, false);
+}
 
-const of = <L, A>(value: A): QueryResult<L, A> => {
-  return success(value, false);
-};
+function _mapLeft<E = never, A = never, B = never>(
+  fa: QueryResult<E, A>,
+  l: (l: E) => B
+): QueryResult<B, A> {
+  return pipe(
+    fa,
+    fold(
+      constant(queryResultLoading),
+      (failure, loading) => queryResultFailure<B, A>(l(failure), loading),
+      queryResultSuccess
+    )
+  );
+}
 
-const bimap = <L, A, B, C>(
-  fa: QueryResult<L, A>,
-  l: (l: L) => B,
+function _bimap<E = never, A = never, B = never, C = never>(
+  fa: QueryResult<E, A>,
+  l: (l: E) => B,
   r: (a: A) => C
-): QueryResult<B, C> => {
-  return fa.bimap(l, r);
-};
+): QueryResult<B, C> {
+  return pipe(
+    fa,
+    fold(
+      constant(queryResultLoading),
+      (failure, loading) => queryResultFailure(l(failure), loading),
+      (success, loading) => queryResultSuccess(r(success), loading)
+    )
+  );
+}
 
-const chain = <L, A, B>(
+function _chain<L, A, B>(
   fa: QueryResult<L, A>,
   f: (a: A) => QueryResult<L, B>
-): QueryResult<L, B> => {
-  return fa.chain(f);
-};
+): QueryResult<L, B> {
+  return pipe(fa, fold(constant(queryResultLoading), queryResultFailure, f));
+}
 
 export const queryResult: Bifunctor2<URI> & Monad2<URI> = {
   URI,
-  map,
-  ap,
-  of,
-  bimap,
-  chain
+  map: _map,
+  ap: (fab, fa) => _chain(fab, f => _map(fa, f)),
+  of: _of,
+  mapLeft: _mapLeft,
+  bimap: _bimap,
+  chain: _chain
 };
 
-export function getSetoid<L, A>(
-  Sl: Setoid<L>,
-  Sa: Setoid<A>
-): Setoid<QueryResult<L, A>> {
-  return fromEquals((a, b) =>
-    a.fold(
-      () => b.type === 'Loading',
-      fa => b.fold(constFalse, fb => Sl.equals(fa, fb), constFalse),
-      sa => b.fold(constFalse, constFalse, sb => Sa.equals(sa, sb))
+const {
+  ap,
+  apFirst,
+  apSecond,
+  bimap,
+  chain,
+  chainFirst,
+  flatten,
+  map,
+  mapLeft
+} = pipeable(queryResult);
+
+export {
+  ap,
+  apFirst,
+  apSecond,
+  bimap,
+  chain,
+  chainFirst,
+  flatten,
+  map,
+  mapLeft
+};
+
+export function getEq<E, A>(
+  Eqe: Eq.Eq<E>,
+  Eqa: Eq.Eq<A>
+): Eq.Eq<QueryResult<E, A>> {
+  return Eq.fromEquals((a, b) =>
+    pipe(
+      a,
+      fold(
+        () => b._tag === 'Loading',
+        fa =>
+          pipe(
+            b,
+            fold(constFalse, fb => Eqe.equals(fa, fb), constFalse)
+          ),
+        sa =>
+          pipe(
+            b,
+            fold(constFalse, constFalse, sb => Eqa.equals(sa, sb))
+          )
+      )
     )
   );
 }

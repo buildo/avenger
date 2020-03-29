@@ -1,6 +1,6 @@
 import { Fetch } from './Query';
 import { invalidate } from './invalidate';
-import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
+import * as TE from 'fp-ts/lib/TaskEither';
 import {
   EnforceNonEmptyRecord,
   ProductA,
@@ -8,7 +8,8 @@ import {
   ObservableQueries,
   VoidInputObservableQueries
 } from './util';
-import { fromNullable } from 'fp-ts/lib/Option';
+import * as O from 'fp-ts/lib/Option';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 /**
  * Constructs a command,
@@ -27,7 +28,7 @@ export function command<
 >(
   cmd: Fetch<A, L, P>,
   queries: EnforceNonEmptyRecord<I>
-): (a: A, ia?: ProductA<I>) => TaskEither<L | IL, P>;
+): (a: A, ia?: ProductA<I>) => TE.TaskEither<L | IL, P>;
 export function command<
   A,
   L,
@@ -37,15 +38,15 @@ export function command<
 >(
   cmd: Fetch<A, L, P>,
   queries: EnforceNonEmptyRecord<I>
-): (a: A, ia: ProductA<I>) => TaskEither<L | IL, P>;
+): (a: A, ia: ProductA<I>) => TE.TaskEither<L | IL, P>;
 export function command<A, L, P>(
   cmd: Fetch<A, L, P>,
   queries?: never
-): (a: A, ia?: never) => TaskEither<L, P>;
+): (a: A, ia?: never) => TE.TaskEither<L, P>;
 export function command<A, L, P>(
   cmd: Fetch<A, L, P>,
   queries?: never
-): (a: A, ia?: never) => TaskEither<L, P>;
+): (a: A, ia?: never) => TE.TaskEither<L, P>;
 export function command<
   A,
   L,
@@ -55,19 +56,27 @@ export function command<
 >(
   cmd: Fetch<A, L, P>,
   queries?: EnforceNonEmptyRecord<I>
-): (a: A, ia?: ProductA<I>) => TaskEither<L | IL, P> {
+): (a: A, ia?: ProductA<I>) => TE.TaskEither<L | IL, P> {
   return (a, ia) =>
-    cmd(a).chain(p =>
-      fromNullable(queries).foldL(
-        () => taskEither.of<L, P>(p),
-        queries => invalidate(queries, ia).map(() => p)
+    TE.taskEither.chain(cmd(a), p =>
+      pipe(
+        queries,
+        O.fromNullable,
+        O.fold(
+          () => TE.taskEither.of(p),
+          queries =>
+            TE.taskEither.map(
+              invalidate((queries as unknown) as EnforceNonEmptyRecord<I>, ia),
+              () => p
+            )
+        )
       )
     );
 }
 
 export function contramap<U, L, A, B>(
-  fa: (a: U) => TaskEither<L, A>,
+  fa: (a: U) => TE.TaskEither<L, A>,
   f: (a: B) => U
-): (a: B) => TaskEither<L, A> {
+): (a: B) => TE.TaskEither<L, A> {
   return a => fa(f(a));
 }

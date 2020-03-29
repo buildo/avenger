@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Function1 } from 'fp-ts/lib/function';
 import { Monoid } from 'fp-ts/lib/Monoid';
 import { declareQueries } from './declareQueries';
 import { QueryResult } from '../QueryResult';
@@ -20,7 +19,7 @@ type Params<A> = A extends void
 
 type Props<R extends ObservableQueries> = {
   queries: EnforceNonEmptyRecord<R>;
-  render: Function1<QueryResult<ProductL<R>, ProductP<R>>, React.ReactNode>;
+  render: (result: QueryResult<ProductL<R>, ProductP<R>>) => React.ReactNode;
   resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>;
 } & Params<ProductA<R>>;
 

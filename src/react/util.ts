@@ -1,11 +1,11 @@
-import { QueryResult, loading, success } from '../QueryResult';
+import * as QR from '../QueryResult';
 
 export function defaultMonoidResult<L, P>() {
   return {
-    empty: loading,
-    concat: (a: QueryResult<L, P>, b: QueryResult<L, P>) =>
-      a.type === 'Success' && b.type === 'Loading'
-        ? success<L, P>(a.value, true)
+    empty: QR.queryResultLoading,
+    concat: (a: QR.QueryResult<L, P>, b: QR.QueryResult<L, P>) =>
+      a._tag === 'Success' && b._tag === 'Loading'
+        ? QR.queryResultSuccess<L, P>(a.success, true)
         : b
   };
 }
