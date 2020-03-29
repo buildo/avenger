@@ -1,13 +1,6 @@
-import { TaskEither, taskEither } from 'fp-ts/lib/TaskEither';
-import {
-  query,
-  compose,
-  product,
-  queryShallow,
-  ObservableQuery,
-  queryStrict
-} from '../../src/Query';
-import { Strategy, available, expire, refetch } from '../../src/Strategy';
+import * as TE from 'fp-ts/lib/TaskEither';
+import * as Q from '../../src/Query';
+import * as S from '../../src/Strategy';
 import { param, command } from '../../src/DSL';
 import { observeShallow } from '../../src/observe';
 import {
@@ -17,81 +10,81 @@ import {
   useQueries
 } from '../../src/react';
 import * as React from 'react';
-import { QueryResult } from '../../src/QueryResult';
+import * as QR from '../../src/QueryResult';
 import { invalidate } from '../../src/invalidate';
 import { ProductA } from '../../src/util';
 
-declare const af: (input: string) => TaskEither<string, number>;
-declare const as: Strategy<string, string, number>;
-const a = query(af)(as); // $ExpectType CachedQuery<string, string, number>
+declare const af: (input: string) => TE.TaskEither<string, number>;
+declare const as: S.Strategy<string, string, number>;
+const a = Q.query(af)(as); // $ExpectType CachedQuery<string, string, number>
 
-declare const bf: () => TaskEither<string, number>;
+declare const bf: () => TE.TaskEither<string, number>;
 // tslint:disable-next-line:invalid-void
-declare const bs: Strategy<void, string, number>;
-const b = query(bf)(bs); // $ExpectType CachedQuery<void, string, number>
+declare const bs: S.Strategy<void, string, number>;
+const b = Q.query(bf)(bs); // $ExpectType CachedQuery<void, string, number>
 
-declare const cf: (input: number) => TaskEither<string, boolean>;
-declare const cs: Strategy<number, string, boolean>;
-const c = query(cf)(cs); // $ExpectType CachedQuery<number, string, boolean>
+declare const cf: (input: number) => TE.TaskEither<string, boolean>;
+declare const cs: S.Strategy<number, string, boolean>;
+const c = Q.query(cf)(cs); // $ExpectType CachedQuery<number, string, boolean>
 
-declare const df: (input: number) => TaskEither<number, boolean>;
-declare const ds: Strategy<number, number, boolean>;
-const d = query(df)(ds); // $ExpectType CachedQuery<number, number, boolean>
+declare const df: (input: number) => TE.TaskEither<number, boolean>;
+declare const ds: S.Strategy<number, number, boolean>;
+const d = Q.query(df)(ds); // $ExpectType CachedQuery<number, number, boolean>
 
-declare const ef: (input: string) => TaskEither<number, boolean>;
-declare const es: Strategy<string, number, boolean>;
-const e = query(ef)(es); // $ExpectType CachedQuery<string, number, boolean>
+declare const ef: (input: string) => TE.TaskEither<number, boolean>;
+declare const es: S.Strategy<string, number, boolean>;
+const e = Q.query(ef)(es); // $ExpectType CachedQuery<string, number, boolean>
 
 // $ExpectType Composition<string, string, boolean>
-const composeac = compose(a, c);
+const composeac = Q.compose(a, c);
 
 // $ExpectType Composition<string, string | number, boolean>
-const composead = compose(a, d);
+const composead = Q.compose(a, d);
 
-const composeae = compose(
+const composeae = Q.compose(
   a,
   e // $ExpectError
 );
 
 // $expectType Composition<never, string, boolean>
-const composebc = compose(b, c);
+const composebc = Q.compose(b, c);
 
 interface Loc {
   pathname: string;
   search: Record<string, string>;
 }
 // tslint:disable-next-line:invalid-void
-declare const location: ObservableQuery<void, void, Loc>;
+declare const location: Q.ObservableQuery<void, void, Loc>;
 interface View {
   view: string;
 }
 declare function locationToView(location: Loc): View;
 
 // $ExpectType Composition<void, void, View>
-const currentView = compose(
+const currentView = Q.compose(
   location,
-  queryStrict(
+  Q.queryStrict(
     // tslint:disable-next-line:invalid-void
-    location => taskEither.of<void, View>(locationToView(location)),
-    refetch
+    location => TE.taskEither.of<void, View>(locationToView(location)),
+    S.refetch
   )
 );
 
 // $ExpectType Product<Pick<{} & { a: string; c: number; }, "a" | "c">, string, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; }>>
-const productac = product({ a, c });
+const productac = Q.product({ a, c });
 
 // tslint:disable-next-line:max-line-length
 // $ExpectType Product<Pick<{} & { a: string; c: number; e: string; }, "a" | "c" | "e">, string | number, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; e: CachedQuery<string, number, boolean>; }>>
-const productace = product({ a, c, e });
+const productace = Q.product({ a, c, e });
 
 // $ExpectType Product<Pick<{ b?: undefined; } & { a: string; }, "a" | "b">, string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
-const productab = product({ a, b });
+const productab = Q.product({ a, b });
 observeShallow(productab, { a: 'foo' });
 // $ExpectError
 observeShallow(productab, { b: 1, a: 'foo' });
 
 // tslint:disable-next-line:invalid-void
-declare function getToken(): TaskEither<void, string>;
+declare function getToken(): TE.TaskEither<void, string>;
 interface Post {
   id: number;
   content: { title: string; body: string };
@@ -101,37 +94,37 @@ type NotFound = 'not found';
 declare function getPosts(input: {
   token: string;
   limit: number;
-}): TaskEither<InvalidToken, Post[]>;
+}): TE.TaskEither<InvalidToken, Post[]>;
 type PostWithTags = Post & { tags: string[] };
-const token = queryShallow(getToken, available);
+const token = Q.queryShallow(getToken, S.available);
 const postId = param<Post['id']>();
 const limit = param<number>();
-const posts = compose(
-  product({ token, limit }),
-  queryShallow(getPosts, expire(2000))
+const posts = Q.compose(
+  Q.product({ token, limit }),
+  Q.queryShallow(getPosts, S.expire(2000))
 );
 declare function _addTags(input: {
   token: string;
   postId: number;
   posts: Post[];
-}): TaskEither<InvalidToken | NotFound, PostWithTags>;
-const addTags = queryShallow(_addTags, expire(2000));
+}): TE.TaskEither<InvalidToken | NotFound, PostWithTags>;
+const addTags = Q.queryShallow(_addTags, S.expire(2000));
 // tslint:disable-next-line:max-line-length
 // $ExpectType Composition<Pick<{ token?: undefined; } & { postId: number; posts: Pick<{ token?: undefined; } & { limit: number; }, "token" | "limit">; }, "token" | "postId" | "posts">, void | "invalid token" | "not found", PostWithTags>
-const postWithTags = compose(product({ token, postId, posts }), addTags);
+const postWithTags = Q.compose(Q.product({ token, postId, posts }), addTags);
 
 const declareA = declareQueries({ a });
 declareA.InputProps; // $ExpectType { queries: Pick<{} & { a: string; }, "a">; }
 declareA.Props; // $ExpectType QueryOutputProps<string, ProductP<{ a: CachedQuery<string, string, number>; }>>
 declare const CA: React.ComponentType<{
-  queries: QueryResult<string, { a: number }>;
+  queries: QR.QueryResult<string, { a: number }>;
 }>;
 const DCA = declareA(CA);
 <DCA queries={{ a: 'foo' }} />;
 <DCA />; // $ExpectError
 <DCA queries={{ a: 1 }} />; // $ExpectError
 declare const CAA: React.ComponentType<{
-  queries: QueryResult<string, { a: number }>;
+  queries: QR.QueryResult<string, { a: number }>;
   foo: number;
 }>;
 const DCAA = declareA(CAA);
@@ -144,13 +137,13 @@ const declareB = declareQueries({ b });
 declareB.InputProps; // $ExpectType {}
 declareB.Props; // $ExpectType QueryOutputProps<string, ProductP<{ b: CachedQuery<void, string, number>; }>>
 declare const CB: React.ComponentType<{
-  queries: QueryResult<string, { b: number }>;
+  queries: QR.QueryResult<string, { b: number }>;
 }>;
 const DCB = declareB(CB);
 <DCB queries={undefined} />; // $ExpectError
 <DCB />;
 declare const CBB: React.ComponentType<{
-  queries: QueryResult<string, { b: number }>;
+  queries: QR.QueryResult<string, { b: number }>;
   foo: number;
 }>;
 const DCBB = declareB(CBB);
@@ -162,7 +155,7 @@ const declareAB = declareQueries({ a, b });
 declareAB.InputProps; // $ExpectType { queries: Pick<{ b?: undefined; } & { a: string; }, "a" | "b">; }
 declareAB.Props; // $ExpectType QueryOutputProps<string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
 declare const AB: React.ComponentType<{
-  queries: QueryResult<string, { a: number; b: number }>;
+  queries: QR.QueryResult<string, { a: number; b: number }>;
 }>;
 const DAB = declareAB(AB);
 <DAB queries={{}} />; // $ExpectError
@@ -177,8 +170,8 @@ invalidate({ b }); // $ExpectType TaskEither<string, ProductP<{ b: CachedQuery<v
 invalidate({ a, b }, {}); // $ExpectError
 invalidate({ a, b }, { a: 'foo' }); // $ExpectType TaskEither<string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
 
-declare const caf: (input: string) => TaskEither<string, number>;
-declare const cbf: (input: number) => TaskEither<string, number>;
+declare const caf: (input: string) => TE.TaskEither<string, number>;
+declare const cbf: (input: number) => TE.TaskEither<string, number>;
 
 const cmdcaf = command(caf); // $ExpectType (a: string, ia?: undefined) => TaskEither<string, number>
 cmdcaf('foo'); // $ExpectType TaskEither<string, number>
@@ -197,91 +190,93 @@ cmdb(1);
 // tslint:disable-next-line:interface-over-type-literal
 type RA = {
   // tslint:disable-next-line:invalid-void
-  a: ObservableQuery<string, void, number>;
+  a: Q.ObservableQuery<string, void, number>;
   // tslint:disable-next-line:invalid-void
-  b: ObservableQuery<void, void, number>;
+  b: Q.ObservableQuery<void, void, number>;
 };
 type PA = ProductA<RA>; // $ExpectType Pick<{ b?: undefined; } & { a: string; }, "a" | "b">
 
 // tslint:disable-next-line:interface-over-type-literal
 type RB = {
   // tslint:disable-next-line:invalid-void
-  a: ObservableQuery<void, void, number>;
+  a: Q.ObservableQuery<void, void, number>;
   // tslint:disable-next-line:invalid-void
-  b: ObservableQuery<void, void, number>;
+  b: Q.ObservableQuery<void, void, number>;
 };
 type PB = ProductA<RB>; // $ExpectType void
 
 // tslint:disable-next-line:interface-over-type-literal
 type RC = {
   // tslint:disable-next-line:invalid-void
-  a: ObservableQuery<string, void, number>;
+  a: Q.ObservableQuery<string, void, number>;
   // tslint:disable-next-line:invalid-void
-  b: ObservableQuery<number, void, number>;
+  b: Q.ObservableQuery<number, void, number>;
 };
 type PC = ProductA<RC>; // $ExpectType Pick<{} & { a: string; b: number; }, "a" | "b">
 
-declare const q1: ObservableQuery<{ a: string }, string, string>;
-declare const q2: ObservableQuery<{ b: number }, string, string>;
-declare const q3: ObservableQuery<void, string, string>;
+declare const q1: Q.ObservableQuery<{ a: string }, string, string>;
+declare const q2: Q.ObservableQuery<{ b: number }, string, string>;
+declare const q3: Q.ObservableQuery<void, string, string>;
 
 <WithQueries
   queries={{ q1, q2 }}
   params={{ q: { a: 'ciao' }, q2: { b: 2 } }} // $ExpectError
-  render={q => {
-    return q.fold(
-      () => null,
-      () => null,
-      ({ q1, q2 }) => <span>{`${q1}: ${q2}`}</span>
-    );
-  }}
+  render={QR.fold(
+    () => null,
+    () => null,
+    ({ q1, q2 }) => (
+      <span>{`${q1}: ${q2}`}</span>
+    )
+  )}
 />;
 
 <WithQueries
   queries={{ q1, q2 }}
   params={{ q1: { a: 2 }, q2: { b: 2 } }} // $ExpectError
-  render={q => {
-    return q.fold(
-      () => null,
-      () => null,
-      ({ q1, q2 }) => <span>{`${q1}: ${q2}`}</span>
-    );
-  }}
+  render={QR.fold(
+    () => null,
+    () => null,
+    ({ q1, q2 }) => (
+      <span>{`${q1}: ${q2}`}</span>
+    )
+  )}
 />;
 
 <WithQueries
   queries={{ q2 }}
   params={{ q2: { b: 2 } }}
-  render={q => {
-    return q.fold(
-      () => null,
-      () => null,
-      ({ q }) => <span>{q}</span> // $ExpectError
-    );
-  }}
+  render={QR.fold(
+    () => null,
+    () => null,
+    (
+      { q } // $ExpectError
+    ) => (
+      <span>{q}</span>
+    )
+  )}
 />;
 
 <WithQueries
   queries={{ q3 }}
   params={{ q3: undefined }} // $ExpectError
-  render={q => {
-    return q.fold(
-      () => null,
-      () => null,
-      ({ q3 }) => <span>{q3}</span>
-    );
-  }}
+  render={QR.fold(
+    () => null,
+    () => null,
+    ({ q3 }) => (
+      <span>{q3}</span>
+    )
+  )}
 />;
 
 <WithQueries
   queries={{ q3, q4: q3 }}
-  render={q => {
-    return q.fold(
-      () => null,
-      () => null,
-      ({ q3, q4 }) => <span>{`${q3}-${q4}`}</span>
-    );
-  }}
+  render={QR.fold(
+    () => null,
+    () => null,
+    ({ q3, q4 }) => (
+      <span>{`${q3}-${q4}`}</span>
+    )
+  )}
 />;
 
 useQuery(a); // $ExpectError

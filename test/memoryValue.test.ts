@@ -6,15 +6,15 @@ import { toArray, take } from 'rxjs/operators';
 describe('memoryValue', () => {
   it('should work', async () => {
     const { query, command } = memoryValue<Option<string>>(none);
-    requestAnimationFrame(() => command(some('token')).run());
+    requestAnimationFrame(() => command(some('token'))());
     const results = await observeStrict(query, undefined)
       .pipe(take(4), toArray())
       .toPromise();
     expect(results).toEqual([
-      { type: 'Loading' },
-      { type: 'Success', loading: false, value: none },
-      { type: 'Loading' },
-      { type: 'Success', loading: false, value: some('token') }
+      { _tag: 'Loading' },
+      { _tag: 'Success', loading: false, success: none },
+      { _tag: 'Loading' },
+      { _tag: 'Success', loading: false, success: some('token') }
     ]);
   });
 });

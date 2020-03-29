@@ -1,38 +1,35 @@
 import * as fc from 'fast-check';
-import { applicative } from 'fp-ts-laws';
-import {
-  queryResult,
-  QueryResult,
-  loading,
-  failure,
-  success,
-  getSetoid
-} from '../src/QueryResult';
-import { setoidString } from 'fp-ts/lib/Setoid';
+import * as laws from 'fp-ts-laws';
+import * as QR from '../src/QueryResult';
+import * as Eq from 'fp-ts/lib/Eq';
 
 function getLoading<L, A>(
   arb: fc.Arbitrary<unknown>
-): fc.Arbitrary<QueryResult<L, A>> {
-  return arb.map(() => loading);
+): fc.Arbitrary<QR.QueryResult<L, A>> {
+  return arb.map(() => QR.queryResultLoading);
 }
 
 function getFailure<L, A>(
   arb: fc.Arbitrary<L>
-): fc.Arbitrary<QueryResult<L, A>> {
-  return arb.chain(a => fc.boolean().map(loading => failure(a, loading)));
+): fc.Arbitrary<QR.QueryResult<L, A>> {
+  return arb.chain(a =>
+    fc.boolean().map(loading => QR.queryResultFailure(a, loading))
+  );
 }
 
 function getSuccess<L, A>(
   arb: fc.Arbitrary<A>
-): fc.Arbitrary<QueryResult<L, A>> {
-  return arb.chain(a => fc.boolean().map(loading => success(a, loading)));
+): fc.Arbitrary<QR.QueryResult<L, A>> {
+  return arb.chain(a =>
+    fc.boolean().map(loading => QR.queryResultSuccess(a, loading))
+  );
 }
 
 function getQueryResult<L, A>(
   leftArb: fc.Arbitrary<L>,
   rightArb: fc.Arbitrary<A>
-): fc.Arbitrary<QueryResult<L, A>> {
-  return fc.oneof<fc.Arbitrary<QueryResult<L, A>>[]>(
+): fc.Arbitrary<QR.QueryResult<L, A>> {
+  return fc.oneof<fc.Arbitrary<QR.QueryResult<L, A>>[]>(
     getLoading(rightArb),
     getFailure(leftArb),
     getSuccess(rightArb)
@@ -40,10 +37,28 @@ function getQueryResult<L, A>(
 }
 
 describe('QueryResult', () => {
-  it('Applicative', () => {
-    applicative(queryResult)(
+  it('Functor', () => {
+    laws.functor(QR.queryResult)(
       a => getQueryResult(fc.string(), a),
-      Sa => getSetoid(setoidString, Sa)
+      Eqa => QR.getEq(Eq.eqString, Eqa)
     );
+  });
+
+  it('Apply', () => {
+    laws.apply(QR.queryResult)(
+      a => getQueryResult(fc.string(), a),
+      Eqa => QR.getEq(Eq.eqString, Eqa)
+    );
+  });
+
+  it('Applicative', () => {
+    laws.applicative(QR.queryResult)(
+      a => getQueryResult(fc.string(), a),
+      Eqa => QR.getEq(Eq.eqString, Eqa)
+    );
+  });
+
+  it('Monad', () => {
+    laws.monad(QR.queryResult)(Eqa => QR.getEq(Eq.eqString, Eqa));
   });
 });

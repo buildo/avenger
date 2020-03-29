@@ -1,48 +1,46 @@
 import * as fc from 'fast-check';
 import { functor } from 'fp-ts-laws';
-import { setoidString } from 'fp-ts/lib/Setoid';
+import * as Eq from 'fp-ts/lib/Eq';
 import { left, right } from 'fp-ts/lib/Either';
-import {
-  cacheValue,
-  getSetoid,
-  CacheValue,
-  cacheValuePending,
-  cacheValueInitial,
-  cacheValueError,
-  cacheValueResolved
-} from '../src/CacheValue';
+import * as CV from '../src/CacheValue';
 
 function getInitial<L, A>(
   arb: fc.Arbitrary<unknown>
-): fc.Arbitrary<CacheValue<L, A>> {
-  return arb.map(() => cacheValueInitial());
+): fc.Arbitrary<CV.CacheValue<L, A>> {
+  return arb.map(() => CV.cacheValueInitial);
 }
 
 function getPending<L, A>(
   leftArb: fc.Arbitrary<L>,
   rightArb: fc.Arbitrary<A>
-): fc.Arbitrary<CacheValue<L, A>> {
-  return fc.oneof<fc.Arbitrary<CacheValue<L, A>>[]>(
-    leftArb.map(l => cacheValuePending(Promise.resolve(left(l)), new Date())),
-    rightArb.map(r => cacheValuePending(Promise.resolve(right(r)), new Date()))
+): fc.Arbitrary<CV.CacheValue<L, A>> {
+  return fc.oneof<fc.Arbitrary<CV.CacheValue<L, A>>[]>(
+    leftArb.map(l =>
+      CV.cacheValuePending(Promise.resolve(left(l)), new Date())
+    ),
+    rightArb.map(r =>
+      CV.cacheValuePending(Promise.resolve(right(r)), new Date())
+    )
   );
 }
 
-function getError<L, A>(arb: fc.Arbitrary<L>): fc.Arbitrary<CacheValue<L, A>> {
-  return arb.map(a => cacheValueError(a, new Date()));
+function getError<L, A>(
+  arb: fc.Arbitrary<L>
+): fc.Arbitrary<CV.CacheValue<L, A>> {
+  return arb.map(a => CV.cacheValueError(a, new Date()));
 }
 
 function getResolved<L, A>(
   arb: fc.Arbitrary<A>
-): fc.Arbitrary<CacheValue<L, A>> {
-  return arb.map(a => cacheValueResolved(a, new Date()));
+): fc.Arbitrary<CV.CacheValue<L, A>> {
+  return arb.map(a => CV.cacheValueResolved(a, new Date()));
 }
 
 function getCacheValue<L, A>(
   leftArb: fc.Arbitrary<L>,
   rightArb: fc.Arbitrary<A>
-): fc.Arbitrary<CacheValue<L, A>> {
-  return fc.oneof<fc.Arbitrary<CacheValue<L, A>>[]>(
+): fc.Arbitrary<CV.CacheValue<L, A>> {
+  return fc.oneof<fc.Arbitrary<CV.CacheValue<L, A>>[]>(
     getInitial(rightArb),
     getPending(leftArb, rightArb),
     getError(leftArb),
@@ -52,9 +50,9 @@ function getCacheValue<L, A>(
 
 describe('CacheValue', () => {
   it('Functor', () => {
-    functor(cacheValue)(
+    functor(CV.cacheValue)(
       a => getCacheValue(fc.string(), a),
-      Sa => getSetoid(setoidString, Sa)
+      Eqa => CV.getEq(Eq.eqString, Eqa)
     );
   });
 });

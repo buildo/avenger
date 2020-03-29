@@ -3,18 +3,22 @@ import { render, waitForElement, cleanup } from 'react-testing-library';
 import { queryStrict, refetch, invalidate } from '../src/DSL';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { useQueries, useQuery } from '../src/react';
+import { fold } from '../src/QueryResult';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 describe('useQueries', () => {
   it('should work', async () => {
     const foo = queryStrict(() => taskEither.of<void, string>('foo'), refetch);
     function Foo() {
-      const f = useQueries({ foo });
       return (
         <>
-          {f.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => foo
+          {pipe(
+            useQueries({ foo }),
+            fold(
+              () => 'loading',
+              () => 'failure',
+              ({ foo }) => foo
+            )
           )}
         </>
       );
@@ -30,13 +34,15 @@ describe('useQueries', () => {
     const foof = jest.fn(() => taskEither.of<void, string>(res.value));
     const foo = queryStrict(foof, refetch);
     const Foo = jest.fn(() => {
-      const f = useQueries({ foo });
       return (
         <>
-          {f.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => foo
+          {pipe(
+            useQueries({ foo }),
+            fold(
+              () => 'loading',
+              () => 'failure',
+              ({ foo }) => foo
+            )
           )}
         </>
       );
@@ -48,7 +54,7 @@ describe('useQueries', () => {
     expect(Foo).toHaveBeenCalledTimes(2);
     expect(foof).toHaveBeenCalledTimes(1);
     res.value = 'bar';
-    await invalidate({ foo }).run();
+    await invalidate({ foo })();
     await rerender(element);
     await waitForElement(() => getByText('bar'));
     expect(Foo).toHaveBeenCalledTimes(4);
@@ -66,13 +72,15 @@ describe('useQueries', () => {
       React.useEffect(() => {
         setTimeout(() => setA('foos'), 10);
       }, []);
-      const f = useQueries({ foo }, { foo: a });
       return (
         <>
-          {f.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => String(foo)
+          {pipe(
+            useQueries({ foo }, { foo: a }),
+            fold(
+              () => 'loading',
+              () => 'failure',
+              ({ foo }) => String(foo)
+            )
           )}
         </>
       );
@@ -97,13 +105,15 @@ describe('useQueries', () => {
       React.useEffect(() => {
         setTimeout(() => setB(true), 10);
       }, []);
-      const f = useQueries({ foo: b ? fooB : fooA });
       return (
         <>
-          {f.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => foo
+          {pipe(
+            useQueries({ foo: b ? fooB : fooA }),
+            fold(
+              () => 'loading',
+              () => 'failure',
+              ({ foo }) => foo
+            )
           )}
         </>
       );
@@ -130,13 +140,15 @@ describe('useQuery', () => {
       React.useEffect(() => {
         setTimeout(() => setB(true), 10);
       }, []);
-      const f = useQuery(b ? fooB : fooA);
       return (
         <>
-          {f.fold(
-            () => 'loading',
-            () => 'failure',
-            foo => foo
+          {pipe(
+            useQuery(b ? fooB : fooA),
+            fold(
+              () => 'loading',
+              () => 'failure',
+              foo => foo
+            )
           )}
         </>
       );

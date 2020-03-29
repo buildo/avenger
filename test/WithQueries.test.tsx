@@ -3,7 +3,8 @@ import { render, waitForElement, cleanup } from 'react-testing-library';
 import { queryStrict, refetch, invalidate } from '../src/DSL';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { WithQueries } from '../src/react';
-import { QueryResult } from '../src/QueryResult';
+import * as QR from '../src/QueryResult';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 describe('declareQueries', () => {
   it('should work', async () => {
@@ -11,13 +12,11 @@ describe('declareQueries', () => {
     const Foo = () => (
       <WithQueries
         queries={{ foo }}
-        render={queries =>
-          queries.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => foo
-          )
-        }
+        render={QR.fold(
+          () => 'loading',
+          () => 'failure',
+          ({ foo }) => foo
+        )}
       />
     );
 
@@ -31,11 +30,14 @@ describe('declareQueries', () => {
     const foof = jest.fn(() => taskEither.of<void, string>(res.value));
     const foo = queryStrict(foof, refetch);
     const renderf = jest.fn(
-      (queries: QueryResult<void, { foo: typeof foo._P }>) =>
-        queries.fold(
-          () => 'loading',
-          () => 'failure',
-          ({ foo }) => foo
+      (queries: QR.QueryResult<void, { foo: typeof foo._P }>) =>
+        pipe(
+          queries,
+          QR.fold(
+            () => 'loading',
+            () => 'failure',
+            ({ foo }) => foo
+          )
         )
     );
     const Foo = () => <WithQueries queries={{ foo }} render={renderf} />;
@@ -46,13 +48,13 @@ describe('declareQueries', () => {
     // why 3 and not 2?
     // Currently WithQueries (implemented using declareQueries) subscribes in componentDidMount, after
     // the first render which has already happened using monoidResult.empty as query result.
-    // Since we a) don't have a way of comparing result (i.e. no resultSetoid) and b) it's unsafe
+    // Since we a) don't have a way of comparing result (i.e. no resultEq) and b) it's unsafe
     // to call subscribe and potentially trigger a setState before the component is mounted,
     // this is expected
     expect(renderf).toHaveBeenCalledTimes(3);
     expect(foof).toHaveBeenCalledTimes(1);
     res.value = 'bar';
-    await invalidate({ foo }).run();
+    await invalidate({ foo })();
     await rerender(element);
     await waitForElement(() => getByText('bar'));
     expect(renderf).toHaveBeenCalledTimes(5); // Why 5 and not 4? See comment above
@@ -74,13 +76,11 @@ describe('declareQueries', () => {
         <WithQueries
           queries={{ foo }}
           params={{ foo: a }}
-          render={queries =>
-            queries.fold(
-              () => 'loading',
-              () => 'failure',
-              ({ foo }) => String(foo)
-            )
-          }
+          render={QR.fold(
+            () => 'loading',
+            () => 'failure',
+            ({ foo }) => String(foo)
+          )}
         />
       );
     };
@@ -107,13 +107,11 @@ describe('declareQueries', () => {
       return (
         <WithQueries
           queries={{ foo: b ? fooB : fooA }}
-          render={queries =>
-            queries.fold(
-              () => 'loading',
-              () => 'failure',
-              ({ foo }) => foo
-            )
-          }
+          render={QR.fold(
+            () => 'loading',
+            () => 'failure',
+            ({ foo }) => foo
+          )}
         />
       );
     }
