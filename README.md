@@ -293,7 +293,51 @@ class MyComponent extends React.PureComponent<Props, State> {
 }
 ```
 
-**NB** both `declareQueries` and `WithQueries` do not support dynamic queries definition (e.g. `declareQueries(someCondition ? { queryA } : { queryA, queryB }`).
+**NB** both `declareQueries` and `WithQueries` do not support dynamic queries definition (e.g. `declareQueries(someCondition ? { queryA } : { queryA, queryB }` will not work).
+
+## useQuery
+
+alternatively, to avoid unecessary boilerplate, you can use the `useQuery` and `useQueries` hooks:
+
+```tsx
+import { useQuery } from 'avenger/lib/react';
+import { userPreferences } from './queries';
+
+const MyComponent: React.FC<{ userName: string }> = props => {
+  return useQuery(userPreferences, { userName: props.userName }).fold(
+    () => <p>loading</p>,
+    () => <p>there was a problem when fetching preferences</p>,
+    userPreferences => (
+      <p>
+        {props.userName}'s favourite color is {userPreferences.color}
+      </p>
+    )
+  );
+};
+```
+
+## useQueries
+
+```tsx
+import { useQueries } from 'avenger/lib/react';
+
+declare const query1: ObservableQuery<string, unknown, number>;
+declare const query2: ObservableQuery<void, unknown, string>;
+
+const MyComponent: React.FC = props => {
+  return useQueries({ query1, query2 }, { query1: 'query-1-input' }).fold(
+    () => <p>still loading query1 or query2 (or both)</p>,
+    () => <p>there was a problem when fetching either query1 or query2</p>,
+    ({ query1, query2 }) => (
+      <p>
+        {query2}: {query1}
+      </p>
+    )
+  );
+};
+```
+
+**NB** both `useQuery` and `useQueries` support dynamic queries definition (e.g. `useQueries(someCondition ? { queryA } : { queryA, queryB }` will work as expected).
 
 # Navigation
 
@@ -334,8 +378,8 @@ export function viewToLocation(view: CurrentView): HistoryLocation {
   }
 }
 
-const currentView: ObservableQuery = getCurrentView(locationToView);
-export const doUpdateCurrentView: Command = getDoUpdateCurrentView(viewToLocation);
+export const currentView = getCurrentView(locationToView); // ObservableQuery
+export const doUpdateCurrentView = getDoUpdateCurrentView(viewToLocation); // Command
 ```
 
 once you instantiated all the boilerplate needed to instruct Avenger on how to navigate, you can use `currentView` and `doUpdateCurrentView` like they were normal queries and commands (and, in fact, they are..).

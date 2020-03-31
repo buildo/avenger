@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Function1 } from 'fp-ts/lib/function';
+import { Monoid } from 'fp-ts/lib/Monoid';
 import { declareQueries } from './declareQueries';
 import { QueryResult } from '../QueryResult';
 import {
@@ -9,6 +10,7 @@ import {
   ProductP,
   ProductA
 } from '../util';
+import { defaultMonoidResult } from './util';
 
 type Params<A> = A extends void
   ? {}
@@ -19,6 +21,7 @@ type Params<A> = A extends void
 type Props<R extends ObservableQueries> = {
   queries: EnforceNonEmptyRecord<R>;
   render: Function1<QueryResult<ProductL<R>, ProductP<R>>, React.ReactNode>;
+  resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>;
 } & Params<ProductA<R>>;
 
 /**
@@ -27,6 +30,7 @@ type Props<R extends ObservableQueries> = {
  * @param queries a record of `ObservableQueries`
  * @param params a record of inputs for the queries
  * @param render a function that accepts a product of QueryResult and returns a ReactNode
+ * @param resultMonoid an optional monoid used to aggregate `QueryResult`s
  *
  * @example
  * return (
@@ -50,9 +54,10 @@ export function WithQueries<P extends ObservableQueries>(props: Props<P>) {
 
   const WrappedComponent = React.useMemo(
     () =>
-      declareQueries(props.queries)(({ queries }) => (
-        <>{renderRef.current(queries)}</>
-      )),
+      declareQueries(
+        props.queries,
+        props.resultMonoid || defaultMonoidResult<ProductL<P>, ProductP<P>>()
+      )(({ queries }) => <>{renderRef.current(queries)}</>),
     []
   );
 
@@ -62,5 +67,3 @@ export function WithQueries<P extends ObservableQueries>(props: Props<P>) {
 
   return <WrappedComponent {...params} />;
 }
-
-export default WithQueries;
