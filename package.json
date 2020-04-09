@@ -8,7 +8,7 @@
     "build": "rm -rf lib && mkdir lib && tsc",
     "dtslint": "dtslint dtslint",
     "preversion": "npm test && npm run prettier && npm run dtslint",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "main": "lib",
   "typings": "lib/index.d.ts",
