@@ -3,6 +3,7 @@ import { render, waitForElement, cleanup } from 'react-testing-library';
 import { queryStrict, refetch, invalidate } from '../src/DSL';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { declareQueries } from '../src/react';
+import { identity } from 'fp-ts/lib/function';
 
 describe('declareQueries', () => {
   it('should work', async () => {
@@ -91,6 +92,36 @@ describe('declareQueries', () => {
 
     const { getByText } = await render(<FooParent />);
     await waitForElement(() => getByText('4'));
+    cleanup();
+  });
+
+  it('should honour default monoid result and maintain the latest Success through loadings caused by an invalidation', async () => {
+    let res = 'foo';
+    const foo = queryStrict(() => taskEither.of<void, string>(res), refetch);
+    const whenLoading = jest.fn(() => 'loading');
+    const whenSuccess = jest.fn(identity);
+    const queries = declareQueries({ foo });
+    const Foo = queries((props: typeof queries.Props) => {
+      React.useEffect(() => {
+        setTimeout(() => {
+          res = 'foos';
+          foo.invalidate().run();
+        }, 10);
+      }, []);
+      return props.queries
+        .map(q => q.foo)
+        .fold(whenLoading, () => 'failure', whenSuccess);
+    });
+
+    const { getByText } = await render(<Foo />);
+    await waitForElement(() => getByText('foos'));
+    expect(whenLoading).toHaveBeenCalledTimes(
+      1 + 1 /* because we subscribe in componentDidMount, see comments above */
+    );
+    expect(whenSuccess).toHaveBeenCalledTimes(
+      1 /* first Success */ +
+        2 /* re-fetch after set state, no Loading -> 2 Successes */
+    );
     cleanup();
   });
 });

@@ -71,14 +71,23 @@ export function useQuery<A, L, P>(
     }
   });
 
+  const lastState = useRef(state);
+  useEffect(() => {
+    lastState.current = state;
+  }, [state]);
+
+  const lastParams = useMemo(() => params, [inputEquality]);
+
   useEffect(() => {
     const subscription = observable
-      .map(observeShallow(query, params), r => _resultMonoid.concat(state, r))
+      .map(observeShallow(query, lastParams), r =>
+        _resultMonoid.concat(lastState.current, r)
+      )
       .subscribe(setState);
     return () => {
       subscription.unsubscribe();
     };
-  }, [inputEquality, query]);
+  }, [query, lastParams]);
 
   return state;
 }
