@@ -23,7 +23,7 @@
   "devDependencies": {
     "@types/history": "^4.7.5",
     "@types/jest": "^25.1.4",
-    "@types/qs": "^6.9.1",
+    "@types/qs": "6.9.1",
     "@types/react": "^16.9.23",
     "@types/react-dom": "^16.9.5",
     "dtslint": "github:gcanti/dtslint",
