@@ -1,18 +1,19 @@
 import { QueryResult, success, failure } from '../QueryResult';
+import { Semigroup } from 'fp-ts/lib/Semigroup';
 
-export function keepQueryResultSemigroup<L, P>() {
+export function keepQueryResultSemigroup<L, P>(): Semigroup<QueryResult<L, P>> {
   return {
-    concat: (a: QueryResult<L, P>, b: QueryResult<L, P>) =>
+    concat: (a, b) =>
       a.type === 'Success' && b.type === 'Loading'
-        ? success<L, P>(a.value, true)
+        ? success(a.value, true)
         : a.type === 'Failure' && b.type === 'Loading'
-        ? failure<L, P>(a.value, true)
+        ? failure(a.value, true)
         : b
   };
 }
 
-export function lastQueryResultSemigroup<L, P>() {
+export function lastQueryResultSemigroup<L, P>(): Semigroup<QueryResult<L, P>> {
   return {
-    concat: (_: QueryResult<L, P>, b: QueryResult<L, P>) => b
+    concat: (_, b) => b
   };
 }
