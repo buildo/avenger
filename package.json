@@ -1,6 +1,6 @@
 {
   "name": "avenger",
-  "version": "5.3.1",
+  "version": "6.0.0-1",
   "description": "A CQRS-flavoured data fetching and caching layer in JavaScript. Batching, caching, data-dependecies and manual invalidations in a declarative fashion for node and the browser",
   "scripts": {
     "test": "jest",
@@ -23,7 +23,7 @@
   "devDependencies": {
     "@types/history": "^4.7.5",
     "@types/jest": "^25.1.4",
-    "@types/qs": "^6.9.1",
+    "@types/qs": "6.9.1",
     "@types/react": "^16.9.23",
     "@types/react-dom": "^16.9.5",
     "dtslint": "github:gcanti/dtslint",

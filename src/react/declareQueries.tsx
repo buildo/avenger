@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { QueryResult } from '../QueryResult';
+import { QueryResult, loading } from '../QueryResult';
 import {
   ObservableQueries,
   EnforceNonEmptyRecord,
@@ -7,8 +7,8 @@ import {
   ProductL,
   ProductP
 } from '../util';
-import { defaultMonoidResult } from './util';
-import { Monoid } from 'fp-ts/lib/Monoid';
+import { keepQueryResultSemigroup } from './Semigroup';
+import { Semigroup } from 'fp-ts/lib/Semigroup';
 import { observable } from '../Observable';
 import { observeShallow } from '../observe';
 import { product } from '../Query';
@@ -35,15 +35,15 @@ export interface DeclareQueriesReturn<A, L, P> {
  * receiving input values via Props,
  * and passing the latest available `QueryResult` to the wrapped component
  * @param queries A record of observable queries to observe
- * @param resultMonoid A monoid used to aggregate `QueryResult`s
+ * @param resultSemigroup A semigroup used to aggregate `QueryResult`s
  * @returns A React component receiving query inputs via the `query` prop
  */
 export function declareQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
-  resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>
+  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
 ): DeclareQueriesReturn<ProductA<R>, ProductL<R>, ProductP<R>> {
-  const _resultMonoid =
-    resultMonoid || defaultMonoidResult<ProductL<R>, ProductP<R>>();
+  const _resultSemigroup =
+    resultSemigroup || keepQueryResultSemigroup<ProductL<R>, ProductP<R>>();
   return ((
     Component: React.ComponentType<QueryOutputProps<ProductL<R>, ProductP<R>>>
   ) =>
@@ -51,7 +51,7 @@ export function declareQueries<R extends ObservableQueries>(
       QueryInputProps_internal<ProductA<R>>
     > {
       state: { result: QueryResult<ProductL<R>, ProductP<R>> } = {
-        result: _resultMonoid.empty
+        result: loading
       };
 
       product = product(queries);
@@ -62,7 +62,7 @@ export function declareQueries<R extends ObservableQueries>(
         this.subscription = some(
           observable
             .map(observeShallow(this.product, this.props.queries), r =>
-              _resultMonoid.concat(this.state.result, r)
+              _resultSemigroup.concat(this.state.result, r)
             )
             .subscribe(result => {
               this.setState({ result });

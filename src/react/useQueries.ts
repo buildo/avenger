@@ -1,6 +1,6 @@
-import { Monoid } from 'fp-ts/lib/Monoid';
+import { Semigroup } from 'fp-ts/lib/Semigroup';
 import { Option, fromNullable } from 'fp-ts/lib/Option';
-import { QueryResult } from '../QueryResult';
+import { QueryResult, loading } from '../QueryResult';
 import { product, ObservableQuery } from '../Query';
 import {
   EnforceNonEmptyRecord,
@@ -10,7 +10,7 @@ import {
   ProductA,
   VoidInputObservableQueries
 } from '../util';
-import { defaultMonoidResult } from './util';
+import { keepQueryResultSemigroup } from './Semigroup';
 import { observable } from '../Observable';
 import { observeShallow } from '../observe';
 import { setoidShallow } from '../Strategy';
@@ -29,7 +29,7 @@ function usePrevious<T>(value: T): Option<T> {
  *
  * @param query an `ObservableQueries`
  * @param params input values for the query
- * @param resultMonoid an optional monoid used to aggregate `QueryResult`s
+ * @param resultSemigroup an optional semigroup used to aggregate `QueryResult`s
  * @returns the latest `QueryResult` to operate upon
  *
  * @example
@@ -42,21 +42,21 @@ function usePrevious<T>(value: T): Option<T> {
 export function useQuery<L, P>(
   query: ObservableQuery<void, L, P>,
   params?: void,
-  resultMonoid?: Monoid<QueryResult<L, P>>
+  resultSemigroup?: Semigroup<QueryResult<L, P>>
 ): QueryResult<L, P>;
 export function useQuery<A, L, P>(
   query: ObservableQuery<A, L, P>,
   params: A,
-  resultMonoid?: Monoid<QueryResult<L, P>>
+  resultSemigroup?: Semigroup<QueryResult<L, P>>
 ): QueryResult<L, P>;
 export function useQuery<A, L, P>(
   query: ObservableQuery<A, L, P>,
   params: A,
-  resultMonoid?: Monoid<QueryResult<L, P>>
+  resultSemigroup?: Semigroup<QueryResult<L, P>>
 ): QueryResult<L, P> {
-  const _resultMonoid = resultMonoid || defaultMonoidResult<L, P>();
+  const _resultSemigroup = resultSemigroup || keepQueryResultSemigroup<L, P>();
 
-  const [state, setState] = useState<QueryResult<L, P>>(_resultMonoid.empty);
+  const [state, setState] = useState<QueryResult<L, P>>(loading);
 
   const previousInput = usePrevious(params);
   const [inputEquality, setInputEquality] = useState(0);
@@ -81,7 +81,7 @@ export function useQuery<A, L, P>(
   useEffect(() => {
     const subscription = observable
       .map(observeShallow(query, lastParams), r =>
-        _resultMonoid.concat(lastState.current, r)
+        _resultSemigroup.concat(lastState.current, r)
       )
       .subscribe(setState);
     return () => {
@@ -97,7 +97,7 @@ export function useQuery<A, L, P>(
  *
  * @param queries a record of `ObservableQueries`
  * @param params a record of inputs for the queries
- * @param resultMonoid an optional monoid used to aggregate `QueryResult`s
+ * @param resultSemigroup an optional monoid used to aggregate `QueryResult`s
  * @returns the latest `QueryResult` to operate upon
  *
  * @example
@@ -113,17 +113,17 @@ export function useQuery<A, L, P>(
 export function useQueries<R extends VoidInputObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   input?: ProductA<R>,
-  resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>
+  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
 ): QueryResult<ProductL<R>, ProductP<R>>;
 export function useQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   input: ProductA<R>,
-  resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>
+  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
 ): QueryResult<ProductL<R>, ProductP<R>>;
 export function useQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   params?: ProductA<R>,
-  resultMonoid?: Monoid<QueryResult<ProductL<R>, ProductP<R>>>
+  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
 ): QueryResult<ProductL<R>, ProductP<R>> {
   const previousQueries = usePrevious(queries);
   const [queriesEquality, setQueriesEquality] = useState(0);
@@ -138,7 +138,7 @@ export function useQueries<R extends ObservableQueries>(
     }
   });
 
-  return useQuery(queryProduct, (params || {}) as any, resultMonoid);
+  return useQuery(queryProduct, (params || {}) as any, resultSemigroup);
 }
 
 export default useQueries;
