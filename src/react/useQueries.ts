@@ -29,7 +29,7 @@ function usePrevious<T>(value: T): Option<T> {
  *
  * @param query an `ObservableQueries`
  * @param params input values for the query
- * @param resultSemigroup an optional Semigroup used to aggregate `QueryResult`s
+ * @param resultSemigroup an optional semigroup used to aggregate `QueryResult`s
  * @returns the latest `QueryResult` to operate upon
  *
  * @example
