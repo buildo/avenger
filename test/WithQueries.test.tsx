@@ -5,6 +5,7 @@ import { taskEither } from 'fp-ts/lib/TaskEither';
 import { WithQueries } from '../src/react';
 import * as QR from '../src/QueryResult';
 import { pipe } from 'fp-ts/lib/pipeable';
+import { identity, flow } from 'fp-ts/lib/function';
 
 describe('declareQueries', () => {
   it('should work', async () => {
@@ -119,6 +120,41 @@ describe('declareQueries', () => {
     const { getByText } = await render(<Foo />);
     await waitForElement(() => getByText('fooB'), { timeout: 500 }).catch(() =>
       waitForElement(() => getByText('fooA'))
+    );
+    cleanup();
+  });
+
+  it('should honour default monoid result and maintain the latest Success through loadings caused by an invalidation', async () => {
+    let res = 'foo';
+    const foo = queryStrict(() => taskEither.of<void, string>(res), refetch);
+    const whenLoading = jest.fn(() => 'loading');
+    const whenSuccess = jest.fn(identity);
+    function Foo() {
+      React.useEffect(() => {
+        setTimeout(() => {
+          res = 'foos';
+          foo.invalidate()();
+        }, 10);
+      }, []);
+      return (
+        <WithQueries
+          queries={{ foo }}
+          render={flow(
+            QR.map(q => q.foo),
+            QR.fold(whenLoading, () => 'failure', whenSuccess)
+          )}
+        />
+      );
+    }
+
+    const { getByText } = await render(<Foo />);
+    await waitForElement(() => getByText('foos'));
+    expect(whenLoading).toHaveBeenCalledTimes(
+      1 + 1 /* because we subscribe in componentDidMount, see comments above */
+    );
+    expect(whenSuccess).toHaveBeenCalledTimes(
+      1 /* first Success */ +
+        2 /* re-fetch after set state, no Loading -> 2 Successes */
     );
     cleanup();
   });
