@@ -1,18 +1,7 @@
 import { Either } from 'fp-ts/lib/Either';
-import { Functor2 } from 'fp-ts/lib/Functor';
 import { Eq, fromEquals } from 'fp-ts/lib/Eq';
 import { constFalse, constant } from 'fp-ts/lib/function';
-import { pipeable, pipe } from 'fp-ts/lib/pipeable';
-
-declare module 'fp-ts/lib/HKT' {
-  interface URItoKind2<E, A> {
-    CacheValue: CacheValue<E, A>;
-  }
-}
-
-export const URI = 'CacheValue';
-
-export type URI = typeof URI;
+import { pipe } from 'fp-ts/lib/pipeable';
 
 export interface CacheValueInitial {
   readonly _tag: 'Initial';
@@ -99,21 +88,6 @@ export function fold<E, A, B>(
     }
   };
 }
-
-function _map<E, A, B>(ma: CacheValue<E, A>, f: (a: A) => B): CacheValue<E, B> {
-  return ma._tag === 'Resolved'
-    ? cacheValueResolved(f(ma.resolved), ma.updated)
-    : (ma as CacheValue<E, B>);
-}
-
-export const cacheValue: Functor2<URI> = {
-  URI,
-  map: _map
-};
-
-const { map } = pipeable(cacheValue);
-
-export { map };
 
 /**
  * Constructs the Eq instance for `CacheValue` given Eqs to compare errors and resolved values
