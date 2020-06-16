@@ -371,7 +371,7 @@ describe('observe', () => {
   it('should handle passing empty input in case of void input queries', async () => {
     const cachedA = product({
       a: query(() => TE.taskEither.of(3))(
-        S.available(Eq.eqStrict as any, CV.getEq(Eq.eqStrict, Eq.eqNumber))
+        S.available(Eq.eqStrict, CV.getEq(Eq.eqStrict, Eq.eqNumber))
       )
     });
     requestAnimationFrame(() => cachedA.run()());

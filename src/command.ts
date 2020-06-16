@@ -64,11 +64,7 @@ export function command<
         O.fromNullable,
         O.fold(
           () => TE.taskEither.of(p),
-          queries =>
-            TE.taskEither.map(
-              invalidate((queries as unknown) as EnforceNonEmptyRecord<I>, ia),
-              () => p
-            )
+          queries => TE.taskEither.map(invalidate(queries, ia), () => p)
         )
       )
     );
