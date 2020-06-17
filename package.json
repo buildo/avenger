@@ -15,7 +15,7 @@
   "author": "Giovanni Gonzaga <giovanni@buildo.io>",
   "license": "MIT",
   "dependencies": {
-    "fp-ts": "^2.5.3",
+    "fp-ts": "^2.6.6",
     "history": "^4.10.1",
     "qs": "^6.9.1",
     "rxjs": "^6.5.4"
@@ -35,7 +35,7 @@
     "react-dom": "^16.13.0",
     "react-testing-library": "^6.1.2",
     "ts-jest": "^25.2.1",
-    "typescript": "^3.8.3"
+    "typescript": "^3.9.5"
   },
   "files": [
     "lib"
