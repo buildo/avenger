@@ -1,14 +1,32 @@
 import * as fc from 'fast-check';
-import { applicative } from 'fp-ts-laws';
-import { queryResult, getSetoid } from '../src/QueryResult';
-import { setoidString } from 'fp-ts/lib/Setoid';
+import * as laws from 'fp-ts-laws';
+import * as QR from '../src/QueryResult';
+import * as Eq from 'fp-ts/lib/Eq';
 import { getQueryResult } from './QueryResultArbitrary';
 
 describe('QueryResult', () => {
-  it('Applicative', () => {
-    applicative(queryResult)(
+  it('Functor', () => {
+    laws.functor(QR.queryResult)(
       a => getQueryResult(fc.string(), a),
-      Sa => getSetoid(setoidString, Sa)
+      Eqa => QR.getEq(Eq.eqString, Eqa)
     );
+  });
+
+  it('Apply', () => {
+    laws.apply(QR.queryResult)(
+      a => getQueryResult(fc.string(), a),
+      Eqa => QR.getEq(Eq.eqString, Eqa)
+    );
+  });
+
+  it('Applicative', () => {
+    laws.applicative(QR.queryResult)(
+      a => getQueryResult(fc.string(), a),
+      Eqa => QR.getEq(Eq.eqString, Eqa)
+    );
+  });
+
+  it('Monad', () => {
+    laws.monad(QR.queryResult)(Eqa => QR.getEq(Eq.eqString, Eqa));
   });
 });

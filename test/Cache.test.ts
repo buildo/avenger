@@ -1,166 +1,157 @@
 import { Cache } from '../src/Cache';
-import { taskEither } from 'fp-ts/lib/TaskEither';
-import { setoidString, setoidNumber } from 'fp-ts/lib/Setoid';
-import { delay } from 'fp-ts/lib/Task';
-import { available, setoidStrict, refetch, expire } from '../src/Strategy';
-import { getSetoid, CacheValue } from '../src/CacheValue';
+import * as TE from 'fp-ts/lib/TaskEither';
+import * as Eq from 'fp-ts/lib/Eq';
+import * as T from 'fp-ts/lib/Task';
+import * as S from '../src/Strategy';
+import * as CV from '../src/CacheValue';
 import { cacheValueToQueryResult } from '../src/observe';
 
-const cacheValueSetoid = getSetoid(setoidStrict, setoidNumber);
+const cacheValueEq = CV.getEq(Eq.eqStrict, Eq.eqNumber);
 
 describe('Cache', () => {
   describe('getOrFetch', () => {
     it('available: should cache results idefinitely', async () => {
-      let events: CacheValue<unknown, unknown>[] = [];
+      let events: CV.CacheValue<unknown, unknown>[] = [];
       const fetchSpy = jest.fn((s: string) =>
-        taskEither.of<string, number>(s.length)
+        TE.taskEither.of<string, number>(s.length)
       );
       const eventsSpy = jest.fn(e => events.push(e));
-      const cache = new Cache(
-        fetchSpy,
-        available(setoidString, cacheValueSetoid)
-      );
+      const cache = new Cache(fetchSpy, S.available(Eq.eqString, cacheValueEq));
       const observable = cache.observe('foo');
       observable.subscribe(eventsSpy);
-      await delay(10, void 0).run();
+      await T.delay(10)(T.of(null))();
       observable.subscribe(eventsSpy);
-      await delay(10, void 0).run();
+      await T.delay(10)(T.of(null))();
       expect(fetchSpy.mock.calls.length).toBe(1);
       expect(events.map(cacheValueToQueryResult)).toEqual([
-        { type: 'Loading' },
-        { loading: false, type: 'Success', value: 3 },
-        { loading: false, type: 'Success', value: 3 }
+        { _tag: 'Loading' },
+        { loading: false, _tag: 'Success', success: 3 },
+        { loading: false, _tag: 'Success', success: 3 }
       ]);
     });
 
     it('refetch: should reuse current pending', async () => {
-      let events: CacheValue<unknown, unknown>[] = [];
+      let events: CV.CacheValue<unknown, unknown>[] = [];
       const eventsSpy = jest.fn(e => events.push(e));
       const fetchSpy = jest.fn((s: string) =>
-        taskEither.of<string, number>(s.length)
+        TE.taskEither.of<string, number>(s.length)
       );
-      const cache = new Cache(
-        fetchSpy,
-        refetch(setoidString, cacheValueSetoid)
-      );
+      const cache = new Cache(fetchSpy, S.refetch(Eq.eqString, cacheValueEq));
       const observable = cache.observe('foo');
       observable.subscribe(eventsSpy);
       const observable2 = cache.observe('foo');
       observable2.subscribe(eventsSpy);
-      await delay(10, void 0).run();
+      await T.delay(10)(T.of(null))();
 
       // every observable & subscriprion gets all the events but the data is only fetched once
       expect(fetchSpy.mock.calls.length).toBe(1);
       expect(events.map(cacheValueToQueryResult)).toEqual([
-        { type: 'Loading' },
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' },
-        { value: 3, loading: false, type: 'Success' }
+        { _tag: 'Loading' },
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' },
+        { success: 3, loading: false, _tag: 'Success' }
       ]);
     });
 
     it('refetch: should never cache results', async () => {
-      let events: CacheValue<unknown, unknown>[] = [];
-      let events2: CacheValue<unknown, unknown>[] = [];
+      let events: CV.CacheValue<unknown, unknown>[] = [];
+      let events2: CV.CacheValue<unknown, unknown>[] = [];
       const eventsSpy = jest.fn(e => events.push(e));
       const eventsSpy2 = jest.fn(e => events2.push(e));
       const fetchSpy = jest.fn((s: string) =>
-        taskEither.of<string, number>(s.length)
+        TE.taskEither.of<string, number>(s.length)
       );
-      const cache = new Cache(
-        fetchSpy,
-        refetch(setoidString, cacheValueSetoid)
-      );
+      const cache = new Cache(fetchSpy, S.refetch(Eq.eqString, cacheValueEq));
       const observable = cache.observe('foo');
-      await delay(10, void 0).run();
+      await T.delay(10)(T.of(null))();
       observable.subscribe(eventsSpy);
-      await delay(10, void 0).run();
+      await T.delay(10)(T.of(null))();
       const observable2 = cache.observe('foo');
-      await delay(10, void 0).run();
+      await T.delay(10)(T.of(null))();
       observable2.subscribe(eventsSpy2);
-      await delay(100, void 0);
+      await T.delay(100)(T.of(null))();
 
       expect(fetchSpy.mock.calls.length).toBe(2);
 
       // the first observable should be notified about all events at value "foo"
       expect(events.map(cacheValueToQueryResult)).toEqual([
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' },
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' }
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' },
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' }
       ]);
 
       // the second observable should be notified only about all events at value "foo" occurred after someone subscribed to it
       expect(events2.map(cacheValueToQueryResult)).toEqual([
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' }
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' }
       ]);
     });
 
     it('expire: should reuse cache result up to n ms after', async () => {
-      let events: CacheValue<unknown, unknown>[] = [];
-      let events2: CacheValue<unknown, unknown>[] = [];
+      let events: CV.CacheValue<unknown, unknown>[] = [];
+      let events2: CV.CacheValue<unknown, unknown>[] = [];
       const eventsSpy = jest.fn(e => events.push(e));
       const eventsSpy2 = jest.fn(e => events2.push(e));
       const fetchSpy = jest.fn((s: string) =>
-        taskEither.of<string, number>(s.length)
+        TE.taskEither.of<string, number>(s.length)
       );
       const cache = new Cache(
         fetchSpy,
-        expire(20)(setoidString, getSetoid(setoidStrict, setoidNumber))
+        S.expire(20)(Eq.eqString, CV.getEq(Eq.eqStrict, Eq.eqNumber))
       );
 
       const observable = cache.observe('foo');
       observable.subscribe(eventsSpy);
-      await delay(10, void 0).run();
+      await T.delay(10)(T.of(null))();
       const observable2 = cache.observe('foo');
       observable2.subscribe(eventsSpy2);
 
       expect(fetchSpy.mock.calls.length).toBe(1);
       // first one receives a loading and a success
       expect(events.map(cacheValueToQueryResult)).toEqual([
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' }
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' }
       ]);
 
       // second one receives only a success
       expect(events2.map(cacheValueToQueryResult)).toEqual([
-        { value: 3, loading: false, type: 'Success' }
+        { success: 3, loading: false, _tag: 'Success' }
       ]);
     });
 
     it('expire: should refetch cache result after n ms passed', async () => {
-      let events: CacheValue<unknown, unknown>[] = [];
-      let events2: CacheValue<unknown, unknown>[] = [];
+      let events: CV.CacheValue<unknown, unknown>[] = [];
+      let events2: CV.CacheValue<unknown, unknown>[] = [];
       const eventsSpy = jest.fn(e => events.push(e));
       const eventsSpy2 = jest.fn(e => events2.push(e));
       const fetchSpy = jest.fn((s: string) =>
-        taskEither.of<string, number>(s.length)
+        TE.taskEither.of<string, number>(s.length)
       );
       const cache = new Cache(
         fetchSpy,
-        expire(10)(setoidString, getSetoid(setoidStrict, setoidNumber))
+        S.expire(10)(Eq.eqString, CV.getEq(Eq.eqStrict, Eq.eqNumber))
       );
 
       const observable = cache.observe('foo');
       observable.subscribe(eventsSpy);
-      await delay(20, void 0).run();
+      await T.delay(20)(T.of(null))();
       const observable2 = cache.observe('foo');
       observable2.subscribe(eventsSpy2);
-      await delay(5, void 0).run();
+      await T.delay(5)(T.of(null))();
 
       expect(fetchSpy.mock.calls.length).toBe(2);
 
       expect(events.map(cacheValueToQueryResult)).toEqual([
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' },
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' }
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' },
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' }
       ]);
 
       expect(events2.map(cacheValueToQueryResult)).toEqual([
-        { type: 'Loading' },
-        { value: 3, loading: false, type: 'Success' }
+        { _tag: 'Loading' },
+        { success: 3, loading: false, _tag: 'Success' }
       ]);
     });
   });

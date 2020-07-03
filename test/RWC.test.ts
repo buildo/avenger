@@ -1,5 +1,5 @@
-import { taskEither, TaskEither, fromLeft } from 'fp-ts/lib/TaskEither';
-import { range, findFirst } from 'fp-ts/lib/Array';
+import * as TE from 'fp-ts/lib/TaskEither';
+import * as A from 'fp-ts/lib/Array';
 import {
   queryShallow,
   available,
@@ -10,10 +10,12 @@ import {
 } from '../src';
 import { observeShallow } from '../src/observe';
 import { take, toArray } from 'rxjs/operators';
+import * as O from 'fp-ts/lib/Option';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 it('RWC', async () => {
-  function getToken(): TaskEither<void, string> {
-    return taskEither.of('token');
+  function getToken(): TE.TaskEither<void, string> {
+    return TE.taskEither.of('token');
   }
   type Post = { id: number; content: { title: string; body: string } };
   type InvalidToken = 'invalid token';
@@ -21,9 +23,9 @@ it('RWC', async () => {
   function getPosts(
     token: string,
     limit: number
-  ): TaskEither<InvalidToken, Array<Post>> {
-    return taskEither.of(
-      range(0, limit).map((_, index) => ({
+  ): TE.TaskEither<InvalidToken, Array<Post>> {
+    return TE.taskEither.of(
+      A.range(0, limit).map((_, index) => ({
         id: index,
         content: { title: String(index), body: token }
       }))
@@ -32,9 +34,9 @@ it('RWC', async () => {
   function getTags(
     token: string,
     postId: Post['id']
-  ): TaskEither<InvalidToken | NotFound, Array<string>> {
-    return taskEither.of(
-      range(0, postId - 1).map((_, index) => `${token}-${index}`)
+  ): TE.TaskEither<InvalidToken | NotFound, Array<string>> {
+    return TE.taskEither.of(
+      A.range(0, postId - 1).map((_, index) => `${token}-${index}`)
     );
   }
   type PostWithTags = Post & { tags: Array<string> };
@@ -51,21 +53,27 @@ it('RWC', async () => {
   );
   const addTags = queryShallow(
     (input: { token: string; postId: Post['id']; posts: Array<Post> }) =>
-      findFirst(input.posts, p => p.id === input.postId).fold(
-        fromLeft<InvalidToken | NotFound, PostWithTags>('not found'),
-        post => getTags(input.token, post.id).map(tags => ({ ...post, tags }))
+      pipe(
+        input.posts,
+        A.findFirst(p => p.id === input.postId),
+        O.fold(
+          () => TE.left<InvalidToken | NotFound, PostWithTags>('not found'),
+          post =>
+            pipe(
+              getTags(input.token, post.id),
+              TE.map(tags => ({ ...post, tags }))
+            )
+        )
       ),
     expire(2000)
   );
   const postWithTags = compose(product({ token, postId, posts }), addTags);
 
   requestAnimationFrame(() =>
-    postWithTags
-      .run({
-        postId: 1,
-        posts: { limit: 10 }
-      })
-      .run()
+    postWithTags.run({
+      postId: 1,
+      posts: { limit: 10 }
+    })()
   );
   const results = await observeShallow(postWithTags, {
     postId: 3,
@@ -74,10 +82,10 @@ it('RWC', async () => {
     .pipe(take(2), toArray())
     .toPromise();
   expect(results).toEqual([
-    { type: 'Loading' },
+    { _tag: 'Loading' },
     {
-      type: 'Success',
-      value: {
+      _tag: 'Success',
+      success: {
         content: {
           body: 'token',
           title: '3'

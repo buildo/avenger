@@ -8,6 +8,8 @@ import {
   doResolvePendingUpdateLocation,
   requestConfirmationToUpdateLocation
 } from '../browser/location';
+import { pipe } from 'fp-ts/lib/pipeable';
+import * as QR from '../QueryResult';
 
 const queries = declareQueries({ pendingUpdateLocation });
 
@@ -37,20 +39,20 @@ class DirtyFormStatePrompt extends React.Component<Props> {
   };
 
   render() {
-    return this.props.queries.fold(
-      constNull,
-      constNull,
-      ({ pendingUpdateLocation: isPending }) =>
+    return pipe(
+      this.props.queries,
+      QR.fold(constNull, constNull, ({ pendingUpdateLocation: isPending }) =>
         isPending
           ? this.props.renderConfirmation(
               () => {
-                doResolvePendingUpdateLocation(false).run();
+                doResolvePendingUpdateLocation(false)();
               },
               () => {
-                doResolvePendingUpdateLocation(true).run();
+                doResolvePendingUpdateLocation(true)();
               }
             )
           : null
+      )
     );
   }
 }

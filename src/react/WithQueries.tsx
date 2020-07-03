@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Function1 } from 'fp-ts/lib/function';
 import { Semigroup } from 'fp-ts/lib/Semigroup';
 import { declareQueries } from './declareQueries';
 import { QueryResult } from '../QueryResult';
@@ -20,7 +19,7 @@ type Params<A> = A extends void
 
 type Props<R extends ObservableQueries> = {
   queries: EnforceNonEmptyRecord<R>;
-  render: Function1<QueryResult<ProductL<R>, ProductP<R>>, React.ReactNode>;
+  render: (result: QueryResult<ProductL<R>, ProductP<R>>) => React.ReactNode;
   resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>;
 } & Params<ProductA<R>>;
 

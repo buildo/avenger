@@ -1,7 +1,7 @@
 import * as fc from 'fast-check';
 import { semigroup } from 'fp-ts-laws';
-import { getSetoid, success, loading, failure } from '../src/QueryResult';
-import { setoidString, setoidNumber } from 'fp-ts/lib/Setoid';
+import * as QR from '../src/QueryResult';
+import * as Eq from 'fp-ts/lib/Eq';
 import { getQueryResult } from './QueryResultArbitrary';
 import {
   keepQueryResultSemigroup,
@@ -12,20 +12,27 @@ describe('keepQueryResultSemigroup', () => {
   it('Semigroup', () =>
     semigroup(
       keepQueryResultSemigroup<string, number>(),
-      getSetoid(setoidString, setoidNumber),
+      QR.getEq(Eq.eqString, Eq.eqNumber),
       getQueryResult(fc.string(), fc.integer())
     ));
 
   it('should keep the latest Success or Failure', () => {
     const S = keepQueryResultSemigroup<string, number>();
-    expect(S.concat(success(1, false), loading)).toEqual(success(1, true));
-    expect(S.concat(success(1, false), success(2, false))).toEqual(
-      success(2, false)
-    );
-    expect(S.concat(failure('a', false), loading)).toEqual(failure('a', true));
-    expect(S.concat(failure('a', false), failure('b', false))).toEqual(
-      failure('b', false)
-    );
+    expect(
+      S.concat(QR.queryResultSuccess(1, false), QR.queryResultLoading)
+    ).toEqual(QR.queryResultSuccess(1, true));
+    expect(
+      S.concat(QR.queryResultSuccess(1, false), QR.queryResultSuccess(2, false))
+    ).toEqual(QR.queryResultSuccess(2, false));
+    expect(
+      S.concat(QR.queryResultFailure('a', false), QR.queryResultLoading)
+    ).toEqual(QR.queryResultFailure('a', true));
+    expect(
+      S.concat(
+        QR.queryResultFailure('a', false),
+        QR.queryResultFailure('b', false)
+      )
+    ).toEqual(QR.queryResultFailure('b', false));
   });
 });
 
@@ -33,16 +40,23 @@ describe('lastQueryResultSemigroup', () => {
   it('Semigroup', () =>
     semigroup(
       lastQueryResultSemigroup<string, number>(),
-      getSetoid(setoidString, setoidNumber),
+      QR.getEq(Eq.eqString, Eq.eqNumber),
       getQueryResult(fc.string(), fc.integer())
     ));
 
   it('should discard previous results', () => {
     const S = lastQueryResultSemigroup<string, number>();
-    expect(S.concat(success(1, false), loading)).toEqual(loading);
-    expect(S.concat(success(1, false), failure('a', false))).toEqual(
-      failure('a', false)
-    );
-    expect(S.concat(failure('a', false), loading)).toEqual(loading);
+    expect(
+      S.concat(QR.queryResultSuccess(1, false), QR.queryResultLoading)
+    ).toEqual(QR.queryResultLoading);
+    expect(
+      S.concat(
+        QR.queryResultSuccess(1, false),
+        QR.queryResultFailure('a', false)
+      )
+    ).toEqual(QR.queryResultFailure('a', false));
+    expect(
+      S.concat(QR.queryResultFailure('a', false), QR.queryResultLoading)
+    ).toEqual(QR.queryResultLoading);
   });
 });

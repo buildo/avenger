@@ -1,4 +1,4 @@
-import { QueryResult, success, failure } from '../QueryResult';
+import * as QR from '../QueryResult';
 import { Semigroup } from 'fp-ts/lib/Semigroup';
 
 /**
@@ -18,13 +18,15 @@ import { Semigroup } from 'fp-ts/lib/Semigroup';
  *   (randomQueryResult) => randomQueryResult
  * )
  */
-export function keepQueryResultSemigroup<L, P>(): Semigroup<QueryResult<L, P>> {
+export function keepQueryResultSemigroup<L, P>(): Semigroup<
+  QR.QueryResult<L, P>
+> {
   return {
     concat: (a, b) =>
-      a.type === 'Success' && b.type === 'Loading'
-        ? success(a.value, true)
-        : a.type === 'Failure' && b.type === 'Loading'
-        ? failure(a.value, true)
+      a._tag === 'Success' && b._tag === 'Loading'
+        ? QR.queryResultSuccess(a.success, true)
+        : a._tag === 'Failure' && b._tag === 'Loading'
+        ? QR.queryResultFailure(a.failure, true)
         : b
   };
 }
@@ -43,7 +45,9 @@ export function keepQueryResultSemigroup<L, P>(): Semigroup<QueryResult<L, P>> {
  *   (randomQueryResult) => randomQueryResult
  * )
  */
-export function lastQueryResultSemigroup<L, P>(): Semigroup<QueryResult<L, P>> {
+export function lastQueryResultSemigroup<L, P>(): Semigroup<
+  QR.QueryResult<L, P>
+> {
   return {
     concat: (_, b) => b
   };

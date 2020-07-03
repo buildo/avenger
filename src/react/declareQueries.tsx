@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { QueryResult, loading } from '../QueryResult';
+import * as QR from '../QueryResult';
 import {
   ObservableQueries,
   EnforceNonEmptyRecord,
@@ -13,12 +13,12 @@ import { observable } from '../Observable';
 import { observeShallow } from '../observe';
 import { product } from '../Query';
 import { Subscription } from 'rxjs';
-import { none, Option, some } from 'fp-ts/lib/Option';
+import * as O from 'fp-ts/lib/Option';
 
 type QueryInputProps_internal<A> = { queries: A };
 type QueryInputProps<A> = A extends void ? {} : { queries: A };
 
-type QueryOutputProps<L, P> = { queries: QueryResult<L, P> };
+type QueryOutputProps<L, P> = { queries: QR.QueryResult<L, P> };
 
 type InputProps<Props, A> = Omit<Props, 'queries'> & QueryInputProps<A>;
 
@@ -40,7 +40,7 @@ export interface DeclareQueriesReturn<A, L, P> {
  */
 export function declareQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
-  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
+  resultSemigroup?: Semigroup<QR.QueryResult<ProductL<R>, ProductP<R>>>
 ): DeclareQueriesReturn<ProductA<R>, ProductL<R>, ProductP<R>> {
   const _resultSemigroup =
     resultSemigroup || keepQueryResultSemigroup<ProductL<R>, ProductP<R>>();
@@ -50,16 +50,16 @@ export function declareQueries<R extends ObservableQueries>(
     class DeclareQueriesWrapper extends React.Component<
       QueryInputProps_internal<ProductA<R>>
     > {
-      state: { result: QueryResult<ProductL<R>, ProductP<R>> } = {
-        result: loading
+      state: { result: QR.QueryResult<ProductL<R>, ProductP<R>> } = {
+        result: QR.queryResultLoading
       };
 
       product = product(queries);
 
-      subscription: Option<Subscription> = none;
+      subscription: O.Option<Subscription> = O.none;
 
       subscribe() {
-        this.subscription = some(
+        this.subscription = O.some(
           observable
             .map(observeShallow(this.product, this.props.queries), r =>
               _resultSemigroup.concat(this.state.result, r)
@@ -71,7 +71,7 @@ export function declareQueries<R extends ObservableQueries>(
       }
 
       unsubscribe() {
-        this.subscription.map(s => s.unsubscribe());
+        O.option.map(this.subscription, s => s.unsubscribe());
       }
 
       componentDidMount() {
@@ -80,10 +80,7 @@ export function declareQueries<R extends ObservableQueries>(
 
       componentDidUpdate(prevProps: QueryInputProps_internal<ProductA<R>>) {
         if (
-          !this.product.inputSetoid.equals(
-            prevProps.queries,
-            this.props.queries
-          )
+          !this.product.inputEq.equals(prevProps.queries, this.props.queries)
         ) {
           this.unsubscribe();
           this.subscribe();

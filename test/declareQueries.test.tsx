@@ -3,6 +3,8 @@ import { render, waitForElement, cleanup } from 'react-testing-library';
 import { queryStrict, refetch, invalidate } from '../src/DSL';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { declareQueries } from '../src/react';
+import * as QR from '../src/QueryResult';
+import { pipe } from 'fp-ts/lib/pipeable';
 import { identity } from 'fp-ts/lib/function';
 
 describe('declareQueries', () => {
@@ -12,10 +14,13 @@ describe('declareQueries', () => {
     const Foo = queries((props: typeof queries.Props) => {
       return (
         <>
-          {props.queries.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => foo
+          {pipe(
+            props.queries,
+            QR.fold(
+              () => 'loading',
+              () => 'failure',
+              ({ foo }) => foo
+            )
           )}
         </>
       );
@@ -34,10 +39,13 @@ describe('declareQueries', () => {
     const Foo_ = jest.fn((props: typeof queries.Props) => {
       return (
         <>
-          {props.queries.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => foo
+          {pipe(
+            props.queries,
+            QR.fold(
+              () => 'loading',
+              () => 'failure',
+              ({ foo }) => foo
+            )
           )}
         </>
       );
@@ -50,13 +58,13 @@ describe('declareQueries', () => {
     // why 3 and not 2?
     // Currently declareQueries subscribes in componentDidMount, after
     // the first render which has already happened using monoidResult.empty as query result.
-    // Since we a) don't have a way of comparing result (i.e. no resultSetoid) and b) it's unsafe
+    // Since we a) don't have a way of comparing result (i.e. no resultEq) and b) it's unsafe
     // to call subscribe and potentially trigger a setState before the component is mounted,
     // this is expected
     expect(Foo_).toHaveBeenCalledTimes(3);
     expect(foof).toHaveBeenCalledTimes(1);
     res.value = 'bar';
-    await invalidate({ foo }).run();
+    await invalidate({ foo })();
     await rerender(element);
     await waitForElement(() => getByText('bar'));
     expect(Foo_).toHaveBeenCalledTimes(5); // why 5 and not 4? See comment above
@@ -73,10 +81,13 @@ describe('declareQueries', () => {
     const Foo = queries((props: typeof queries.Props) => {
       return (
         <>
-          {props.queries.fold(
-            () => 'loading',
-            () => 'failure',
-            ({ foo }) => String(foo)
+          {pipe(
+            props.queries,
+            QR.fold(
+              () => 'loading',
+              () => 'failure',
+              ({ foo }) => String(foo)
+            )
           )}
         </>
       );
@@ -105,12 +116,14 @@ describe('declareQueries', () => {
       React.useEffect(() => {
         setTimeout(() => {
           res = 'foos';
-          foo.invalidate().run();
+          foo.invalidate()();
         }, 10);
       }, []);
-      return props.queries
-        .map(q => q.foo)
-        .fold(whenLoading, () => 'failure', whenSuccess);
+      return pipe(
+        props.queries,
+        QR.map(q => q.foo),
+        QR.fold(whenLoading, () => 'failure', whenSuccess)
+      );
     });
 
     const { getByText } = await render(<Foo />);

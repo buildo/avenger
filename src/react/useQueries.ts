@@ -1,6 +1,6 @@
 import { Semigroup } from 'fp-ts/lib/Semigroup';
-import { Option, fromNullable } from 'fp-ts/lib/Option';
-import { QueryResult, loading } from '../QueryResult';
+import * as O from 'fp-ts/lib/Option';
+import * as QR from '../QueryResult';
 import { product, ObservableQuery } from '../Query';
 import {
   EnforceNonEmptyRecord,
@@ -13,15 +13,17 @@ import {
 import { keepQueryResultSemigroup } from './Semigroup';
 import { observable } from '../Observable';
 import { observeShallow } from '../observe';
-import { setoidShallow } from '../Strategy';
+import { eqShallow } from '../Strategy';
 import { useRef, useEffect, useState, useMemo } from 'react';
+import { pipe } from 'fp-ts/lib/pipeable';
+import { constFalse } from 'fp-ts/lib/function';
 
-function usePrevious<T>(value: T): Option<T> {
+function usePrevious<T>(value: T): O.Option<T> {
   const ref = useRef<T>();
   useEffect(() => {
     ref.current = value;
   });
-  return fromNullable(ref.current);
+  return O.fromNullable(ref.current);
 }
 
 /**
@@ -42,29 +44,34 @@ function usePrevious<T>(value: T): Option<T> {
 export function useQuery<L, P>(
   query: ObservableQuery<void, L, P>,
   params?: void,
-  resultSemigroup?: Semigroup<QueryResult<L, P>>
-): QueryResult<L, P>;
+  resultSemigroup?: Semigroup<QR.QueryResult<L, P>>
+): QR.QueryResult<L, P>;
 export function useQuery<A, L, P>(
   query: ObservableQuery<A, L, P>,
   params: A,
-  resultSemigroup?: Semigroup<QueryResult<L, P>>
-): QueryResult<L, P>;
+  resultSemigroup?: Semigroup<QR.QueryResult<L, P>>
+): QR.QueryResult<L, P>;
 export function useQuery<A, L, P>(
   query: ObservableQuery<A, L, P>,
   params: A,
-  resultSemigroup?: Semigroup<QueryResult<L, P>>
-): QueryResult<L, P> {
+  resultSemigroup?: Semigroup<QR.QueryResult<L, P>>
+): QR.QueryResult<L, P> {
   const _resultSemigroup = resultSemigroup || keepQueryResultSemigroup<L, P>();
 
-  const [state, setState] = useState<QueryResult<L, P>>(loading);
+  const [state, setState] = useState<QR.QueryResult<L, P>>(
+    QR.queryResultLoading
+  );
 
   const previousInput = usePrevious(params);
   const [inputEquality, setInputEquality] = useState(0);
 
   useEffect(() => {
-    const inputChanged = previousInput.fold(
-      false,
-      previousInput => !query.inputSetoid.equals(previousInput, params)
+    const inputChanged = pipe(
+      previousInput,
+      O.fold(
+        constFalse,
+        previousInput => !query.inputEq.equals(previousInput, params)
+      )
     );
     if (inputChanged) {
       setInputEquality(inputEquality + 1);
@@ -113,25 +120,28 @@ export function useQuery<A, L, P>(
 export function useQueries<R extends VoidInputObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   input?: ProductA<R>,
-  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
-): QueryResult<ProductL<R>, ProductP<R>>;
+  resultSemigroup?: Semigroup<QR.QueryResult<ProductL<R>, ProductP<R>>>
+): QR.QueryResult<ProductL<R>, ProductP<R>>;
 export function useQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   input: ProductA<R>,
-  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
-): QueryResult<ProductL<R>, ProductP<R>>;
+  resultSemigroup?: Semigroup<QR.QueryResult<ProductL<R>, ProductP<R>>>
+): QR.QueryResult<ProductL<R>, ProductP<R>>;
 export function useQueries<R extends ObservableQueries>(
   queries: EnforceNonEmptyRecord<R>,
   params?: ProductA<R>,
-  resultSemigroup?: Semigroup<QueryResult<ProductL<R>, ProductP<R>>>
-): QueryResult<ProductL<R>, ProductP<R>> {
+  resultSemigroup?: Semigroup<QR.QueryResult<ProductL<R>, ProductP<R>>>
+): QR.QueryResult<ProductL<R>, ProductP<R>> {
   const previousQueries = usePrevious(queries);
   const [queriesEquality, setQueriesEquality] = useState(0);
   const queryProduct = useMemo(() => product(queries), [queriesEquality]);
   useEffect(() => {
-    const queriesChanged = previousQueries.fold(
-      false,
-      previousQueries => !setoidShallow.equals(previousQueries, queries)
+    const queriesChanged = pipe(
+      previousQueries,
+      O.fold(
+        constFalse,
+        previousQueries => !eqShallow.equals(previousQueries, queries)
+      )
     );
     if (queriesChanged) {
       setQueriesEquality(queriesEquality + 1);

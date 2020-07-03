@@ -6,7 +6,7 @@ export function param<A>() {
   return queryStrict((a: A) => taskEither.of<void, A>(a), refetch);
 }
 
-export { queryShallow, queryStrict, queryJSON } from './Query';
+export { queryShallow, queryStrict } from './Query';
 
 export { available, refetch, expire } from './Strategy';
 
