@@ -70,14 +70,14 @@ const currentView = Q.compose(
   )
 );
 
-// $ExpectType Product<Pick<{} & { a: string; c: number; }, "a" | "c">, string, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; }>>
+// $ExpectType Product<{} & { a: string; c: number; }, string, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; }>>
 const productac = Q.product({ a, c });
 
 // tslint:disable-next-line:max-line-length
-// $ExpectType Product<Pick<{} & { a: string; c: number; e: string; }, "a" | "c" | "e">, string | number, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; e: CachedQuery<string, number, boolean>; }>>
+// $flaky-ExpectType Product<{} & { a: string; c: number; e: string; }, ProductL<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; e: CachedQuery<string, number, boolean>; }>, ProductP<{ a: CachedQuery<string, string, number>; c: CachedQuery<number, string, boolean>; e: CachedQuery<string, number, boolean>; }>>
 const productace = Q.product({ a, c, e });
 
-// $ExpectType Product<Pick<{ b?: undefined; } & { a: string; }, "a" | "b">, string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
+// $ExpectType Product<{ b?: undefined; } & { a: string; }, string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
 const productab = Q.product({ a, b });
 observeShallow(productab, { a: 'foo' });
 // $ExpectError
@@ -110,11 +110,11 @@ declare function _addTags(input: {
 }): TE.TaskEither<InvalidToken | NotFound, PostWithTags>;
 const addTags = Q.queryShallow(_addTags, S.expire(2000));
 // tslint:disable-next-line:max-line-length
-// $ExpectType Composition<Pick<{ token?: undefined; } & { postId: number; posts: Pick<{ token?: undefined; } & { limit: number; }, "token" | "limit">; }, "token" | "postId" | "posts">, void | "invalid token" | "not found", PostWithTags>
+// $flaky-ExpectType Composition<{ token?: undefined; } & { postId: number; posts: { token?: undefined; } & { limit: number; }; }, void | "invalid token" | "not found", PostWithTags>
 const postWithTags = Q.compose(Q.product({ token, postId, posts }), addTags);
 
 const declareA = declareQueries({ a });
-declareA.InputProps; // $ExpectType { queries: Pick<{} & { a: string; }, "a">; }
+declareA.InputProps; // $ExpectType { queries: {} & { a: string; }; }
 declareA.Props; // $ExpectType QueryOutputProps<string, ProductP<{ a: CachedQuery<string, string, number>; }>>
 declare const CA: React.ComponentType<{
   queries: QR.QueryResult<string, { a: number }>;
@@ -152,7 +152,7 @@ const DCBB = declareB(CBB);
 <DCBB foo={1} />;
 
 const declareAB = declareQueries({ a, b });
-declareAB.InputProps; // $ExpectType { queries: Pick<{ b?: undefined; } & { a: string; }, "a" | "b">; }
+declareAB.InputProps; // $ExpectType { queries: { b?: undefined; } & { a: string; }; }
 declareAB.Props; // $ExpectType QueryOutputProps<string, ProductP<{ a: CachedQuery<string, string, number>; b: CachedQuery<void, string, number>; }>>
 declare const AB: React.ComponentType<{
   queries: QR.QueryResult<string, { a: number; b: number }>;
@@ -176,7 +176,7 @@ declare const cbf: (input: number) => TE.TaskEither<string, number>;
 const cmdcaf = command(caf); // $ExpectType (a: string, ia?: undefined) => TaskEither<string, number>
 cmdcaf('foo'); // $ExpectType TaskEither<string, number>
 command(caf, {}); // $ExpectError
-const cmda = command(caf, { a }); // $ExpectType (a: string, ia: Pick<{} & { a: string; }, "a">) => TaskEither<string, number>
+const cmda = command(caf, { a }); // $ExpectType (a: string, ia: {} & { a: string; }) => TaskEither<string, number>
 cmda(1, { a: 'foo' }); // $ExpectError
 cmda('foo', {}); // $ExpectError
 cmda('foo'); // $ExpectError
@@ -194,7 +194,7 @@ type RA = {
   // tslint:disable-next-line:invalid-void
   b: Q.ObservableQuery<void, void, number>;
 };
-type PA = ProductA<RA>; // $ExpectType Pick<{ b?: undefined; } & { a: string; }, "a" | "b">
+type PA = ProductA<RA>; // $ExpectType { b?: undefined; } & { a: string; }
 
 // tslint:disable-next-line:interface-over-type-literal
 type RB = {
@@ -212,7 +212,7 @@ type RC = {
   // tslint:disable-next-line:invalid-void
   b: Q.ObservableQuery<number, void, number>;
 };
-type PC = ProductA<RC>; // $ExpectType Pick<{} & { a: string; b: number; }, "a" | "b">
+type PC = ProductA<RC>; // $ExpectType {} & { a: string; b: number; }
 
 declare const q1: Q.ObservableQuery<{ a: string }, string, string>;
 declare const q2: Q.ObservableQuery<{ b: number }, string, string>;
