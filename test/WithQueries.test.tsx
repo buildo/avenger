@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { render, waitForElement, cleanup } from 'react-testing-library';
-import { queryStrict, refetch, invalidate } from '../src/DSL';
+import { queryStrict, refetch, invalidate, available } from '../src/DSL';
 import { taskEither } from 'fp-ts/lib/TaskEither';
 import { WithQueries } from '../src/react';
 import * as QR from '../src/QueryResult';
@@ -157,5 +157,26 @@ describe('declareQueries', () => {
         2 /* re-fetch after set state, no Loading -> 2 Successes */
     );
     cleanup();
+  });
+
+  it('should honour the last "render" prop received', async () => {
+    const foo = queryStrict(
+      () => taskEither.of<void, unknown>(null),
+      available
+    );
+    const a = jest.fn();
+    const b = jest.fn();
+    const { rerender } = await render(
+      <WithQueries queries={{ foo }} render={a} />
+    );
+    expect(a).toHaveBeenCalledTimes(
+      1 + 1 /* because we subscribe in componentDidMount, see comments above */
+    );
+    expect(b).toHaveBeenCalledTimes(0);
+    await rerender(<WithQueries queries={{ foo }} render={b} />);
+    expect(a).toHaveBeenCalledTimes(
+      1 + 1 /* because we subscribe in componentDidMount, see comments above */
+    );
+    expect(b).toHaveBeenCalledTimes(1);
   });
 });
